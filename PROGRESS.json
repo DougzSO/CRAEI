@@ -1,12 +1,12 @@
 {
   "project": "CRAEI",
   "updated": "2026-09-16",
-  "current_command": "C06",
+  "current_command": "C07",
   "phases": [
     {
       "id": "P0",
       "name": "Bootstrap",
-      "status": "in_progress",
+      "status": "done",
       "commands": [
         {"id": "C01", "status": "done", "commit": null, "check": "tree matches plan"},
         {"id": "C02", "status": "done", "commit": null, "check": "CLAUDE.md <= 80 lines, 8 rules present"},
@@ -15,7 +15,7 @@
         {"id": "C05", "status": "done", "commit": null, "check": "paths.local.yaml and data files gitignored"},
         {"id": "P0-R", "status": "done", "commit": null, "check": "phase review approved"},
         {"id": "P0-C", "status": "done", "commit": null, "check": "git status clean; git log -1 shows message"},
-        {"id": "C06", "status": "blocked", "commit": null, "check": "gh run list -L 1 shows CI success; blocked on O01"}
+        {"id": "C06", "status": "done", "commit": "39afbb9", "check": "gh run list -L 1 shows CI success"}
       ]
     },
     {
