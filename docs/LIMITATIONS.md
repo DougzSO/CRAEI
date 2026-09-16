@@ -10,3 +10,4 @@
 | L08 | W5E5 ends in 2019 (2021 water crisis outside validation) | Methods §1.7 | Stated in Methods |
 | L09 | Validation has no India coverage | Methods §1.7 | Stated as limitation |
 | L10 | SPEI extrapolation truncated at ±3 | Methods §1.3, §1.4 (H2) | Clipping documented in Methods |
+| L11 | Geothermal capacity (GEM `Type`, Portugal only) is out of the four defined technology classes | D15 | Excluded from the fleet, same treatment as wind |
