@@ -1,7 +1,7 @@
 {
   "project": "CRAEI",
   "updated": "2026-09-16",
-  "current_command": "P1-R",
+  "current_command": "C10",
   "phases": [
     {
       "id": "P0",
@@ -21,13 +21,13 @@
     {
       "id": "P1",
       "name": "Blocking verifications",
-      "status": "todo",
+      "status": "done",
       "commands": [
-        {"id": "C07", "status": "done", "commit": null, "check": "per-country counts match file totals"},
-        {"id": "C08", "status": "done", "commit": null, "check": "60/60 combinations covering required periods"},
-        {"id": "C09", "status": "done", "commit": null, "check": "4 sources with confirmed period or open decision"},
-        {"id": "P1-R", "status": "todo", "commit": null, "check": "phase review approved"},
-        {"id": "P1-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+        {"id": "C07", "status": "done", "commit": "3933799", "check": "per-country counts match file totals"},
+        {"id": "C08", "status": "done", "commit": "3933799", "check": "60/60 combinations covering required periods"},
+        {"id": "C09", "status": "done", "commit": "3933799", "check": "4 sources with confirmed period or open decision"},
+        {"id": "P1-R", "status": "done", "commit": null, "check": "phase review approved"},
+        {"id": "P1-C", "status": "done", "commit": "3933799", "check": "git status clean; git log -1 shows message"}
       ]
     },
     {
