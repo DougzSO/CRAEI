@@ -1,0 +1,103 @@
+{
+  "project": "CRAEI",
+  "updated": "2026-09-16",
+  "current_command": "C06",
+  "phases": [
+    {
+      "id": "P0",
+      "name": "Bootstrap",
+      "status": "in_progress",
+      "commands": [
+        {"id": "C01", "status": "done", "commit": null, "check": "tree matches plan"},
+        {"id": "C02", "status": "done", "commit": null, "check": "CLAUDE.md <= 80 lines, 8 rules present"},
+        {"id": "C03", "status": "done", "commit": null, "check": "PROGRESS.json valid; 12 D + 4 O; 10 L"},
+        {"id": "C04", "status": "done", "commit": null, "check": "pip install -e . ok; pytest passes; 16 params reported"},
+        {"id": "C05", "status": "done", "commit": null, "check": "paths.local.yaml and data files gitignored"},
+        {"id": "P0-R", "status": "done", "commit": null, "check": "phase review approved"},
+        {"id": "P0-C", "status": "done", "commit": null, "check": "git status clean; git log -1 shows message"},
+        {"id": "C06", "status": "blocked", "commit": null, "check": "gh run list -L 1 shows CI success; blocked on O01"}
+      ]
+    },
+    {
+      "id": "P1",
+      "name": "Blocking verifications",
+      "status": "todo",
+      "commands": [
+        {"id": "C07", "status": "todo", "commit": null, "check": "per-country counts match file totals"},
+        {"id": "C08", "status": "todo", "commit": null, "check": "60/60 combinations covering required periods"},
+        {"id": "C09", "status": "todo", "commit": null, "check": "4 sources with confirmed period or open decision"},
+        {"id": "P1-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P1-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "Data acquisition",
+      "status": "todo",
+      "commands": [
+        {"id": "C10", "status": "todo", "commit": null, "check": "dry-run lists 60 datasets + W5E5 + auxiliaries; pytest passes"},
+        {"id": "C11", "status": "todo", "commit": null, "check": "36/36 datasets open without error, full years, expected units"},
+        {"id": "C12", "status": "todo", "commit": null, "check": "180/180 ISIMIP + W5E5 + 4 auxiliaries in manifest, hashes verified"},
+        {"id": "P2-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P2-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    },
+    {
+      "id": "P3",
+      "name": "Inventory and spatial mapping",
+      "status": "todo",
+      "commands": [
+        {"id": "C13", "status": "todo", "commit": null, "check": "kept + discarded = input total; zero duplicate plant_uid"},
+        {"id": "C14", "status": "todo", "commit": null, "check": "100% plants with cell; catchment area diff < 1%; weights sum to 1"},
+        {"id": "P3-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P3-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "Hazard indices",
+      "status": "todo",
+      "commands": [
+        {"id": "C15", "status": "todo", "commit": null, "check": "P95 exceedance between 4.5% and 5.5% of wet days"},
+        {"id": "C16", "status": "todo", "commit": null, "check": "FAO-56 test passes; zero negative PET; zero NaN outside ocean cells"},
+        {"id": "C17", "status": "todo", "commit": null, "check": "calibration test passes; baseline F_D distribution reported"},
+        {"id": "C18", "status": "todo", "commit": null, "check": "row counts match expected; NaN counts per hazard reported"},
+        {"id": "P4-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P4-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    },
+    {
+      "id": "P5",
+      "name": "Exposure and compound metric",
+      "status": "todo",
+      "commands": [
+        {"id": "C19", "status": "todo", "commit": null, "check": "MW sums match plants.parquet; synthetic test passes"},
+        {"id": "C20", "status": "todo", "commit": null, "check": "45 rows; fallback count reported"},
+        {"id": "P5-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P5-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    },
+    {
+      "id": "P6",
+      "name": "Validation",
+      "status": "todo",
+      "commands": [
+        {"id": "C21", "status": "todo", "commit": null, "check": "5 regions with n_years, rho and CI reported"},
+        {"id": "P6-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P6-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    },
+    {
+      "id": "P7",
+      "name": "Sensitivity, figures and release",
+      "status": "todo",
+      "commands": [
+        {"id": "C22", "status": "todo", "commit": null, "check": "one row per test x main result; ranking-change flag filled"},
+        {"id": "C23", "status": "todo", "commit": null, "check": "5 main figures + Extended Data generated; no calculation in figure modules"},
+        {"id": "C24", "status": "todo", "commit": null, "check": "total time < 24h; hashes identical; tag created"},
+        {"id": "P7-R", "status": "todo", "commit": null, "check": "phase review approved"},
+        {"id": "P7-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+      ]
+    }
+  ]
+}

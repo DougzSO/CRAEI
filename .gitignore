@@ -1,0 +1,24 @@
+# Data (never enters git; see config/paths.local.yaml)
+data/
+DATA_ROOT/
+outputs/
+config/paths.local.yaml
+
+# Raster / table / grid data files anywhere in the repo
+*.nc
+*.parquet
+*.tif
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# Notebooks
+.ipynb_checkpoints/

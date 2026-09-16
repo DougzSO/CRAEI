@@ -1,0 +1,46 @@
+# ISIMIP3b bias-adjusted climate input data. Source: Methods Spec §1.3, §5.
+models:
+  - gfdl-esm4
+  - ipsl-cm6a-lr
+  - mpi-esm1-2-hr
+  - mri-esm2-0
+  - ukesm1-0-ll
+
+scenarios:
+  - historical
+  - ssp126
+  - ssp370
+  - ssp585
+
+variables:
+  - tasmax
+  - tasmin
+  - pr
+
+periods:
+  baseline:
+    start: 1985
+    end: 2014
+  future:
+    start: 2041
+    end: 2070
+
+# Download filter windows (Methods Spec §5 example: years_needed).
+download_years:
+  historical:
+    start: 1984
+    end: 2014
+  future:
+    start: 2041
+    end: 2070
+
+w5e5:
+  years:
+    start: 1984
+    end: 2019
+
+# west, east, south, north
+bboxes:
+  BRA: [-74.5, -34.0, -34.5, 6.0]
+  IND: [68.0, 98.0, 6.0, 37.5]
+  PRT: [-31.5, -6.0, 32.5, 42.5]

@@ -1,0 +1,7 @@
+# Template for config/paths.local.yaml (gitignored). Copy this file and
+# fill in real paths; data never enters git (Methods Spec principle 5).
+data_root: "/path/to/DATA_ROOT"
+raw_dir: "/path/to/DATA_ROOT/raw"
+interim_dir: "/path/to/DATA_ROOT/interim"
+processed_dir: "/path/to/DATA_ROOT/processed"
+outputs_dir: "/path/to/DATA_ROOT/outputs"
