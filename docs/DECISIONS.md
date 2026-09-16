@@ -12,7 +12,8 @@
 | D10 | Validation against ONS ENA and REN | closed | Spec §1.7 | 2026-09-16 |
 | D11 | Hydro with no type treated as reservoir | closed | Spec §1.2 | 2026-09-16 |
 | D12 | ERA5 gust, IBTrACS and legacy rasters not used | closed | Spec §0 | 2026-09-16 |
-| O01 | Repository license and visibility | open | author | 2026-09-16 |
+| D13 | Repository license MIT, visibility public | closed | author | 2026-09-16 |
+| O01 | Repository license and visibility | open → D13 | author | 2026-09-16 |
 | O02 | GEM technology string mapping to classes | open | author | 2026-09-16 |
 | O03 | GEM status values for operating/planned_adv/planned_early | open | author | 2026-09-16 |
 | O04 | Environment manager (proposal: conda-forge via `environment.yml`) | open | author | 2026-09-16 |
