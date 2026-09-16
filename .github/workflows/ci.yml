@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install package
-        run: pip install -e ".[dev]" || pip install -e . ruff pytest pyyaml
+        run: pip install -e . ruff pytest
       - name: Lint
         run: ruff check .
       - name: Test
