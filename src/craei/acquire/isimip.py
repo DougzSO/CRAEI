@@ -170,15 +170,32 @@ def _file_overlaps(filename: str, start_year: int, end_year: int) -> bool:
     return file_start <= end_year and file_end >= start_year
 
 
+METADATA_RETRIES = 4
+
+
 def dataset_paths(client, job: IsimipJob, datasets_cfg: dict) -> list[str]:
-    """List ISIMIP repository paths of the global files covering `job`'s required years."""
-    result = client.datasets(
-        simulation_round="ISIMIP3b",
-        climate_scenario=job.scenario,
-        climate_forcing=job.model,
-        climate_variable=job.variable,
-        bias_adjustment="w5e5",
-    )
+    """List ISIMIP repository paths of the global files covering `job`'s required years.
+
+    Retries the metadata call: `data.isimip.org` was observed to fail DNS
+    resolution/connect for several minutes during an otherwise-healthy run
+    (see COMANDO 11 in docs/DECISIONS.md), which is a transient network
+    condition, not a permanently missing dataset.
+    """
+    result = None
+    for attempt in range(METADATA_RETRIES):
+        try:
+            result = client.datasets(
+                simulation_round="ISIMIP3b",
+                climate_scenario=job.scenario,
+                climate_forcing=job.model,
+                climate_variable=job.variable,
+                bias_adjustment="w5e5",
+            )
+            break
+        except requests.exceptions.RequestException:
+            if attempt == METADATA_RETRIES - 1:
+                raise
+            time.sleep(15 * (attempt + 1))
     if not result:
         raise ValueError(f"no ISIMIP dataset found for {job}")
     start_year, end_year = required_years(job, datasets_cfg)
@@ -290,11 +307,15 @@ def _download_parallel_ranges(url: str, tmp_path: Path, size: int, n_connections
 def _fetch_range(url: str, tmp_path: Path, start: int, end: int) -> None:
     """Fetch bytes [start, end] and write them into `tmp_path`, retrying on drops.
 
-    The connection was observed to drop mid-transfer on large ranges (~150 MB
-    chunks); each retry resumes from the last byte actually written instead
-    of restarting the whole range.
+    The connection was observed to (a) drop mid-transfer on large ranges
+    (~150 MB chunks), each retry resuming from the last byte actually
+    written instead of restarting the whole range, and (b) close cleanly
+    with fewer bytes than requested without raising — checked explicitly
+    below, since silently short ranges corrupt the file's HDF5 chunks
+    without any exception (see COMANDO 11 in docs/DECISIONS.md).
     """
     pos = start
+    expected = end - start + 1
     for attempt in range(RANGE_RETRIES):
         try:
             with requests.get(
@@ -306,9 +327,13 @@ def _fetch_range(url: str, tmp_path: Path, start: int, end: int) -> None:
                     for chunk in resp.iter_content(chunk_size=1024 * 1024):
                         f.write(chunk)
                         pos += len(chunk)
-            return
+            if pos - start == expected:
+                return
+            raise requests.exceptions.ChunkedEncodingError(
+                f"range {start}-{end} ended short: got {pos - start}/{expected} bytes"
+            )
         except requests.exceptions.RequestException:
-            if attempt == RANGE_RETRIES - 1 or pos > end:
+            if attempt == RANGE_RETRIES - 1:
                 raise
             time.sleep(2**attempt)
 
