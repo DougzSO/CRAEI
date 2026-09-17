@@ -36,7 +36,7 @@
       "status": "todo",
       "commands": [
         {"id": "C10", "status": "done", "commit": null, "check": "dry-run lists 60 datasets + W5E5 + auxiliaries; pytest passes"},
-        {"id": "C11", "status": "in_progress", "commit": null, "check": "36/36 datasets open without error, full years, expected units; PRT-only subset (12/36) running first — ISIMIP cutout queue is slow, see DECISIONS.md"},
+        {"id": "C11", "status": "in_progress", "commit": null, "check": "36/36 datasets open without error, full years, expected units. Switched from congested cutout API to direct global download + local xarray crop (see DECISIONS.md); 1/36 (PRT historical/tasmax) validated (K units, full 1984-2014, correct bbox). Remaining 11/12 PRT jobs running in background; BRA/IND not started"},
         {"id": "C12", "status": "todo", "commit": null, "check": "180/180 ISIMIP + W5E5 + 4 auxiliaries in manifest, hashes verified"},
         {"id": "P2-R", "status": "todo", "commit": null, "check": "phase review approved"},
         {"id": "P2-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}

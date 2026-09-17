@@ -3,10 +3,15 @@
 Downloads the full GFDL-ESM4 set via craei.acquire.isimip, opens each file
 with xarray to check variable, units, calendar, date range and bbox, then
 reports actual size and extrapolates total volume for all 5 models.
+
+Uses direct HTTPS download of global files + local crop with xarray
+(`isimip.run_job_direct`), not the ISIMIP cutout API: that API's job queue
+was found congested (jobs stuck "queued" for 30+ min, confirmed server-side,
+not a local network issue) while plain file downloads and metadata calls
+respond normally. See COMANDO 11 in docs/DECISIONS.md.
 """
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
@@ -21,19 +26,6 @@ from craei.manifest import Manifest
 MODEL = "gfdl-esm4"
 COUNTRIES = ("BRA", "IND", "PRT")
 EXPECTED_UNITS = {"tasmax": "K", "tasmin": "K", "pr": "kg m-2 s-1"}
-POLL_ALL_TIMEOUT_S = 3 * 3600  # cutout jobs on the shared ISIMIP queue can take a long time
-POLL_ROUND_INTERVAL_S = 20
-CHECKPOINT_NAME = "pilot_gfdl-esm4_checkpoint.json"
-
-
-def load_checkpoint(path: Path) -> dict:
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
-
-
-def save_checkpoint(path: Path, checkpoint: dict) -> None:
-    path.write_text(json.dumps(checkpoint, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def check_file(path: Path, job: isimip.IsimipJob, country: str, datasets_cfg: dict) -> dict:
@@ -104,6 +96,7 @@ def main() -> None:
     datasets_cfg = load_datasets()
     paths = load_paths()
     raw_dir = Path(paths["raw_dir"])
+    cache_dir = Path(paths["isimip_global_cache_dir"])
     manifest = Manifest(raw_dir / "manifest.json")
     client = ISIMIPClient()
 
@@ -112,95 +105,30 @@ def main() -> None:
     print(f"Pilot download: {len(jobs)} jobs x {len(countries)} countries = {n_files} files")
 
     t0 = time.time()
-    checkpoint_path = raw_dir / CHECKPOINT_NAME
-    checkpoint = load_checkpoint(checkpoint_path)
-
-    # Submit everything up front so all jobs queue on the server at once
-    # (sequential submit-and-block was tested and left single jobs "queued"
-    # for 15+ minutes without even reaching "started" — see DECISIONS.md).
-    # Every job_url is written to a checkpoint file immediately, so a second
-    # run resumes polling existing jobs instead of resubmitting from zero.
-    already_done = []
-    pending = []
+    rows = []
     for job in jobs:
         for country in countries:
             key = f"{job.key_prefix}/{country}"
             if manifest.is_intact(key):
-                already_done.append({"job": job, "country": country, "key": key})
-                checkpoint.pop(key, None)
+                path = Path(manifest.entries[key]["path"])
+                print(f"[{time.time() - t0:7.1f}s] {key}: already intact", flush=True)
+                rows.append(check_file(path, job, country, datasets_cfg))
                 continue
-
-            if key in checkpoint:
-                pending.append(
-                    {"job": job, "country": country, "key": key,
-                     "submitted": {"status": "queued", "job_url": checkpoint[key]}}
-                )
-                print(f"[{time.time() - t0:7.1f}s] resuming {key}", flush=True)
-                continue
-
             try:
-                submission = isimip.submit_job(client, manifest, job, country, datasets_cfg)
+                entry = isimip.run_job_direct(
+                    client, manifest, job, country, datasets_cfg, cache_dir, raw_dir
+                )
             except Exception as exc:  # noqa: BLE001 - keep going, report at the end
-                print(f"SUBMIT FAILED {key}: {exc}", flush=True)
+                print(f"[{time.time() - t0:7.1f}s] {key}: FAILED ({exc})", flush=True)
+                rows.append(
+                    {
+                        "model": job.model, "scenario": job.scenario, "variable": job.variable,
+                        "country": country, "ok": False, "error": str(exc),
+                    }
+                )
                 continue
-            checkpoint[key] = submission["submitted"]["job_url"]
-            save_checkpoint(checkpoint_path, checkpoint)
-            print(f"[{time.time() - t0:7.1f}s] submitted {key}", flush=True)
-            pending.append(submission)
-
-    print(
-        f"\n{len(pending)} jobs pending, {len(already_done)} already intact; polling"
-        f" (checkpoint: {checkpoint_path})...",
-        flush=True,
-    )
-
-    elapsed = 0
-    active = ("queued", "started")
-    while elapsed < POLL_ALL_TIMEOUT_S:
-        still_pending = [p for p in pending if p["submitted"]["status"] in active]
-        if not still_pending:
-            break
-        for p in still_pending:
-            p["submitted"] = client.get_job(p["submitted"]["job_url"], poll=None)
-        counts = {}
-        for p in pending:
-            counts[p["submitted"]["status"]] = counts.get(p["submitted"]["status"], 0) + 1
-        print(f"[{time.time() - t0:7.1f}s] status: {counts}", flush=True)
-        time.sleep(POLL_ROUND_INTERVAL_S)
-        elapsed += POLL_ROUND_INTERVAL_S
-
-    rows = []
-    for entry in already_done:
-        path = Path(manifest.entries[entry["key"]]["path"])
-        rows.append(check_file(path, entry["job"], entry["country"], datasets_cfg))
-
-    for submission in pending:
-        job, country = submission["job"], submission["country"]
-        status = submission["submitted"]["status"]
-        print(f"[{time.time() - t0:7.1f}s] {submission['key']}: {status}", flush=True)
-        if status != "finished":
-            rows.append(
-                {
-                    "model": job.model, "scenario": job.scenario, "variable": job.variable,
-                    "country": country, "ok": False, "error": f"job did not finish: {status}",
-                }
-            )
-            continue
-        try:
-            entry = isimip.finalize_job(client, manifest, submission, raw_dir)
-        except Exception as exc:  # noqa: BLE001 - keep going, report at the end
-            print(f"  DOWNLOAD FAILED: {exc}", flush=True)
-            rows.append(
-                {
-                    "model": job.model, "scenario": job.scenario, "variable": job.variable,
-                    "country": country, "ok": False, "error": f"download failed: {exc}",
-                }
-            )
-            continue
-        checkpoint.pop(submission["key"], None)
-        save_checkpoint(checkpoint_path, checkpoint)
-        row = check_file(Path(entry["path"]), job, country, datasets_cfg)
-        rows.append(row)
+            print(f"[{time.time() - t0:7.1f}s] {key}: done", flush=True)
+            rows.append(check_file(Path(entry["path"]), job, country, datasets_cfg))
 
     print("\n=== Checkup table ===")
     cols = ["scenario", "variable", "country", "ok", "size_MB", "units", "calendar", "dates"]

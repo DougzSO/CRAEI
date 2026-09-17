@@ -5,3 +5,8 @@ raw_dir: "/path/to/DATA_ROOT/raw"
 interim_dir: "/path/to/DATA_ROOT/interim"
 processed_dir: "/path/to/DATA_ROOT/processed"
 outputs_dir: "/path/to/DATA_ROOT/outputs"
+
+# Optional: permanent cache of raw global ISIMIP files, reused across all
+# study countries so they are never re-downloaded (see docs/DECISIONS.md,
+# COMANDO 11). Can live anywhere with enough free space.
+isimip_global_cache_dir: "/path/to/ISIMIP_CACHE"
