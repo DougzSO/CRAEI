@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
+import h5py
 import requests
 import xarray as xr
 
@@ -31,6 +32,20 @@ ISIMIP_METADATA_BASE = "https://data.isimip.org"
 DOWNLOAD_CONNECTIONS = 3
 MIN_FREE_SPACE_BYTES = 20 * 1024**3
 STUDY_COUNTRIES = ("BRA", "IND", "PRT")
+
+# Watchdog for a stalled-but-still-connected download (COMANDO 12 rework,
+# item 3): checked every WATCHDOG_POLL_S against the partial file's size; no
+# growth for WATCHDOG_STALL_S aborts the current attempt so the existing
+# retry/resume logic in `_download_single_stream` can take over. This cannot
+# rescue a write stuck in an uninterruptible kernel I/O wait (observed once
+# against the D: USB drive in the paused COMANDO 12 run — even
+# `taskkill /F`/`Stop-Process -Force` failed against it); that failure mode
+# is instead avoided structurally by staging downloads on the internal SSD
+# (see `staging_dir` below) and only moving the finished, validated file to
+# the (USB) cache/destination drive.
+WATCHDOG_POLL_S = 60
+WATCHDOG_STALL_S = 300
+WATCHDOG_MAX_RESTARTS = 3
 
 
 @dataclass(frozen=True)
@@ -326,10 +341,40 @@ class _ProgressTracker:
         self._stop.set()
 
 
+_HDF5_LOCK = threading.Lock()
+
+
+def _validate_raw_netcdf(path: Path) -> None:
+    """Open `path` with h5py and read its last time step (COMANDO 12 rework, item 5).
+
+    Cheap sanity check that the file is a readable, non-truncated HDF5/NetCDF4
+    container before it is trusted as cache content — catches truncated or
+    corrupted downloads that happen to match the expected byte count (the
+    `Content-Length` check in `download_global_file` does not).
+
+    Serialized via `_HDF5_LOCK`: `download_global_files` runs this from
+    several `ThreadPoolExecutor` workers at once (one per concurrently
+    downloading file), and the underlying HDF5 C library is not safe to call
+    concurrently from multiple threads in the same process — the default
+    (non-threadsafe) HDF5 build corrupts its own internal B-tree/cache state
+    under concurrent access, observed as "wrong B-tree signature" errors
+    that then also broke unrelated, later, single-threaded reads (xarray's
+    `crop_to_countries`) in the same process. A lock, not per-file, since the
+    corruption is of process-wide HDF5 library state, not per-file state.
+    """
+    with _HDF5_LOCK, h5py.File(path, "r") as f:
+        time_var = f["time"]
+        if time_var.shape[0] == 0:
+            raise OSError(f"{path}: 'time' dimension is empty")
+        _ = time_var[-1]
+
+
 def download_global_file(
     cache_dir: Path,
     repo_path: str,
     progress: "_ProgressTracker | None" = None,
+    staging_dir: Path | None = None,
+    defer_move: bool = False,
 ) -> Path:
     """Download one whole global ISIMIP file into a permanent, reusable cache.
 
@@ -343,12 +388,35 @@ def download_global_file(
     parallel Range requests was tried and dropped after it corrupted
     downloaded files (see `download_global_files`); concurrency comes only
     from downloading several files at once, each its own safe single stream.
+
+    If `staging_dir` is given (COMANDO 12 rework, item 2), the live download
+    (and its retries/resumes) writes there instead of directly into
+    `cache_dir`; `cache_dir` is touched only once, by a single `shutil.move`
+    of the finished, h5py-validated (item 5) file. This keeps the failure-
+    prone part of the transfer (a long-held file handle, repeatedly written
+    to over possibly hours) off a drive known to have hung at the kernel I/O
+    level (see `WATCHDOG_STALL_S` docstring above and COMANDO 12 in
+    docs/DECISIONS.md); `staging_dir` should be on the internal SSD.
+
+    If `defer_move` is true, the finished, validated file is left under
+    `staging_dir` (renamed to its final basename, `.part` dropped) and that
+    staged path is returned instead of moving it into `cache_dir`. Lets a
+    caller (`acquire_job_all_countries`) crop directly from the SSD copy
+    before the one-time move to `cache_dir` (D:) — cropping reads the whole
+    file's worth of chunks (COMANDO 11: `(1, 360, 720)` chunk layout, one
+    full grid per time step), so reading from `cache_dir` first and cropping
+    from there second would mean two D: touches instead of one.
     """
     local_path = cache_dir / repo_path
     if local_path.exists():
         return local_path
     local_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = local_path.with_name(local_path.name + ".part")
+
+    write_dir = staging_dir if staging_dir is not None else local_path.parent
+    if staging_dir is not None:
+        _check_free_space(staging_dir)
+        write_dir.mkdir(parents=True, exist_ok=True)
+    tmp_path = write_dir / (local_path.name + ".part")
     url = f"{ISIMIP_FILES_BASE}/{repo_path}"
 
     t0 = time.time()
@@ -362,17 +430,51 @@ def download_global_file(
         tmp_path.unlink()
         raise OSError(f"{repo_path}: downloaded {actual_size} bytes, expected {size}")
 
-    tmp_path.rename(local_path)
+    try:
+        _validate_raw_netcdf(tmp_path)
+    except (OSError, KeyError) as exc:
+        tmp_path.unlink(missing_ok=True)
+        raise OSError(f"{repo_path}: failed h5py validation after download: {exc}") from exc
+
     elapsed = time.time() - t0
-    mb = local_path.stat().st_size / 1e6
+    mb = tmp_path.stat().st_size / 1e6
     rate = mb / max(elapsed, 1)
-    msg = f"  [cache] {local_path.name}: {mb:.0f} MB in {elapsed:.0f}s ({rate:.2f} MB/s)"
-    print(msg, flush=True)
+
+    if defer_move:
+        staged_path = tmp_path.with_name(local_path.name)
+        tmp_path.rename(staged_path)
+        print(f"  [staged] {staged_path.name}: {mb:.0f} MB in {elapsed:.0f}s ({rate:.2f} MB/s)",
+              flush=True)
+        return staged_path
+
+    shutil.move(str(tmp_path), str(local_path))
+    print(f"  [cache] {local_path.name}: {mb:.0f} MB in {elapsed:.0f}s ({rate:.2f} MB/s)",
+          flush=True)
+    return local_path
+
+
+def promote_staged_file(staged_path: Path, cache_dir: Path, repo_path: str) -> Path:
+    """Move a `defer_move=True` staged file into its final place in `cache_dir`.
+
+    The one D: write per global file (COMANDO 12 rework, item 2): everything
+    before this — download, retries, h5py validation, and the crop that
+    reads it — happens on `staging_dir` (SSD); this call is the only time
+    the file touches the (USB) cache drive.
+    """
+    local_path = cache_dir / repo_path
+    if staged_path == local_path:
+        return local_path
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(staged_path), str(local_path))
     return local_path
 
 
 def download_global_files(
-    cache_dir: Path, repo_paths: list[str], max_parallel_files: int = DOWNLOAD_CONNECTIONS
+    cache_dir: Path,
+    repo_paths: list[str],
+    max_parallel_files: int = DOWNLOAD_CONNECTIONS,
+    staging_dir: Path | None = None,
+    defer_move: bool = False,
 ) -> list[Path]:
     """Download several global files for one job concurrently, one connection per file.
 
@@ -400,7 +502,12 @@ def download_global_files(
     try:
         with ThreadPoolExecutor(max_workers=workers) as pool:
             fetched = list(
-                pool.map(lambda p: download_global_file(cache_dir, p, progress), to_fetch)
+                pool.map(
+                    lambda p: download_global_file(
+                        cache_dir, p, progress, staging_dir, defer_move
+                    ),
+                    to_fetch,
+                )
             )
     finally:
         progress.stop()
@@ -422,6 +529,43 @@ def _probe_file(url: str) -> tuple[int, bool]:
 DOWNLOAD_RETRIES = 5
 
 
+class _StallWatchdog:
+    """Aborts the in-progress download if `tmp_path` stops growing for `WATCHDOG_STALL_S`.
+
+    COMANDO 12 rework, item 3. Runs in a daemon thread polling the partial
+    file's size on disk every `WATCHDOG_POLL_S`; sets `aborted` (checked by
+    `_download_single_stream` between chunks) rather than trying to kill the
+    request itself, since closing a socket from another thread mid-`recv` is
+    not reliably interruptible on Windows.
+    """
+
+    def __init__(self, tmp_path: Path):
+        self.tmp_path = tmp_path
+        self.aborted = threading.Event()
+        self._stop = threading.Event()
+        self._last_size = -1
+        self._last_growth = time.time()
+
+    def _poll(self) -> None:
+        while not self._stop.wait(WATCHDOG_POLL_S):
+            size = self.tmp_path.stat().st_size if self.tmp_path.exists() else 0
+            now = time.time()
+            if size != self._last_size:
+                self._last_size = size
+                self._last_growth = now
+            elif now - self._last_growth >= WATCHDOG_STALL_S:
+                self.aborted.set()
+                return
+
+    def __enter__(self) -> "_StallWatchdog":
+        self._thread = threading.Thread(target=self._poll, daemon=True)
+        self._thread.start()
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self._stop.set()
+
+
 def _download_single_stream(
     url: str,
     tmp_path: Path,
@@ -432,29 +576,48 @@ def _download_single_stream(
 
     On retry, resumes via `Range` from the last byte actually written
     instead of restarting — a connection was observed to drop mid-transfer
-    on ~1-2 GB files (see COMANDO 11 in docs/DECISIONS.md).
+    on ~1-2 GB files (see COMANDO 11 in docs/DECISIONS.md). A `_StallWatchdog`
+    aborts and retries an attempt whose partial file stops growing for
+    `WATCHDOG_STALL_S`, up to `WATCHDOG_MAX_RESTARTS` times, logging each
+    stall — separate from `DOWNLOAD_RETRIES`, which covers connection drops
+    that `requests` itself raises on.
     """
     pos = tmp_path.stat().st_size if tmp_path.exists() else 0
     mode = "r+b" if pos else "wb"
-    for attempt in range(DOWNLOAD_RETRIES):
+    conn_retries = 0
+    stall_restarts = 0
+    while True:
         headers = {"Range": f"bytes={pos}-"} if pos else {}
         try:
             with requests.get(url, headers=headers, stream=True, timeout=120) as resp:
                 resp.raise_for_status()
-                with open(tmp_path, mode) as f:
+                with open(tmp_path, mode) as f, _StallWatchdog(tmp_path) as watchdog:
                     if pos:
                         f.seek(pos)
                     for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                        if watchdog.aborted.is_set():
+                            raise TimeoutError(
+                                f"{tmp_path.name}: no growth for {WATCHDOG_STALL_S}s"
+                            )
                         f.write(chunk)
                         pos += len(chunk)
                         if progress is not None:
                             progress.advance(progress_name, len(chunk))
             return
         except requests.exceptions.RequestException:
-            if attempt == DOWNLOAD_RETRIES - 1:
+            conn_retries += 1
+            if conn_retries >= DOWNLOAD_RETRIES:
                 raise
             mode = "r+b"
-            time.sleep(2**attempt)
+            time.sleep(2**conn_retries)
+        except TimeoutError as exc:
+            stall_restarts += 1
+            print(f"  [watchdog] {exc} (restart {stall_restarts}/{WATCHDOG_MAX_RESTARTS})",
+                  flush=True)
+            if stall_restarts >= WATCHDOG_MAX_RESTARTS:
+                raise
+            pos = tmp_path.stat().st_size if tmp_path.exists() else 0
+            mode = "r+b" if pos else "wb"
 
 
 def crop_to_country(
@@ -562,6 +725,7 @@ def acquire_job_all_countries(
     cache_dir: Path,
     raw_dir: Path,
     countries: tuple[str, ...] = STUDY_COUNTRIES,
+    staging_dir: Path | None = None,
 ) -> dict[str, dict | None]:
     """Download a job's global file(s) once, crop all `countries` in one pass.
 
@@ -570,12 +734,22 @@ def acquire_job_all_countries(
     D19-D23): they are useful for adding countries later or for reuse outside
     this pipeline, and `cache_dir` has ample free space.
 
+    If `staging_dir` is given, each global file's live download writes there
+    (internal SSD) instead of directly into `cache_dir`. `crop_to_countries`
+    below then reads straight from `staging_dir` too (not `cache_dir`), so
+    the crop — which touches every chunk of the file, per the COMANDO 11
+    chunk-layout finding — never reads from the (USB) cache drive either.
+    Only after a successful crop is each freshly-downloaded file moved into
+    `cache_dir` via `promote_staged_file`, one `shutil.move` per file: the
+    only time this job's global files touch D: at all (COMANDO 12 rework,
+    item 2).
+
     If `crop_to_countries` still fails after its own retries, one global
     file being genuinely corrupt (not just transiently locked) is the
     remaining suspect (observed once: a stale file from an earlier run's
     process collision, silently reused forever because presence alone was
-    trusted). As a last resort, the cached files for this job are deleted
-    and re-downloaded once before giving up.
+    trusted). As a last resort, the staged/cached files for this job are
+    deleted and re-downloaded once before giving up.
     """
     missing = [c for c in countries if not manifest.is_intact(f"{job.key_prefix}/{c}")]
     if not missing:
@@ -585,16 +759,23 @@ def acquire_job_all_countries(
     _check_free_space(cache_dir)
     out_dir = raw_dir / "climate" / "isimip3b" / job.model / job.scenario / job.variable
 
-    local_globals = download_global_files(cache_dir, repo_paths, DOWNLOAD_CONNECTIONS)
+    local_globals = download_global_files(
+        cache_dir, repo_paths, DOWNLOAD_CONNECTIONS, staging_dir, defer_move=True
+    )
     try:
         cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
     except (OSError, RuntimeError):
         for p in local_globals:
             p.unlink(missing_ok=True)
-        local_globals = download_global_files(cache_dir, repo_paths, DOWNLOAD_CONNECTIONS)
+        local_globals = download_global_files(
+            cache_dir, repo_paths, DOWNLOAD_CONNECTIONS, staging_dir, defer_move=True
+        )
         cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
 
     content_length = sum(p.stat().st_size for p in local_globals)
+    for staged_path, repo_path in zip(local_globals, repo_paths, strict=True):
+        promote_staged_file(staged_path, cache_dir, repo_path)  # kept for reuse, D26
+
     origin = ",".join(f"{ISIMIP_FILES_BASE}/{p}" for p in repo_paths)
     results: dict[str, dict | None] = dict.fromkeys(countries)
     for country, path in cropped.items():

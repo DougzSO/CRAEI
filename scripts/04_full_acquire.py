@@ -27,6 +27,7 @@ def main() -> None:
     paths = load_paths()
     raw_dir = Path(paths["raw_dir"])
     cache_dir = Path(paths["isimip_global_cache_dir"])
+    staging_dir = Path(paths["isimip_staging_dir"]) if paths.get("isimip_staging_dir") else None
     manifest = Manifest(raw_dir / "manifest.json")
     client = ISIMIPClient()
 
@@ -46,7 +47,8 @@ def main() -> None:
         print(f"{tag} starting {job.key_prefix}", flush=True)
         try:
             isimip.acquire_job_all_countries(
-                client, manifest, job, datasets_cfg, cache_dir, raw_dir
+                client, manifest, job, datasets_cfg, cache_dir, raw_dir,
+                staging_dir=staging_dir,
             )
             ok += 1
             print(f"{tag} done {job.key_prefix}", flush=True)

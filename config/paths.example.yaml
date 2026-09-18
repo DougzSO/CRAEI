@@ -10,3 +10,7 @@ outputs_dir: "/path/to/DATA_ROOT/outputs"
 # study countries so they are never re-downloaded (see docs/DECISIONS.md,
 # COMANDO 11). Can live anywhere with enough free space.
 isimip_global_cache_dir: "/path/to/ISIMIP_CACHE"
+
+# Optional: internal-SSD staging area for in-progress downloads before they
+# are moved into isimip_global_cache_dir (see docs/DECISIONS.md, COMANDO 12).
+isimip_staging_dir: "/path/to/SSD_STAGING"
