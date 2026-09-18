@@ -508,6 +508,9 @@ def _check_free_space(path: Path, min_bytes: int = MIN_FREE_SPACE_BYTES) -> None
         raise OSError(f"only {free / 1e9:.1f} GB free at {path}, need >= {min_bytes / 1e9:.0f} GB")
 
 
+CROP_RETRIES = 4
+
+
 def crop_to_countries(
     global_paths: list[Path],
     job: IsimipJob,
@@ -519,21 +522,36 @@ def crop_to_countries(
 
     Opening the (multi-GB) global files once and cropping every country from
     the same in-memory dataset avoids re-reading them per country.
+
+    Retries on OSError/RuntimeError (observed as a transient HDF5 "Permission
+    denied" a few seconds after a multi-GB file finished downloading, almost
+    certainly Windows Defender's real-time scan briefly locking the file it
+    just wrote; see COMANDO 12 follow-up in docs/DECISIONS.md). The global
+    files are already fully downloaded and cached, so a retry costs only the
+    crop, not the download.
     """
     start_year, end_year = required_years(job, datasets_cfg)
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_paths = {}
-    with xr.open_mfdataset([str(p) for p in global_paths], combine="by_coords") as ds:
-        ds_time = ds.sel(time=slice(f"{start_year}-01-01", f"{end_year}-12-31"))
-        for country in countries:
-            west, east, south, north = datasets_cfg["bboxes"][country]
-            lat_ok = (ds_time["lat"] >= south) & (ds_time["lat"] <= north)
-            lon_ok = (ds_time["lon"] >= west) & (ds_time["lon"] <= east)
-            cropped = ds_time.isel(lat=lat_ok.values, lon=lon_ok.values)
-            out_path = out_dir / f"{job.model}_{job.scenario}_{job.variable}_{country}.nc"
-            cropped.load().to_netcdf(out_path)
-            out_paths[country] = out_path
-    return out_paths
+
+    for attempt in range(CROP_RETRIES):
+        try:
+            out_paths = {}
+            with xr.open_mfdataset([str(p) for p in global_paths], combine="by_coords") as ds:
+                ds_time = ds.sel(time=slice(f"{start_year}-01-01", f"{end_year}-12-31"))
+                for country in countries:
+                    west, east, south, north = datasets_cfg["bboxes"][country]
+                    lat_ok = (ds_time["lat"] >= south) & (ds_time["lat"] <= north)
+                    lon_ok = (ds_time["lon"] >= west) & (ds_time["lon"] <= east)
+                    cropped = ds_time.isel(lat=lat_ok.values, lon=lon_ok.values)
+                    out_path = out_dir / f"{job.model}_{job.scenario}_{job.variable}_{country}.nc"
+                    cropped.load().to_netcdf(out_path)
+                    out_paths[country] = out_path
+            return out_paths
+        except (OSError, RuntimeError):
+            if attempt == CROP_RETRIES - 1:
+                raise
+            time.sleep(10 * (attempt + 1))
+    raise AssertionError("unreachable")
 
 
 def acquire_job_all_countries(
@@ -545,13 +563,19 @@ def acquire_job_all_countries(
     raw_dir: Path,
     countries: tuple[str, ...] = STUDY_COUNTRIES,
 ) -> dict[str, dict | None]:
-    """Download a job's global file(s) once, crop all `countries` in one pass, delete.
+    """Download a job's global file(s) once, crop all `countries` in one pass.
 
-    Supersedes the earlier per-country `run_job_direct` + permanent global
-    cache design (see COMANDO 11 in docs/DECISIONS.md): since every country
-    is cropped from the same download in the same pass, there is no reuse
-    benefit left to justify keeping ~35-45 GB of global files on disk. No
-    global file remains after this returns.
+    The global files are kept in `cache_dir` as a permanent, reusable cache
+    (D26 in docs/DECISIONS.md, superseding the "delete after crop" part of
+    D19-D23): they are useful for adding countries later or for reuse outside
+    this pipeline, and `cache_dir` has ample free space.
+
+    If `crop_to_countries` still fails after its own retries, one global
+    file being genuinely corrupt (not just transiently locked) is the
+    remaining suspect (observed once: a stale file from an earlier run's
+    process collision, silently reused forever because presence alone was
+    trusted). As a last resort, the cached files for this job are deleted
+    and re-downloaded once before giving up.
     """
     missing = [c for c in countries if not manifest.is_intact(f"{job.key_prefix}/{c}")]
     if not missing:
@@ -559,12 +583,18 @@ def acquire_job_all_countries(
 
     repo_paths = dataset_paths_resilient(client, job, datasets_cfg)
     _check_free_space(cache_dir)
-    local_globals = download_global_files(cache_dir, repo_paths, DOWNLOAD_CONNECTIONS)
-    content_length = sum(p.stat().st_size for p in local_globals)
-
     out_dir = raw_dir / "climate" / "isimip3b" / job.model / job.scenario / job.variable
-    cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
 
+    local_globals = download_global_files(cache_dir, repo_paths, DOWNLOAD_CONNECTIONS)
+    try:
+        cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
+    except (OSError, RuntimeError):
+        for p in local_globals:
+            p.unlink(missing_ok=True)
+        local_globals = download_global_files(cache_dir, repo_paths, DOWNLOAD_CONNECTIONS)
+        cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
+
+    content_length = sum(p.stat().st_size for p in local_globals)
     origin = ",".join(f"{ISIMIP_FILES_BASE}/{p}" for p in repo_paths)
     results: dict[str, dict | None] = dict.fromkeys(countries)
     for country, path in cropped.items():
@@ -574,11 +604,8 @@ def acquire_job_all_countries(
             path,
             origin=origin,
             content_length=content_length,
-            route="direct_download_crop_delete",
+            route="direct_download_crop_keep_cache",
         )
-
-    for p in local_globals:
-        p.unlink(missing_ok=True)
     return results
 
 
