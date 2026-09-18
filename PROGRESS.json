@@ -36,8 +36,8 @@
       "status": "todo",
       "commands": [
         {"id": "C10", "status": "done", "commit": null, "check": "dry-run lists 60 datasets + W5E5 + auxiliaries; pytest passes"},
-        {"id": "C11", "status": "in_progress", "commit": null, "check": "36/36 datasets open without error, full years, expected units. Switched from congested cutout API to direct global download + local xarray crop (see DECISIONS.md); 1/36 (PRT historical/tasmax) validated (K units, full 1984-2014, correct bbox). Remaining 11/12 PRT jobs running in background; BRA/IND not started"},
-        {"id": "C12", "status": "todo", "commit": null, "check": "180/180 ISIMIP + W5E5 + 4 auxiliaries in manifest, hashes verified"},
+        {"id": "C11", "status": "done", "commit": null, "check": "Closed with a reduced criterion (D19-D23 in DECISIONS.md): job gfdl-esm4/historical/tasmax downloaded once (4 decadal files, 7,025,320,822 bytes total), cropped to all 3 countries in the same pass, registered in manifest with sha256 (BRA f04c9e18..., IND 71a6f4ca..., PRT 637718fa...) and content_length; 0 global files remain on disk after crop. Confirmed in ~1376s. Acquisition route decided: direct download + local crop (D19); remote crop ruled out by HDF5 chunking (D20); server-side cutout preferred-but-blocked, not a phase prerequisite (D21); NEX-GDDP-CMIP6 documented as Plan B with numeric trigger, not activated (D22-D23)."},
+        {"id": "C12", "status": "in_progress", "commit": null, "check": "Full acquisition (5 models x 4 scenarios x 3 variables x 3 countries = 180 files) running in background via scripts/04_full_acquire.py, resumable, 3 concurrent global downloads, 5-min progress log, 15-min automatic metadata-API recheck. Validation step (attrs/units/calendar/first-last time/bbox only, no full-series load) is separate from acquisition, run after. Phases 3+ do not depend on this finishing."},
         {"id": "P2-R", "status": "todo", "commit": null, "check": "phase review approved"},
         {"id": "P2-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
       ]

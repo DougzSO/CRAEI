@@ -10,6 +10,8 @@ Python's recursion limit on slow jobs (see COMANDO 08 finding in
 """
 
 import re
+import shutil
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -22,9 +24,13 @@ from craei.manifest import Manifest
 
 POLL_INTERVAL_S = 5
 POLL_TIMEOUT_S = 900
+PROGRESS_REPORT_INTERVAL_S = 300
 
 ISIMIP_FILES_BASE = "https://files.isimip.org"
-DOWNLOAD_CONNECTIONS = 8
+ISIMIP_METADATA_BASE = "https://data.isimip.org"
+DOWNLOAD_CONNECTIONS = 3
+MIN_FREE_SPACE_BYTES = 20 * 1024**3
+STUDY_COUNTRIES = ("BRA", "IND", "PRT")
 
 
 @dataclass(frozen=True)
@@ -204,8 +210,126 @@ def dataset_paths(client, job: IsimipJob, datasets_cfg: dict) -> list[str]:
     ]
 
 
+def _decade_ranges(
+    start_year: int, end_year: int, dataset_end: int | None
+) -> list[tuple[int, int]]:
+    aligned_start = start_year - ((start_year - 1) % 10)
+    ranges = []
+    y = aligned_start
+    while y <= end_year:
+        d_end = y + 9
+        if dataset_end is not None and d_end > dataset_end:
+            d_end = dataset_end
+        ranges.append((y, d_end))
+        y += 10
+    return ranges
+
+
+def dataset_paths_by_pattern(job: IsimipJob, datasets_cfg: dict) -> list[str]:
+    """Build global file paths from the known ISIMIP3b decade-file naming
+    convention, without querying the metadata API.
+
+    Fallback for when `data.isimip.org` is unreachable (see COMANDO 11 in
+    docs/DECISIONS.md). Each candidate path is HEAD-verified against
+    `files.isimip.org` so a wrong guess raises instead of silently acquiring
+    the wrong (or no) data. `historical` is capped at 2014 (the ISIMIP3b
+    historical run's actual end, shorter than a full decade) — confirmed
+    empirically; future scenarios use plain decade boundaries.
+    """
+    start_year, end_year = required_years(job, datasets_cfg)
+    dataset_end = 2014 if job.scenario == "historical" else None
+    model_dir = job.model.upper()
+    paths = []
+    for d_start, d_end in _decade_ranges(start_year, end_year, dataset_end):
+        filename = (
+            f"{job.model}_r1i1p1f1_w5e5_{job.scenario}_{job.variable}"
+            f"_global_daily_{d_start}_{d_end}.nc"
+        )
+        path = (
+            "ISIMIP3b/InputData/climate/atmosphere/bias-adjusted/global/daily/"
+            f"{job.scenario}/{model_dir}/{filename}"
+        )
+        resp = requests.head(f"{ISIMIP_FILES_BASE}/{path}", timeout=20, allow_redirects=True)
+        if resp.status_code != 200:
+            raise ValueError(f"pattern-guessed path not found (HTTP {resp.status_code}): {path}")
+        paths.append(path)
+    return paths
+
+
+_metadata_status = {"reachable": None, "checked_at": 0.0}
+METADATA_RECHECK_INTERVAL_S = 900
+
+
+def _metadata_reachable() -> bool:
+    """Probe `data.isimip.org` at most once per `METADATA_RECHECK_INTERVAL_S`.
+
+    Doubles as the "check every 15 min whether the API recovered" cadence:
+    a long-running acquisition loop calling `dataset_paths_resilient` picks
+    up the API again automatically once it responds.
+    """
+    now = time.time()
+    stale = now - _metadata_status["checked_at"] >= METADATA_RECHECK_INTERVAL_S
+    if stale or _metadata_status["reachable"] is None:
+        try:
+            requests.head(f"{ISIMIP_METADATA_BASE}/api/v1/datasets/", timeout=10)
+            _metadata_status["reachable"] = True
+        except requests.exceptions.RequestException:
+            _metadata_status["reachable"] = False
+        _metadata_status["checked_at"] = now
+    return _metadata_status["reachable"]
+
+
+def dataset_paths_resilient(client, job: IsimipJob, datasets_cfg: dict) -> list[str]:
+    """`dataset_paths` when the metadata API is reachable, else `dataset_paths_by_pattern`."""
+    if _metadata_reachable():
+        try:
+            return dataset_paths(client, job, datasets_cfg)
+        except requests.exceptions.RequestException:
+            pass
+    return dataset_paths_by_pattern(job, datasets_cfg)
+
+
+class _ProgressTracker:
+    """Thread-safe byte counters for one or more concurrent downloads, with periodic prints.
+
+    Without this, a multi-file/multi-connection job gave no signal between
+    "started" and "done" (often 20+ min for a single 2 GB file), so a hung
+    or slow download was indistinguishable from a working one.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._totals: dict[str, int] = {}
+        self._done: dict[str, int] = {}
+        self._stop = threading.Event()
+
+    def add(self, name: str, total: int) -> None:
+        with self._lock:
+            self._totals[name] = total
+            self._done[name] = 0
+
+    def advance(self, name: str, n: int) -> None:
+        with self._lock:
+            self._done[name] += n
+
+    def report_forever(self, interval_s: float) -> None:
+        while not self._stop.wait(interval_s):
+            with self._lock:
+                parts = [
+                    f"{name}={self._done[name] / 1e6:.0f}/{total / 1e6:.0f} MB"
+                    for name, total in self._totals.items()
+                ]
+            if parts:
+                print(f"  [progress] {', '.join(parts)}", flush=True)
+
+    def stop(self) -> None:
+        self._stop.set()
+
+
 def download_global_file(
-    cache_dir: Path, repo_path: str, n_connections: int = DOWNLOAD_CONNECTIONS
+    cache_dir: Path,
+    repo_path: str,
+    progress: "_ProgressTracker | None" = None,
 ) -> Path:
     """Download one whole global ISIMIP file into a permanent, reusable cache.
 
@@ -215,10 +339,10 @@ def download_global_file(
     study country, so they are cached outside the project's own gitignored
     data folder and never re-downloaded once present.
 
-    Splits the download across `n_connections` parallel HTTP Range requests:
-    the server was measured to throttle per connection (~300-450 KB/s each)
-    rather than per client, so N connections on one file gave ~2.7 MB/s
-    aggregate against ~1 MB/s for a single stream (see DECISIONS.md).
+    Downloads as a single sequential stream. Splitting one file across
+    parallel Range requests was tried and dropped after it corrupted
+    downloaded files (see `download_global_files`); concurrency comes only
+    from downloading several files at once, each its own safe single stream.
     """
     local_path = cache_dir / repo_path
     if local_path.exists():
@@ -228,11 +352,15 @@ def download_global_file(
     url = f"{ISIMIP_FILES_BASE}/{repo_path}"
 
     t0 = time.time()
-    size, supports_ranges = _probe_file(url)
-    if size and supports_ranges and n_connections > 1:
-        _download_parallel_ranges(url, tmp_path, size, n_connections)
-    else:
-        _download_single_stream(url, tmp_path)
+    size, _ = _probe_file(url)
+    if progress is not None and size:
+        progress.add(local_path.name, size)
+    _download_single_stream(url, tmp_path, progress, local_path.name)
+
+    actual_size = tmp_path.stat().st_size
+    if size and actual_size != size:
+        tmp_path.unlink()
+        raise OSError(f"{repo_path}: downloaded {actual_size} bytes, expected {size}")
 
     tmp_path.rename(local_path)
     elapsed = time.time() - t0
@@ -244,28 +372,38 @@ def download_global_file(
 
 
 def download_global_files(
-    cache_dir: Path, repo_paths: list[str], total_connections: int = DOWNLOAD_CONNECTIONS
+    cache_dir: Path, repo_paths: list[str], max_parallel_files: int = DOWNLOAD_CONNECTIONS
 ) -> list[Path]:
-    """Download several global files for one job concurrently, sharing `total_connections`.
+    """Download several global files for one job concurrently, one connection per file.
 
-    A job needing multiple decadal files (e.g. the historical period spans 4
-    of them) was previously downloaded one file at a time, each internally
-    parallel — leaving most of the connection budget idle while later files
-    waited their turn. Splitting the budget across files instead keeps all
-    connections busy for the whole job.
+    Splitting a single file's download across parallel Range requests was
+    tried (see `_download_parallel_ranges`) but corrupted 100% of files in
+    one run and 6/8 in another, even after fixing a silent-short-read bug —
+    the exact cause (concurrent same-file writes vs. the server mishandling
+    Range requests under concurrent load) was not pinned down given the time
+    already spent debugging it. Each file is now a single, safe sequential
+    stream; concurrency instead comes only from downloading multiple files
+    at once (each to its own file, no shared-write risk). See COMANDO 11 in
+    docs/DECISIONS.md.
     """
     already_cached = [p for p in repo_paths if (cache_dir / p).exists()]
     to_fetch = [p for p in repo_paths if p not in already_cached]
     if not to_fetch:
         return [cache_dir / p for p in repo_paths]
 
-    per_file_connections = max(1, total_connections // len(to_fetch))
-    with ThreadPoolExecutor(max_workers=len(to_fetch)) as pool:
-        fetched = list(
-            pool.map(
-                lambda p: download_global_file(cache_dir, p, per_file_connections), to_fetch
+    progress = _ProgressTracker()
+    reporter = threading.Thread(
+        target=progress.report_forever, args=(PROGRESS_REPORT_INTERVAL_S,), daemon=True
+    )
+    reporter.start()
+    workers = min(max_parallel_files, len(to_fetch))
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            fetched = list(
+                pool.map(lambda p: download_global_file(cache_dir, p, progress), to_fetch)
             )
-        )
+    finally:
+        progress.stop()
     fetched_by_path = dict(zip(to_fetch, fetched, strict=True))
     return [cache_dir / p if p in already_cached else fetched_by_path[p] for p in repo_paths]
 
@@ -281,60 +419,41 @@ def _probe_file(url: str) -> tuple[int, bool]:
     return size, resp.headers.get("Accept-Ranges") == "bytes"
 
 
-def _download_single_stream(url: str, tmp_path: Path) -> None:
-    with requests.get(url, stream=True, timeout=60) as resp:
-        resp.raise_for_status()
-        with open(tmp_path, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=1024 * 1024):
-                f.write(chunk)
+DOWNLOAD_RETRIES = 5
 
 
-RANGE_RETRIES = 5
+def _download_single_stream(
+    url: str,
+    tmp_path: Path,
+    progress: "_ProgressTracker | None" = None,
+    progress_name: str = "",
+) -> None:
+    """Download `url` to `tmp_path` as one sequential stream, retrying on drops.
 
-
-def _download_parallel_ranges(url: str, tmp_path: Path, size: int, n_connections: int) -> None:
-    with open(tmp_path, "wb") as f:
-        f.truncate(size)
-
-    boundaries = [size * i // n_connections for i in range(n_connections + 1)]
-    byte_ranges = [(boundaries[i], boundaries[i + 1] - 1) for i in range(n_connections)]
-
-    with ThreadPoolExecutor(max_workers=n_connections) as pool:
-        for _ in pool.map(lambda r: _fetch_range(url, tmp_path, r[0], r[1]), byte_ranges):
-            pass
-
-
-def _fetch_range(url: str, tmp_path: Path, start: int, end: int) -> None:
-    """Fetch bytes [start, end] and write them into `tmp_path`, retrying on drops.
-
-    The connection was observed to (a) drop mid-transfer on large ranges
-    (~150 MB chunks), each retry resuming from the last byte actually
-    written instead of restarting the whole range, and (b) close cleanly
-    with fewer bytes than requested without raising — checked explicitly
-    below, since silently short ranges corrupt the file's HDF5 chunks
-    without any exception (see COMANDO 11 in docs/DECISIONS.md).
+    On retry, resumes via `Range` from the last byte actually written
+    instead of restarting — a connection was observed to drop mid-transfer
+    on ~1-2 GB files (see COMANDO 11 in docs/DECISIONS.md).
     """
-    pos = start
-    expected = end - start + 1
-    for attempt in range(RANGE_RETRIES):
+    pos = tmp_path.stat().st_size if tmp_path.exists() else 0
+    mode = "r+b" if pos else "wb"
+    for attempt in range(DOWNLOAD_RETRIES):
+        headers = {"Range": f"bytes={pos}-"} if pos else {}
         try:
-            with requests.get(
-                url, headers={"Range": f"bytes={pos}-{end}"}, stream=True, timeout=120
-            ) as resp:
+            with requests.get(url, headers=headers, stream=True, timeout=120) as resp:
                 resp.raise_for_status()
-                with open(tmp_path, "r+b") as f:
-                    f.seek(pos)
+                with open(tmp_path, mode) as f:
+                    if pos:
+                        f.seek(pos)
                     for chunk in resp.iter_content(chunk_size=1024 * 1024):
                         f.write(chunk)
                         pos += len(chunk)
-            if pos - start == expected:
-                return
-            raise requests.exceptions.ChunkedEncodingError(
-                f"range {start}-{end} ended short: got {pos - start}/{expected} bytes"
-            )
+                        if progress is not None:
+                            progress.advance(progress_name, len(chunk))
+            return
         except requests.exceptions.RequestException:
-            if attempt == RANGE_RETRIES - 1:
+            if attempt == DOWNLOAD_RETRIES - 1:
                 raise
+            mode = "r+b"
             time.sleep(2**attempt)
 
 
@@ -380,3 +499,147 @@ def run_job_direct(
     cropped_path = crop_to_country(local_globals, job, country, datasets_cfg, out_dir)
     origin = ",".join(f"{ISIMIP_FILES_BASE}/{p}" for p in repo_paths)
     return manifest.register(key, cropped_path, origin=origin)
+
+
+def _check_free_space(path: Path, min_bytes: int = MIN_FREE_SPACE_BYTES) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    free = shutil.disk_usage(path).free
+    if free < min_bytes:
+        raise OSError(f"only {free / 1e9:.1f} GB free at {path}, need >= {min_bytes / 1e9:.0f} GB")
+
+
+def crop_to_countries(
+    global_paths: list[Path],
+    job: IsimipJob,
+    countries: list[str],
+    datasets_cfg: dict,
+    out_dir: Path,
+) -> dict[str, Path]:
+    """Crop cached global file(s) to each of `countries` in one open+read pass.
+
+    Opening the (multi-GB) global files once and cropping every country from
+    the same in-memory dataset avoids re-reading them per country.
+    """
+    start_year, end_year = required_years(job, datasets_cfg)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_paths = {}
+    with xr.open_mfdataset([str(p) for p in global_paths], combine="by_coords") as ds:
+        ds_time = ds.sel(time=slice(f"{start_year}-01-01", f"{end_year}-12-31"))
+        for country in countries:
+            west, east, south, north = datasets_cfg["bboxes"][country]
+            lat_ok = (ds_time["lat"] >= south) & (ds_time["lat"] <= north)
+            lon_ok = (ds_time["lon"] >= west) & (ds_time["lon"] <= east)
+            cropped = ds_time.isel(lat=lat_ok.values, lon=lon_ok.values)
+            out_path = out_dir / f"{job.model}_{job.scenario}_{job.variable}_{country}.nc"
+            cropped.load().to_netcdf(out_path)
+            out_paths[country] = out_path
+    return out_paths
+
+
+def acquire_job_all_countries(
+    client,
+    manifest: Manifest,
+    job: IsimipJob,
+    datasets_cfg: dict,
+    cache_dir: Path,
+    raw_dir: Path,
+    countries: tuple[str, ...] = STUDY_COUNTRIES,
+) -> dict[str, dict | None]:
+    """Download a job's global file(s) once, crop all `countries` in one pass, delete.
+
+    Supersedes the earlier per-country `run_job_direct` + permanent global
+    cache design (see COMANDO 11 in docs/DECISIONS.md): since every country
+    is cropped from the same download in the same pass, there is no reuse
+    benefit left to justify keeping ~35-45 GB of global files on disk. No
+    global file remains after this returns.
+    """
+    missing = [c for c in countries if not manifest.is_intact(f"{job.key_prefix}/{c}")]
+    if not missing:
+        return dict.fromkeys(countries)
+
+    repo_paths = dataset_paths_resilient(client, job, datasets_cfg)
+    _check_free_space(cache_dir)
+    local_globals = download_global_files(cache_dir, repo_paths, DOWNLOAD_CONNECTIONS)
+    content_length = sum(p.stat().st_size for p in local_globals)
+
+    out_dir = raw_dir / "climate" / "isimip3b" / job.model / job.scenario / job.variable
+    cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
+
+    origin = ",".join(f"{ISIMIP_FILES_BASE}/{p}" for p in repo_paths)
+    results: dict[str, dict | None] = dict.fromkeys(countries)
+    for country, path in cropped.items():
+        key = f"{job.key_prefix}/{country}"
+        results[country] = manifest.register(
+            key,
+            path,
+            origin=origin,
+            content_length=content_length,
+            route="direct_download_crop_delete",
+        )
+
+    for p in local_globals:
+        p.unlink(missing_ok=True)
+    return results
+
+
+def verify_pending_checksums(manifest: Manifest) -> dict[str, int]:
+    """Try to record source-file checksums for manifest entries still "pending".
+
+    `data.isimip.org/api/v1/files/` provides an authoritative checksum per
+    ISIMIP-hosted file, but only for the original global files, not for the
+    country crops this project registers — a crop's own SHA-256 can never
+    equal a global file's checksum, since they are different files. This
+    therefore records each entry's source checksums for provenance rather
+    than flipping "pending" into a pass/fail verdict. Non-blocking: any
+    lookup failure (e.g. the metadata API being unreachable for hours, as
+    observed in COMANDO 11) leaves the entry pending for a later call.
+    """
+    counts = {"checked": 0, "still_pending": 0}
+    for entry in manifest.entries.values():
+        if entry.get("server_checksum") != "pending":
+            continue
+        source_urls = [u for u in entry.get("origin", "").split(",") if u]
+        source_checksums = {}
+        for url in source_urls:
+            repo_path = url.replace(f"{ISIMIP_FILES_BASE}/", "")
+            try:
+                resp = requests.get(
+                    f"{ISIMIP_METADATA_BASE}/api/v1/files/",
+                    params={"path": repo_path},
+                    timeout=20,
+                )
+                resp.raise_for_status()
+                payload = resp.json()
+                rows = payload.get("results", payload) if isinstance(payload, dict) else payload
+                if rows:
+                    source_checksums[url] = rows[0].get("checksum")
+            except requests.exceptions.RequestException:
+                pass
+        if source_checksums:
+            entry["source_checksums"] = source_checksums
+            entry["server_checksum"] = "checked"
+            counts["checked"] += 1
+        else:
+            counts["still_pending"] += 1
+    manifest.save()
+    return counts
+
+
+def inspect_cropped_file(path: Path) -> dict:
+    """Read only metadata from a cropped file: variable, units, calendar, first/last
+    time step and bbox. Never loads the full time series — COMANDO 12 is a metadata
+    check, run separately after acquisition, not interleaved with it.
+    """
+    with xr.open_dataset(path) as ds:
+        variable = next(iter(ds.data_vars))
+        da = ds[variable]
+        time_vals = ds["time"].values
+        return {
+            "variable": variable,
+            "units": da.attrs.get("units"),
+            "calendar": ds["time"].encoding.get("calendar") or ds["time"].attrs.get("calendar"),
+            "first": str(time_vals[0])[:10],
+            "last": str(time_vals[-1])[:10],
+            "lat_range": (float(ds["lat"].min()), float(ds["lat"].max())),
+            "lon_range": (float(ds["lon"].min()), float(ds["lon"].max())),
+        }

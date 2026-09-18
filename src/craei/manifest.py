@@ -48,12 +48,31 @@ class Manifest:
             return False
         return sha256_file(path) == entry["sha256"]
 
-    def register(self, key: str, path: Path, origin: str) -> dict:
+    def register(
+        self,
+        key: str,
+        path: Path,
+        origin: str,
+        content_length: int | None = None,
+        route: str | None = None,
+    ) -> dict:
+        """Register `path` under `key`.
+
+        `content_length` (server-reported size) and `route` (how the file
+        was acquired) are optional context recorded alongside the local
+        SHA-256. `server_checksum` starts "pending": the ISIMIP files API
+        that would provide an authoritative checksum was unreachable at
+        acquisition time (see COMANDO 11 in docs/DECISIONS.md), so it is
+        filled in later by `verify_pending_checksums` when reachable.
+        """
         path = Path(path)
         entry = {
             "path": str(path),
             "sha256": sha256_file(path),
             "size": path.stat().st_size,
+            "content_length": content_length,
+            "route": route,
+            "server_checksum": "pending",
             "origin": origin,
             "registered_at": datetime.now(UTC).isoformat(),
         }
