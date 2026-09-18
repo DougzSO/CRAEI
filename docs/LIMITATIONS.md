@@ -11,3 +11,4 @@
 | L09 | Validation has no India coverage | Methods §1.7 | Stated as limitation |
 | L10 | SPEI extrapolation truncated at ±3 | Methods §1.3, §1.4 (H2) | Clipping documented in Methods |
 | L11 | Geothermal capacity (GEM `Type`, Portugal only) is out of the four defined technology classes | D15 | Excluded from the fleet, same treatment as wind |
+| L12 | ISIMIP climate files are cropped to each country's bbox (COMANDO 11); an upstream hydro catchment that extends past that bbox (e.g. into a neighboring country) has no grid cells there to weight | D25, COMANDO 14 | Catchment weights renormalize to sum 1 over the in-bbox cells only; `n_upstream_basins` and `pct_diff_up_area` in the catchment validation report flag which plants have the largest unweighted catchment fraction |

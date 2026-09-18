@@ -79,7 +79,10 @@ def run_natural_earth(manifest: Manifest, local_paths: dict, raw_dir: Path) -> l
             continue
         dest = raw_dir / "boundaries" / source.name
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, dest)
+        # Shapefiles need their sidecar files (.dbf/.shx/.prj/...) alongside
+        # the .shp to be readable; copy every file sharing the same stem.
+        for sidecar in source.parent.glob(f"{source.stem}.*"):
+            shutil.copy2(sidecar, dest.parent / sidecar.name)
         registered.append(manifest.register(key, dest, origin=str(source)))
     return registered
 

@@ -22,3 +22,6 @@ dist/
 
 # Notebooks
 .ipynb_checkpoints/
+
+# Run logs (not one of the 3 support files; see CLAUDE.md rule 2)
+*.log
