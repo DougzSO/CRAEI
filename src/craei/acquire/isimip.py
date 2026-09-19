@@ -409,7 +409,13 @@ def download_global_file(
     """
     local_path = cache_dir / repo_path
     if local_path.exists():
-        return local_path
+        try:
+            _validate_raw_netcdf(local_path)
+            return local_path
+        except (OSError, KeyError) as exc:
+            print(f"  [cache] {local_path.name}: failed h5py validation, "
+                  f"deleting and re-downloading: {exc}", flush=True)
+            local_path.unlink(missing_ok=True)
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
     write_dir = staging_dir if staging_dir is not None else local_path.parent
@@ -785,7 +791,7 @@ def acquire_job_all_countries(
     )
     try:
         cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
-    except (OSError, RuntimeError):
+    except (OSError, RuntimeError, ValueError):
         for p in local_globals:
             p.unlink(missing_ok=True)
         local_globals = download_global_files(
