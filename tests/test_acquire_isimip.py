@@ -1,8 +1,9 @@
-import time
+import threading
 from pathlib import Path
 
 import h5py
 import pytest
+import requests
 
 from craei.acquire import isimip
 from craei.config import load_datasets
@@ -15,12 +16,23 @@ def _write_fake_netcdf(path, n_steps=3):
     return path.read_bytes()
 
 
+class _FakeRaw:
+    """`._closed` mimics a real socket close unblocking `iter_content()` with an error."""
+
+    def __init__(self):
+        self._closed = threading.Event()
+
+    def close(self):
+        self._closed.set()
+
+
 class _FakeStreamResponse:
     """Minimal stand-in for `requests.get(..., stream=True)`'s context-manager result."""
 
     def __init__(self, body: bytes, chunks: list[bytes] | None = None):
         self._chunks = chunks if chunks is not None else [body]
         self.headers = {"Content-Length": str(len(body))}
+        self.raw = _FakeRaw()
 
     def raise_for_status(self):
         pass
@@ -219,7 +231,7 @@ def test_stall_watchdog_triggers_after_no_growth(tmp_path, monkeypatch):
     the first chunk is aborted (not left hanging) after WATCHDOG_STALL_S."""
     monkeypatch.setattr(isimip, "WATCHDOG_POLL_S", 0.02)
     monkeypatch.setattr(isimip, "WATCHDOG_STALL_S", 0.08)
-    monkeypatch.setattr(isimip, "WATCHDOG_MAX_RESTARTS", 1)
+    monkeypatch.setattr(isimip, "WATCHDOG_MAX_RESTARTS", 2)
 
     body = b"x" * 64
     cache_dir = tmp_path / "cache"
@@ -234,16 +246,24 @@ def test_stall_watchdog_triggers_after_no_growth(tmp_path, monkeypatch):
 
         return R()
 
-    def stalled_chunks():
+    responses = []
+
+    def stalled_chunks(raw):
         yield body[:8]
-        time.sleep(1.0)  # never reached before the watchdog fires
-        yield body[8:]
+        while not raw._closed.wait(0.01):
+            pass
+        raise requests.exceptions.ChunkedEncodingError("connection closed by watchdog")
 
     def fake_get(url, headers=None, stream=True, timeout=120):
-        return _FakeStreamResponse(body, chunks=stalled_chunks())
+        resp = _FakeStreamResponse(body, chunks=None)
+        resp._chunks = stalled_chunks(resp.raw)
+        responses.append(resp)
+        return resp
 
     monkeypatch.setattr(isimip.requests, "head", fake_head)
     monkeypatch.setattr(isimip.requests, "get", fake_get)
 
-    with pytest.raises((TimeoutError, OSError)):
+    with pytest.raises(requests.exceptions.ChunkedEncodingError):
         isimip.download_global_file(cache_dir, repo_path)
+
+    assert len(responses) == isimip.WATCHDOG_MAX_RESTARTS  # last attempt raises, no further retry

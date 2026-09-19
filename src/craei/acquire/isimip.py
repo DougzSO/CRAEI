@@ -13,7 +13,7 @@ import re
 import shutil
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -499,19 +499,25 @@ def download_global_files(
     )
     reporter.start()
     workers = min(max_parallel_files, len(to_fetch))
+    pool = ThreadPoolExecutor(max_workers=workers)
+    fetched_by_path: dict[str, Path] = {}
     try:
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            fetched = list(
-                pool.map(
-                    lambda p: download_global_file(
-                        cache_dir, p, progress, staging_dir, defer_move
-                    ),
-                    to_fetch,
-                )
-            )
+        futures = {
+            pool.submit(download_global_file, cache_dir, p, progress, staging_dir, defer_move): p
+            for p in to_fetch
+        }
+        # `as_completed`, not `pool.map`: a `.map()` result list only raises a
+        # given future's exception when iteration reaches its submission
+        # position, so one file failing (e.g. a stalled connection exhausting
+        # its watchdog restarts) stayed hidden behind an unrelated, still
+        # slowly-progressing sibling download for 30+ min in practice before
+        # this was caught. `as_completed` surfaces the first failure as soon
+        # as it happens, regardless of submission order.
+        for future in as_completed(futures):
+            fetched_by_path[futures[future]] = future.result()
     finally:
         progress.stop()
-    fetched_by_path = dict(zip(to_fetch, fetched, strict=True))
+        pool.shutdown(wait=False, cancel_futures=True)
     return [cache_dir / p if p in already_cached else fetched_by_path[p] for p in repo_paths]
 
 
@@ -532,16 +538,24 @@ DOWNLOAD_RETRIES = 5
 class _StallWatchdog:
     """Aborts the in-progress download if `tmp_path` stops growing for `WATCHDOG_STALL_S`.
 
-    COMANDO 12 rework, item 3. Runs in a daemon thread polling the partial
-    file's size on disk every `WATCHDOG_POLL_S`; sets `aborted` (checked by
-    `_download_single_stream` between chunks) rather than trying to kill the
-    request itself, since closing a socket from another thread mid-`recv` is
-    not reliably interruptible on Windows.
+    COMANDO 12 rework, item 3 (corrected: an earlier version only set a flag
+    checked between chunks in `resp.iter_content()`'s `for` loop — useless
+    against exactly the failure it exists for, a connection that goes
+    completely silent: if zero bytes ever arrive, that loop body never runs
+    again, so the flag is never read; observed live as a `.part` file frozen
+    at exactly one chunk (1,048,576 B) for 30+ min with no watchdog log line).
+    This version instead closes `resp` itself from the watchdog thread on
+    trigger, which unblocks the blocked `iter_content()` read in the main
+    thread by forcing it to raise (typically `ChunkedEncodingError` /
+    `ConnectionError`, both `requests.exceptions.RequestException`
+    subclasses) — the only way to actually interrupt a call that is blocked
+    inside it, short of killing the whole process.
     """
 
-    def __init__(self, tmp_path: Path):
+    def __init__(self, tmp_path: Path, resp: requests.Response):
         self.tmp_path = tmp_path
-        self.aborted = threading.Event()
+        self.resp = resp
+        self.triggered = threading.Event()
         self._stop = threading.Event()
         self._last_size = -1
         self._last_growth = time.time()
@@ -554,7 +568,8 @@ class _StallWatchdog:
                 self._last_size = size
                 self._last_growth = now
             elif now - self._last_growth >= WATCHDOG_STALL_S:
-                self.aborted.set()
+                self.triggered.set()
+                self.resp.raw.close()  # forces the blocked iter_content() read to raise
                 return
 
     def __enter__(self) -> "_StallWatchdog":
@@ -577,10 +592,13 @@ def _download_single_stream(
     On retry, resumes via `Range` from the last byte actually written
     instead of restarting — a connection was observed to drop mid-transfer
     on ~1-2 GB files (see COMANDO 11 in docs/DECISIONS.md). A `_StallWatchdog`
-    aborts and retries an attempt whose partial file stops growing for
+    force-closes an attempt whose partial file stops growing for
     `WATCHDOG_STALL_S`, up to `WATCHDOG_MAX_RESTARTS` times, logging each
     stall — separate from `DOWNLOAD_RETRIES`, which covers connection drops
-    that `requests` itself raises on.
+    that `requests` raises on by itself. `requests`'s own `timeout=120` is
+    a per-socket-read timeout (no bytes at all for 120s), which does not
+    catch a connection trickling in fractions of a chunk indefinitely
+    without ever going fully silent — hence the separate, coarser watchdog.
     """
     pos = tmp_path.stat().st_size if tmp_path.exists() else 0
     mode = "r+b" if pos else "wb"
@@ -588,34 +606,37 @@ def _download_single_stream(
     stall_restarts = 0
     while True:
         headers = {"Range": f"bytes={pos}-"} if pos else {}
+        watchdog = None
         try:
             with requests.get(url, headers=headers, stream=True, timeout=120) as resp:
                 resp.raise_for_status()
-                with open(tmp_path, mode) as f, _StallWatchdog(tmp_path) as watchdog:
+                watchdog = _StallWatchdog(tmp_path, resp)
+                with open(tmp_path, mode) as f, watchdog:
                     if pos:
                         f.seek(pos)
                     for chunk in resp.iter_content(chunk_size=1024 * 1024):
-                        if watchdog.aborted.is_set():
-                            raise TimeoutError(
-                                f"{tmp_path.name}: no growth for {WATCHDOG_STALL_S}s"
-                            )
                         f.write(chunk)
                         pos += len(chunk)
                         if progress is not None:
                             progress.advance(progress_name, len(chunk))
             return
         except requests.exceptions.RequestException:
-            conn_retries += 1
-            if conn_retries >= DOWNLOAD_RETRIES:
-                raise
+            if watchdog is not None and watchdog.triggered.is_set():
+                stall_restarts += 1
+                print(
+                    f"  [watchdog] {tmp_path.name}: no growth for {WATCHDOG_STALL_S}s "
+                    f"(restart {stall_restarts}/{WATCHDOG_MAX_RESTARTS})",
+                    flush=True,
+                )
+                if stall_restarts >= WATCHDOG_MAX_RESTARTS:
+                    raise
+            else:
+                conn_retries += 1
+                if conn_retries >= DOWNLOAD_RETRIES:
+                    raise
+                time.sleep(2**conn_retries)
             mode = "r+b"
-            time.sleep(2**conn_retries)
-        except TimeoutError as exc:
-            stall_restarts += 1
-            print(f"  [watchdog] {exc} (restart {stall_restarts}/{WATCHDOG_MAX_RESTARTS})",
-                  flush=True)
-            if stall_restarts >= WATCHDOG_MAX_RESTARTS:
-                raise
+            pos = tmp_path.stat().st_size if tmp_path.exists() else 0
             pos = tmp_path.stat().st_size if tmp_path.exists() else 0
             mode = "r+b" if pos else "wb"
 
