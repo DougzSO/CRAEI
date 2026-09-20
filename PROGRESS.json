@@ -59,7 +59,7 @@
       "status": "todo",
       "commands": [
         {"id": "C15", "status": "todo", "commit": null, "check": "P95 exceedance between 4.5% and 5.5% of wet days"},
-        {"id": "C16", "status": "todo", "commit": null, "check": "FAO-56 test passes; zero negative PET; zero NaN outside ocean cells"},
+        {"id": "C16", "status": "in_progress", "commit": null, "check": "PARTIAL 2026-09-20: FAO-56 test passes (extraterrestrial_radiation vs FAO-56 Example 8, 20S/3-Sep, Ra=32.2 MJ m-2 d-1, author confirmation still pending), hargreaves_pet rejects tmax<tmin, monthly_water_balance aggregates correctly -- all acquisition-independent, tested against synthetic series only. src/craei/hazards/pet.py, tests/test_hazards_pet.py (5 tests). NOT done: the real 5-model/4-scenario ISIMIP data this needs is blocked on C12 (18/60 jobs; only gfdl-esm4 has all 4 scenarios, ipsl-cm6a-lr only historical+ssp126, other 3 models not started). RESUME: once C12 reaches 180/180, wire pet.py into a scripts/07_water_balance.py that reads cropped tasmax/tasmin/pr per country/model/scenario (Kelvin->Celsius via KELVIN_OFFSET_C), runs monthly_water_balance over all land cells (C14 output) and catchments (weighted per C14), writes water_balance_cell.parquet + water_balance_catchment.parquet, and only then close this command's criteria (zero negative PET, zero NaN outside ocean cells) against the full dataset."},
         {"id": "C17", "status": "todo", "commit": null, "check": "calibration test passes; baseline F_D distribution reported"},
         {"id": "C18", "status": "todo", "commit": null, "check": "row counts match expected; NaN counts per hazard reported"},
         {"id": "P4-R", "status": "todo", "commit": null, "check": "phase review approved"},
