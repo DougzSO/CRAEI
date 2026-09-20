@@ -75,7 +75,7 @@ F_D = fraction of months with SPEI-12 ≤ −1.5,
 
 which is close to 6.7% in the baseline by construction (standard normal probability below −1.5). The change metric is the ratio R_D = F_D,future / F_D,baseline. The headline exposure class is R_D ≥ 2 (severe drought at least twice as frequent; tier 3, tested at 1.5 and 3). For run-of-river plants SPEI-3 is also reported. Hargreaves was chosen over Thornthwaite because Thornthwaite is known to overstate drying under warming, and over Penman-Monteith for simplicity; SPI-12 (precipitation only) is reported as the lower bound that ignores atmospheric demand.
 
-**H3. Chronic water stress (water-dependent thermal, freshwater bound only).** Baseline water stress (bws) from WRI Aqueduct 4.0 for the baseline and for 2050 under the optimistic, business-as-usual and pessimistic scenarios, mapped to SSP1-2.6, SSP3-7.0 and SSP5-8.5. Aqueduct categories are used as published: low (<10%), low-medium (10-20%), medium-high (20-40%), high (40-80%), extremely high (>80%). Exposure is capacity in high or extremely high stress. H3 is reported separately from H1 and H2 because Aqueduct uses its own climate and socioeconomic forcing and is not consistent with the ISIMIP3b ensemble.
+**H3. Chronic water stress (water-dependent thermal, freshwater bound only).** WRI Aqueduct 4.0, keyed by HydroBASINS `pfaf_id`, for the baseline and for 2050 under the optimistic, business-as-usual and pessimistic scenarios, mapped to SSP1-2.6, SSP3-7.0 and SSP5-8.5. Aqueduct 4.0 splits the indicator across two collections with different field names: the baseline collection (`baseline_annual`) exposes `bws` (baseline water stress); the 2050 projections (`future_annual`) expose `ws` (water stress) under each `{bau|opt|pes}{30|50|80}` scenario/horizon code. Both are the same underlying stress ratio (withdrawal over available supply) on the same 0-5 category scale; the field renaming between collections is WRI's own convention, not a methodological difference. Aqueduct categories are used as published: low (<10%), low-medium (10-20%), medium-high (20-40%), high (40-80%), extremely high (>80%). Exposure is capacity in high or extremely high stress. H3 is reported separately from H1 and H2 because Aqueduct uses its own climate and socioeconomic forcing and is not consistent with the ISIMIP3b ensemble.
 
 **H4. Extreme precipitation (Supplementary Information, all fleets).** Wet-day 95th percentile (days ≥1 mm) estimated on the baseline per cell and model; change metric is the ratio of exceedance frequency (baseline 5% of wet days by construction) and the percentage change in mean annual Rx5day. Reported as a change in flood-forcing precipitation, not as flood risk.
 
@@ -215,9 +215,9 @@ Output: `plant_hazards.parquet` (plant_uid, model, scenario, hazard, baseline_va
 Time: 0.5 h.
 
 **Step 8. Aqueduct water stress**
-Input: Aqueduct 4.0 baseline and 2050 bws (existing GEE export, add baseline if missing).
-Processing: point extraction at water-dependent thermal plants; categories.
-Output: `plant_aqueduct.parquet` (plant_uid, scenario, bws_value, bws_category).
+Input: Aqueduct 4.0 `future_annual` `ws` (2050, 3 scenarios; local export present, `pfaf_id`-keyed) and `baseline_annual` `bws` (not yet exported — see DECISIONS.md D32).
+Processing: join to water-dependent thermal plants by catchment `pfaf_id`; categories.
+Output: `plant_aqueduct.parquet` (plant_uid, scenario, ws_value, ws_category) for the join skeleton; baseline columns added once D32 is resolved.
 Time: 0.5 h.
 
 **Step 9. Exposure aggregation and agreement**
