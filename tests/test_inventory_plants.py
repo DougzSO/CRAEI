@@ -84,6 +84,28 @@ def _synthetic_gem() -> pd.DataFrame:
                 "Country/area": "Canada",
             }
         ),  # out of scope (country filter)
+        _row(
+            **{
+                "Plant / Project name": "Plant I",
+                "Country/area": "Portugal",
+                "Status": "operating",
+                "Type": "coal",
+                "Technology": "subcritical",
+                "Latitude": 38.72,
+                "Longitude": -27.07,
+            }
+        ),  # Azores -- non_mainland_excluded (D40)
+        _row(
+            **{
+                "Plant / Project name": "Plant J",
+                "Country/area": "Portugal",
+                "Status": "operating",
+                "Type": "coal",
+                "Technology": "subcritical",
+                "Latitude": 32.65,
+                "Longitude": -16.97,
+            }
+        ),  # Madeira -- non_mainland_excluded (D40)
     ]
     return pd.DataFrame(rows)
 
@@ -93,8 +115,8 @@ def test_kept_plus_discarded_equals_scoped_input():
     plants, discarded, n_units_in_scope = inv.build_inventory(gem)
     kept_units = n_units_in_scope - len(discarded)
     assert kept_units + len(discarded) == n_units_in_scope
-    # 8 rows are Brazil/India/Portugal (all but Plant H); Plant A has 2 units.
-    assert n_units_in_scope == 8
+    # 10 rows are Brazil/India/Portugal (all but Plant H); Plant A has 2 units.
+    assert n_units_in_scope == 10
 
 
 def test_units_aggregate_to_one_plant_by_name_lat_lon():
@@ -120,7 +142,17 @@ def test_discard_reasons():
         "technology_excluded": 1,
         "no_capacity": 1,
         "no_coordinate": 1,
+        "non_mainland_excluded": 2,
     }
+
+
+def test_azores_madeira_excluded_from_continental_scope():
+    gem = _synthetic_gem()
+    plants, discarded, _n = inv.build_inventory(gem)
+    non_mainland = discarded[discarded["reason"] == "non_mainland_excluded"]
+    assert set(non_mainland["Plant / Project name"]) == {"Plant I", "Plant J"}
+    assert inv.plant_uid("Plant I", 38.72, -27.07) not in set(plants["plant_uid"])
+    assert inv.plant_uid("Plant J", 32.65, -16.97) not in set(plants["plant_uid"])
 
 
 def test_fleet_and_tech_class_mapping():

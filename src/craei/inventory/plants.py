@@ -41,6 +41,12 @@ _PUMPED_STORAGE_TECHNOLOGIES = {"pumped storage", "conventional and pumped stora
 
 COASTAL_BUFFER_KM_DEFAULT = (2, 5, 10)
 
+# D40: study scope is continental Portugal only (Azores/Madeira excluded, not
+# just given a no-data H3 value) -- west, east, south, north. Generous around
+# mainland Portugal (lat ~36.8-42.2, lon ~-9.6--6.0), well short of Madeira
+# (~32.6-33.1, -17.3--16.2) and the Azores (~36.9-39.7, -31.3--24.7).
+_PRT_MAINLAND_BBOX = (-9.6, -6.0, 36.0, 42.5)
+
 
 def _norm(value: object) -> str:
     return str(value).strip().lower() if pd.notna(value) else ""
@@ -93,6 +99,18 @@ def build_inventory(
     reason = pd.Series(pd.NA, index=df.index, dtype="object")
     reason[df["Latitude"].isna() | df["Longitude"].isna()] = "no_coordinate"
     reason[reason.isna() & df["Capacity (MW)"].isna()] = "no_capacity"
+
+    # D40: Azores/Madeira are outside the study's continental scope -- excluded
+    # entirely (not just left without an H3 value), same discard mechanism as
+    # any other out-of-scope row.
+    west, east, south, north = _PRT_MAINLAND_BBOX
+    is_prt_non_mainland = (df["iso3"] == "PRT") & reason.isna() & (
+        (df["Longitude"] < west)
+        | (df["Longitude"] > east)
+        | (df["Latitude"] < south)
+        | (df["Latitude"] > north)
+    )
+    reason[is_prt_non_mainland] = "non_mainland_excluded"
 
     status_norm = df["Status"].map(_norm)
     type_norm = df["Type"].map(_norm)
