@@ -459,6 +459,21 @@ def download_global_file(
     return local_path
 
 
+def _cleanup_job_staging_files(directory: Path, repo_paths: list[str]) -> None:
+    """Delete a failed job's downloaded/staged files (and any `.part` remnant).
+
+    Called from `acquire_job_all_countries` when a job gives up: none of its
+    files were promoted to `cache_dir`, so they are not reusable by anything
+    and would otherwise sit on `directory` (normally `staging_dir`, the SSD)
+    forever, eating into the free-space margin later jobs' `_check_free_space`
+    calls rely on.
+    """
+    for repo_path in repo_paths:
+        name = Path(repo_path).name
+        (directory / name).unlink(missing_ok=True)
+        (directory / (name + ".part")).unlink(missing_ok=True)
+
+
 def promote_staged_file(staged_path: Path, cache_dir: Path, repo_path: str) -> Path:
     """Move a `defer_move=True` staged file into its final place in `cache_dir`.
 
@@ -523,7 +538,14 @@ def download_global_files(
             fetched_by_path[futures[future]] = future.result()
     finally:
         progress.stop()
-        pool.shutdown(wait=False, cancel_futures=True)
+        # `wait=True`: a still-running download (e.g. a sibling of the file
+        # whose failure we're propagating) must finish before this function
+        # returns/raises, not keep writing to `staging_dir` unsupervised in
+        # the background — that orphaned an already-abandoned job's file
+        # (observed: a `[staged]` log line minutes after its job had already
+        # been marked FAILED and the run had moved on to later jobs),
+        # silently eating staging-disk space with nothing left to clean it up.
+        pool.shutdown(wait=True, cancel_futures=True)
     return [cache_dir / p if p in already_cached else fetched_by_path[p] for p in repo_paths]
 
 
@@ -786,18 +808,29 @@ def acquire_job_all_countries(
     _check_free_space(cache_dir)
     out_dir = raw_dir / "climate" / "isimip3b" / job.model / job.scenario / job.variable
 
-    local_globals = download_global_files(
-        cache_dir, repo_paths, DOWNLOAD_CONNECTIONS, staging_dir, defer_move=True
-    )
     try:
-        cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
-    except (OSError, RuntimeError, ValueError):
-        for p in local_globals:
-            p.unlink(missing_ok=True)
         local_globals = download_global_files(
             cache_dir, repo_paths, DOWNLOAD_CONNECTIONS, staging_dir, defer_move=True
         )
-        cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
+        try:
+            cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
+        except (OSError, RuntimeError, ValueError):
+            for p in local_globals:
+                p.unlink(missing_ok=True)
+            local_globals = download_global_files(
+                cache_dir, repo_paths, DOWNLOAD_CONNECTIONS, staging_dir, defer_move=True
+            )
+            cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
+    except Exception:
+        # A job that fails here (free-space check, exhausted self-heal retry,
+        # ...) must not leave its downloaded/staged files behind: those don't
+        # belong to any job the manifest will ever call complete, and if left
+        # on `staging_dir` they silently eat into the free-space margin the
+        # next job's `_check_free_space` call depends on (observed: a cascade
+        # of ~30 consecutive job failures once accumulated orphaned files
+        # pushed staging below the required threshold).
+        _cleanup_job_staging_files(staging_dir or cache_dir, repo_paths)
+        raise
 
     content_length = sum(p.stat().st_size for p in local_globals)
     for staged_path, repo_path in zip(local_globals, repo_paths, strict=True):
