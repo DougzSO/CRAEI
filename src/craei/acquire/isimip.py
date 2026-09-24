@@ -30,7 +30,7 @@ PROGRESS_REPORT_INTERVAL_S = 300
 ISIMIP_FILES_BASE = "https://files.isimip.org"
 ISIMIP_METADATA_BASE = "https://data.isimip.org"
 DOWNLOAD_CONNECTIONS = 3
-MIN_FREE_SPACE_BYTES = 20 * 1024**3
+MIN_FREE_SPACE_BYTES = 12 * 1024**3
 STUDY_COUNTRIES = ("BRA", "IND", "PRT")
 
 # Watchdog for a stalled-but-still-connected download (COMANDO 12 rework,
