@@ -33,6 +33,16 @@ DOWNLOAD_CONNECTIONS = 3
 MIN_FREE_SPACE_BYTES = 12 * 1024**3
 STUDY_COUNTRIES = ("BRA", "IND", "PRT")
 
+# CMIP6 variant label per model, used only by the pattern-guessed filename
+# fallback (dataset_paths_by_pattern) when the metadata API is unreachable.
+# UKESM1-0-LL publishes under r1i1p1f2; every other ISIMIP3b GCM in this
+# project's ensemble (D01) publishes under r1i1p1f1. Found 2026-09-26: the
+# fallback's hardcoded r1i1p1f1 produced HTTP 404s for ukesm1-0-ll/ssp585.
+_MODEL_VARIANT_LABEL = {
+    "ukesm1-0-ll": "r1i1p1f2",
+}
+_DEFAULT_VARIANT_LABEL = "r1i1p1f1"
+
 # Watchdog for a stalled-but-still-connected download (COMANDO 12 rework,
 # item 3): checked every WATCHDOG_POLL_S against the partial file's size; no
 # growth for WATCHDOG_STALL_S aborts the current attempt so the existing
@@ -255,9 +265,10 @@ def dataset_paths_by_pattern(job: IsimipJob, datasets_cfg: dict) -> list[str]:
     dataset_end = 2014 if job.scenario == "historical" else None
     model_dir = job.model.upper()
     paths = []
+    variant_label = _MODEL_VARIANT_LABEL.get(job.model, _DEFAULT_VARIANT_LABEL)
     for d_start, d_end in _decade_ranges(start_year, end_year, dataset_end):
         filename = (
-            f"{job.model}_r1i1p1f1_w5e5_{job.scenario}_{job.variable}"
+            f"{job.model}_{variant_label}_w5e5_{job.scenario}_{job.variable}"
             f"_global_daily_{d_start}_{d_end}.nc"
         )
         path = (
