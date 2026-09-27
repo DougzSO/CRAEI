@@ -541,23 +541,30 @@ def download_global_files(
     at once (each to its own file, no shared-write risk). See COMANDO 11 in
     docs/DECISIONS.md.
     """
-    already_cached = [p for p in repo_paths if (cache_dir / p).exists()]
-    to_fetch = [p for p in repo_paths if p not in already_cached]
-    if not to_fetch:
-        return [cache_dir / p for p in repo_paths]
-
+    # Every path goes through `download_global_file`, even one already
+    # sitting in `cache_dir`: that function's own cache check re-validates
+    # (h5py) before trusting it, and self-heals (delete + redownload) on
+    # failure. An earlier version of this function short-circuited on a bare
+    # `.exists()` for already-cached paths, skipping that validation
+    # entirely -- found 2026-09-27 after a silently corrupted cache file
+    # (right size, garbage bytes; a leftover from an interrupted manual
+    # promotion) kept failing every later crop attempt with a confusing,
+    # inconsistent mix of symptoms (an xarray `guess_engine` ValueError, a
+    # `WinError 32` on a subsequent cleanup unlink) that never actually
+    # pointed back at the one broken file, because nothing ever re-opened it
+    # to check.
     progress = _ProgressTracker()
     reporter = threading.Thread(
         target=progress.report_forever, args=(PROGRESS_REPORT_INTERVAL_S,), daemon=True
     )
     reporter.start()
-    workers = min(max_parallel_files, len(to_fetch))
+    workers = min(max_parallel_files, len(repo_paths))
     pool = ThreadPoolExecutor(max_workers=workers)
     fetched_by_path: dict[str, Path] = {}
     try:
         futures = {
             pool.submit(download_global_file, cache_dir, p, progress, staging_dir, defer_move): p
-            for p in to_fetch
+            for p in repo_paths
         }
         # `as_completed`, not `pool.map`: a `.map()` result list only raises a
         # given future's exception when iteration reaches its submission
@@ -578,7 +585,7 @@ def download_global_files(
         # been marked FAILED and the run had moved on to later jobs),
         # silently eating staging-disk space with nothing left to clean it up.
         pool.shutdown(wait=True, cancel_futures=True)
-    return [cache_dir / p if p in already_cached else fetched_by_path[p] for p in repo_paths]
+    return [fetched_by_path[p] for p in repo_paths]
 
 
 def _probe_file(url: str) -> tuple[int, bool]:
@@ -774,14 +781,17 @@ def crop_to_countries(
     files are already fully downloaded and cached, so a retry costs only the
     crop, not the download.
 
-    Also observed (2026-09-27), recurring specifically on cache-hit reuse of
-    an already-cached global file: xarray's process-wide `CachingFileManager`
-    can keep a low-level file handle open past the end of this function's own
-    `with xr.open_mfdataset(...)` block (a known Windows-specific gotcha when
-    dask still holds a reference into the backend), which then makes the
-    *next* open of that same path raise `WinError 32` even though this
-    process is the one holding it. `gc.collect()` before retrying reliably
-    drops those otherwise-unreferenced backend objects and their handles.
+    Also retries on ValueError: xarray's `guess_engine` raises one, not an
+    OSError, when it can't sniff a file's format. Found 2026-09-27: the
+    actual cause was a silently corrupted cache file (see
+    `download_global_files`), which produced this ValueError here on one
+    attempt and a plain h5py "file signature not found" OSError on another
+    -- both symptoms of the same unreadable bytes, not a transient condition
+    this retry loop can fix by itself. The real fix is that
+    `download_global_files` now re-validates (and self-heals) every cached
+    file before it ever reaches this function; this ValueError retry stays
+    as cheap defense in depth for a similarly-shaped but genuinely transient
+    failure.
     """
     start_year, end_year = required_years(job, datasets_cfg)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -800,7 +810,7 @@ def crop_to_countries(
                     cropped.load().to_netcdf(out_path)
                     out_paths[country] = out_path
             return out_paths
-        except (OSError, RuntimeError):
+        except (OSError, RuntimeError, ValueError):
             if attempt == CROP_RETRIES - 1:
                 raise
             gc.collect()
