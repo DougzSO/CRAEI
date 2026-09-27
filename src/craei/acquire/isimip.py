@@ -9,6 +9,7 @@ Python's recursion limit on slow jobs (see COMANDO 08 finding in
 `docs/DECISIONS.md`); `poll_job` below polls in a loop instead.
 """
 
+import gc
 import re
 import shutil
 import threading
@@ -470,6 +471,26 @@ def download_global_file(
     return local_path
 
 
+def _unlink_retry_on_permission_error(path: Path, retries: int = 3) -> None:
+    """`path.unlink(missing_ok=True)`, but also resilient to `WinError 32`.
+
+    `missing_ok=True` only suppresses "file not found", not "file in use" —
+    if this process itself is still holding a stale xarray/dask file handle
+    on `path` (see `crop_to_countries`), an immediate unlink can raise the
+    same `WinError 32` the crop just failed with, aborting this job's
+    self-heal delete-and-redownload fallback before it can even try.
+    """
+    for attempt in range(retries):
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError:
+            if attempt == retries - 1:
+                raise
+            gc.collect()
+            time.sleep(5 * (attempt + 1))
+
+
 def _cleanup_job_staging_files(directory: Path, repo_paths: list[str]) -> None:
     """Delete a failed job's downloaded/staged files (and any `.part` remnant).
 
@@ -752,6 +773,15 @@ def crop_to_countries(
     just wrote; see COMANDO 12 follow-up in docs/DECISIONS.md). The global
     files are already fully downloaded and cached, so a retry costs only the
     crop, not the download.
+
+    Also observed (2026-09-27), recurring specifically on cache-hit reuse of
+    an already-cached global file: xarray's process-wide `CachingFileManager`
+    can keep a low-level file handle open past the end of this function's own
+    `with xr.open_mfdataset(...)` block (a known Windows-specific gotcha when
+    dask still holds a reference into the backend), which then makes the
+    *next* open of that same path raise `WinError 32` even though this
+    process is the one holding it. `gc.collect()` before retrying reliably
+    drops those otherwise-unreferenced backend objects and their handles.
     """
     start_year, end_year = required_years(job, datasets_cfg)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -773,6 +803,7 @@ def crop_to_countries(
         except (OSError, RuntimeError):
             if attempt == CROP_RETRIES - 1:
                 raise
+            gc.collect()
             time.sleep(10 * (attempt + 1))
     raise AssertionError("unreachable")
 
@@ -826,8 +857,9 @@ def acquire_job_all_countries(
         try:
             cropped = crop_to_countries(local_globals, job, missing, datasets_cfg, out_dir)
         except (OSError, RuntimeError, ValueError):
+            gc.collect()
             for p in local_globals:
-                p.unlink(missing_ok=True)
+                _unlink_retry_on_permission_error(p)
             local_globals = download_global_files(
                 cache_dir, repo_paths, DOWNLOAD_CONNECTIONS, staging_dir, defer_move=True
             )
