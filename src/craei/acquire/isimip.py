@@ -337,7 +337,14 @@ class _ProgressTracker:
 
     def advance(self, name: str, n: int) -> None:
         with self._lock:
-            self._done[name] += n
+            # `name` may never have been `add`-ed: `download_global_file`
+            # skips that call when its HEAD probe couldn't determine a
+            # total size (`_probe_file` returning 0 on a transient network
+            # hiccup), but still calls `advance` unconditionally as bytes
+            # arrive. Found 2026-09-28. `report_forever` only prints names
+            # present in `_totals`, so an unset total here just means this
+            # download's progress goes unreported, not a crash.
+            self._done[name] = self._done.get(name, 0) + n
 
     def report_forever(self, interval_s: float) -> None:
         while not self._stop.wait(interval_s):
@@ -541,30 +548,57 @@ def download_global_files(
     at once (each to its own file, no shared-write risk). See COMANDO 11 in
     docs/DECISIONS.md.
     """
-    # Every path goes through `download_global_file`, even one already
-    # sitting in `cache_dir`: that function's own cache check re-validates
-    # (h5py) before trusting it, and self-heals (delete + redownload) on
-    # failure. An earlier version of this function short-circuited on a bare
-    # `.exists()` for already-cached paths, skipping that validation
-    # entirely -- found 2026-09-27 after a silently corrupted cache file
-    # (right size, garbage bytes; a leftover from an interrupted manual
-    # promotion) kept failing every later crop attempt with a confusing,
-    # inconsistent mix of symptoms (an xarray `guess_engine` ValueError, a
-    # `WinError 32` on a subsequent cleanup unlink) that never actually
-    # pointed back at the one broken file, because nothing ever re-opened it
-    # to check.
+    # Every already-cached path is re-validated (h5py) sequentially, before
+    # any concurrent download starts -- found 2026-09-27 in two parts:
+    # (1) a bare `.exists()` check used to be trusted with no validation at
+    # all, silently reusing a corrupted cache file (right byte count,
+    # garbage content -- a leftover from an interrupted manual promotion)
+    # forever; (2) validating cache hits concurrently with an active
+    # download, by routing every path through the same thread pool below,
+    # produced a *new* spurious `WinError 32` on a still-healthy cached file
+    # -- this external (USB) cache drive appears not to handle overlapping
+    # reads from multiple files at once cleanly. Sequential, one file at a
+    # time, before the pool starts, avoids that overlap while still catching
+    # corruption; only genuine downloads (to_fetch) run concurrently.
+    already_ok: dict[str, Path] = {}
+    to_fetch = []
+    for p in repo_paths:
+        local_path = cache_dir / p
+        if local_path.exists():
+            valid = False
+            last_exc: Exception | None = None
+            for attempt in range(2):
+                try:
+                    _validate_raw_netcdf(local_path)
+                    valid = True
+                    break
+                except (OSError, KeyError) as exc:
+                    last_exc = exc
+                    if attempt == 0:
+                        time.sleep(5)  # one retry: rules out a genuinely transient read
+            if valid:
+                already_ok[p] = local_path
+                continue
+            print(f"  [cache] {local_path.name}: failed h5py validation, "
+                  f"deleting and re-downloading: {last_exc}", flush=True)
+            local_path.unlink(missing_ok=True)
+        to_fetch.append(p)
+
+    if not to_fetch:
+        return [already_ok[p] for p in repo_paths]
+
     progress = _ProgressTracker()
     reporter = threading.Thread(
         target=progress.report_forever, args=(PROGRESS_REPORT_INTERVAL_S,), daemon=True
     )
     reporter.start()
-    workers = min(max_parallel_files, len(repo_paths))
+    workers = min(max_parallel_files, len(to_fetch))
     pool = ThreadPoolExecutor(max_workers=workers)
     fetched_by_path: dict[str, Path] = {}
     try:
         futures = {
             pool.submit(download_global_file, cache_dir, p, progress, staging_dir, defer_move): p
-            for p in repo_paths
+            for p in to_fetch
         }
         # `as_completed`, not `pool.map`: a `.map()` result list only raises a
         # given future's exception when iteration reaches its submission
@@ -585,7 +619,7 @@ def download_global_files(
         # been marked FAILED and the run had moved on to later jobs),
         # silently eating staging-disk space with nothing left to clean it up.
         pool.shutdown(wait=True, cancel_futures=True)
-    return [fetched_by_path[p] for p in repo_paths]
+    return [already_ok[p] if p in already_ok else fetched_by_path[p] for p in repo_paths]
 
 
 def _probe_file(url: str) -> tuple[int, bool]:
