@@ -45,6 +45,19 @@ def test_wet_day_p95_unaffected_by_future_rows():
     assert after == before
 
 
+def test_wet_day_count_ignores_dry_days_and_future_rows():
+    wet = list(range(1, 51))  # 50 wet days
+    dry = [0.0, 0.9]
+    baseline = _baseline_and_future(dry + wet)
+
+    future = baseline.copy()
+    future["period"] = "future"
+    combined = pd.concat([baseline, future], ignore_index=True)
+
+    out = precip.wet_day_count(combined)
+    assert out.iloc[0]["n_wet_days"] == 50
+
+
 def test_exceedance_frequency_near_five_percent_by_construction():
     wet = list(range(1, 101))
     baseline = _baseline_and_future(wet)

@@ -30,6 +30,23 @@ def wet_day_p95(
     )
 
 
+def wet_day_count(
+    daily: pd.DataFrame,
+    value_col: str = "pr_mm",
+    period_col: str = "period",
+    baseline_label: str = "baseline",
+) -> pd.DataFrame:
+    """Baseline-only count of wet days (pr >= 1 mm), per group (e.g. cell, model).
+
+    The sample size `wet_day_p95`'s percentile is estimated from -- a small
+    count makes that threshold, and everything H4 derives from it, noisy.
+    """
+    baseline = daily[daily[period_col] == baseline_label]
+    group_cols = [c for c in baseline.columns if c not in ("date", value_col, period_col)]
+    wet = baseline[baseline[value_col] >= WET_DAY_THRESHOLD_MM]
+    return wet.groupby(group_cols, as_index=False).agg(n_wet_days=(value_col, "size"))
+
+
 def exceedance_frequency(
     daily: pd.DataFrame, p95: pd.DataFrame, value_col: str = "pr_mm"
 ) -> pd.DataFrame:

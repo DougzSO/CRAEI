@@ -36,6 +36,9 @@ single source of truth for all numeric choices and definitions.
    is shown. Review and commit are separate commands.
 9. A methodological value with no source in the spec becomes an `O` line in
    `DECISIONS.md`, and work stops there.
+10. Modules shared between the production pipeline and audit scripts take no
+    flag for divergent behavior between the two. If an audit needs its own
+    behavior, it gets its own code.
 
 ## Stack
 

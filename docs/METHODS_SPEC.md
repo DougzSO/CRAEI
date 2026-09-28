@@ -170,81 +170,81 @@ Report whether the ranking of countries and technologies changes under any alter
 
 ## 3. Technical pipeline
 
-Compute estimates assume a recent laptop or workstation (8+ cores, 32 GB RAM), excluding download time. They are rough estimates.
+Execution machine, measured (COMANDO 15 follow-up, O06/O07 audit): AMD Ryzen 3 PRO 2200G, 4 cores / 4 logical processors, 6.4 GB RAM total. Project data (`data_root`, country-cropped climate files, `plants.parquet`, etc.) lives on the internal SSD (Samsung MZNLN128HAHQ, 128 GB); the raw global ISIMIP cache lives on an external USB HDD (Seagate Basic, 4 TB, D27'/D28). This is well below the 8+ cores / 32 GB this section originally assumed — see D41 (memory-constrained, per-country/model/scenario processing) and the per-step times below, which are measured where a COMANDO on this machine recorded one, and explicitly marked "not measured" otherwise (most are still the original rough pre-implementation estimates).
 
 **Step 1. Plant inventory**
 Input: GEM tracker CSV; Natural Earth 10m coastline.
 Processing: filter countries and statuses; aggregate units to plants; assign technology class and water dependence; compute distance to coast (projected CRS per country); flag coastal plants at 2/5/10 km.
 Output: `plants.parquet` (plant_uid, country, fleet [operating/planned_adv/planned_early], tech_class, water_dependent [bool], hydro_type, capacity_mw, lat, lon, dist_coast_km).
-Time: 0.5 h.
+Time: not measured with wall-clock precision (COMANDO 13 ran in an earlier session with no stopwatch log). The 2026-09-20 D40 rerun's output timestamp (`plants.parquet` 18:05) is a few minutes before Step 3's outputs (below), consistent with well under the original 0.5 h estimate, but the run's start time was not logged, so this is not a measurement.
 
 **Step 2. Climate data acquisition**
 Input: ISIMIP repository.
 Processing: download bounding-box cutouts for 5 GCMs × {historical, ssp126, ssp370, ssp585} × {tasmax, tasmin, pr}, keeping files overlapping 1984-2014 and 2041-2070; W5E5 observations 1984-2019 for the same variables.
 Output: `data/isimip/{model}/{scenario}/{var}_{country}_{decade}.nc`; `data/w5e5/{var}_{country}_{decade}.nc`; checksum manifest.
-Time: compute negligible; download depends on server queue (hours to days).
+Time: not a single measured duration by design (server-queue-dependent, D23); observed throughput and elapsed time for the actual COMANDO 11/12 run are in `docs/DECISIONS.md`.
 
 **Step 3. Spatial mapping**
 Input: `plants.parquet`; HydroBASINS level 6; one ISIMIP grid template.
 Processing: nearest land cell per plant; for hydro, sub-basin containing the plant and upstream set via `NEXT_DOWN` traversal; area weights of grid cells intersecting each catchment.
 Output: `plant_cell.parquet` (plant_uid, cell_lat, cell_lon, dist_to_cell_km); `catchment_weights.parquet` (plant_uid, cell_lat, cell_lon, weight).
-Time: 1-2 h.
+Time: not measured with wall-clock precision, same caveat as Step 1. The 2026-09-20 D40 rerun's output timestamps (`plant_cell.parquet` 18:09, `catchment_weights.parquet` 18:10) span about 5 minutes together with Step 1's `plants.parquet` (18:05), well under the original 1-2 h estimate, but again not a logged measurement.
 
 **Step 4. Daily temperature and precipitation indices**
 Input: ISIMIP cutouts; unique cells from Step 3.
 Processing: for each model and period, per cell: annual TX35, TX40; monthly N35; wet-day P95 (baseline) and exceedance counts in both periods; annual Rx5day.
 Output: `indices_daily.parquet` (cell_lat, cell_lon, model, scenario, period, index, year, month [nullable], value).
-Time: 2-4 h.
+Time: measured, COMANDO 15, this machine: **72 min** end to end for all 60 model/scenario/country jobs (`indices_daily.parquet` written 18:57, script launched ~17:45), under the machine's real memory constraints (D41) and with the system near its RAM ceiling (~89% used) for part of the run. Faster than the original 2-4 h estimate despite the weaker hardware (D41): Step 4 only ever touches the cells a plant actually uses (a few hundred to ~1,000 per country, not the full country grid), which apparently dominates over the RAM constraint's cost.
 
 **Step 5. PET and water balance**
 Input: ISIMIP tasmax, tasmin, pr; W5E5 for validation.
 Processing: daily Ra from latitude and day of year; Hargreaves PET; monthly P, PET, D; catchment-averaged D for hydro plants using weights from Step 3.
 Output: `water_balance_cell.parquet`, `water_balance_catchment.parquet` (id, model, scenario, month, P, PET, D).
-Time: 1-2 h.
+Time: 1-2 h (not measured).
 
 **Step 6. SPEI and SPI**
 Input: Step 5 outputs.
 Processing: 12-month and 3-month accumulation; log-logistic fit per calendar month on 1985-2014 per model (xclim standardized index functions with a calibration period, or explicit fit with scipy); apply the same parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution. Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
 Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12).
-Time: 1-2 h.
+Time: 1-2 h (not measured).
 
 **Step 7. Plant-level hazard table**
 Input: Steps 3-6.
 Processing: join indices to plants; compute ΔTX35, ΔTX40, F_D, R_D, R95 ratio, ΔRx5day per plant, model, scenario.
 Output: `plant_hazards.parquet` (plant_uid, model, scenario, hazard, baseline_value, future_value, delta, ratio).
-Time: 0.5 h.
+Time: 0.5 h (not measured).
 
 **Step 8. Aqueduct water stress**
 Input: Aqueduct 4.0 `future_annual` `ws` (2050, 3 scenarios; local export present, `pfaf_id`-keyed) and `baseline_annual` `bws` (not yet exported — see DECISIONS.md D32).
 Processing: join to water-dependent thermal plants by catchment `pfaf_id`; categories.
 Output: `plant_aqueduct.parquet` (plant_uid, scenario, ws_value, ws_category) for the join skeleton; baseline columns added once D32 is resolved.
-Time: 0.5 h.
+Time: 0.5 h (not measured).
 
 **Step 9. Exposure aggregation and agreement**
 Input: Steps 1, 7, 8.
 Processing: capacity shares and GW above headline classes per country × technology × fleet × scenario × model; ensemble median and range; model agreement flags per plant.
 Output: `exposure_summary.csv` (country, tech_class, fleet, hazard, scenario, cooling_bound, median_share, min_share, max_share, median_gw, agreement_share).
-Time: 0.5 h.
+Time: 0.5 h (not measured).
 
 **Step 10. Compound metric**
 Input: `spei.parquet`, monthly N35, plants.
 Processing: national monthly S_hydro and H_thermal; baseline P90 per model; compound months; LR_C per country, scenario, model.
 Output: `compound.csv` (country, scenario, model, f_baseline, f_future, lr_c); `compound_months.parquet` for seasonal inset.
-Time: 0.5 h.
+Time: 0.5 h (not measured).
 
 **Step 11. Validation**
 Input: W5E5 SPEI (Step 6 applied to observations); ONS ENA; REN productivity index; plants.
 Processing: hydro-capacity-weighted annual SPEI-12 per subsystem and Portugal; Spearman ρ with block bootstrap; odds ratio for low-inflow years.
 Output: `validation.csv` (region, n_years, rho, rho_ci_low, rho_ci_high, odds_ratio, or_ci_low, or_ci_high).
-Time: 1 h.
+Time: 1 h (not measured).
 
 **Step 12. Sensitivity and figures**
 Input: all previous outputs.
 Processing: rerun Steps 9-10 under each alternative; generate figures.
 Output: `sensitivity.csv` (test, parameter_value, result_id, value); figure files.
-Time: 2-3 h.
+Time: 2-3 h (not measured).
 
-Total compute: roughly 11-18 h, within the 24 h constraint.
+Total compute: roughly 11-18 h (not measured as a single run; see O07 in docs/DECISIONS.md for the projection from Steps 1-4's actual measured/observed times and the open question this raises about the 24 h criterion).
 
 ---
 
