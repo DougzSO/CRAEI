@@ -55,6 +55,8 @@ Justification: (i) every model has a historical baseline, which removes the self
 
 All indices are computed in two stages: baseline statistics (thresholds, distribution parameters) are estimated on 1985-2014 of each model, then applied unchanged to 2041-2070 of the same model. No percentile or distribution is ever fitted on the series being classified.
 
+Tasmax/tasmin consistency (TX >= TN) has been verified across the full ensemble: 707,545,940 cell-days tested (all 5 models x 4 scenarios x 3 countries, every plant-catchment cell), 0 inversions (TX < TN) and 0 exact or near-equal (tolerance 1e-6) coincidences found.
+
 Plants are assigned to the nearest 0.5° land cell. For hydro plants, the upstream catchment is built from HydroBASINS level 6 by recursively following the `NEXT_DOWN` topology from the sub-basin containing the plant; climate variables are area-weighted over all grid cells intersecting the catchment before computing indices.
 
 ### 1.4 Hazard definitions
@@ -200,7 +202,7 @@ Time: measured, COMANDO 15, this machine: **72 min** end to end for all 60 model
 Input: ISIMIP tasmax, tasmin, pr; W5E5 for validation.
 Processing: daily Ra from latitude and day of year; Hargreaves PET; monthly P, PET, D; catchment-averaged D for hydro plants using weights from Step 3.
 Output: `water_balance_cell.parquet`, `water_balance_catchment.parquet` (id, model, scenario, month, P, PET, D).
-Time: 1-2 h (not measured).
+Time: completed successfully (COMANDO 16, this machine) but without a logged start timestamp this run, so no reliable elapsed time — the original 1-2 h estimate is neither confirmed nor measured. Input cell count is larger than Step 4's (union of nearest-cell and hydro-catchment cells, e.g. 1,993 for Brazil vs. Step 4's 967), so Step 4's 72 min measurement is not a safe proxy either.
 
 **Step 6. SPEI and SPI**
 Input: Step 5 outputs.

@@ -23,7 +23,7 @@ import pandas as pd
 from craei.acquire.isimip import STUDY_COUNTRIES
 from craei.config import load_datasets, load_params, load_paths
 from craei.hazards import heat, precip
-from craei.hazards.loading import pr_daily, tasmax_daily, unique_cells_by_country
+from craei.hazards.loading import period_years, pr_daily, tasmax_daily, unique_cells_by_country
 
 
 def with_labels(df: pd.DataFrame, model: str, scenario: str, period: str) -> pd.DataFrame:
@@ -66,7 +66,8 @@ def main() -> None:
         for model in datasets_cfg["models"]:
             # Pass 1: baseline-only pr, to get each cell's wet-day P95 threshold.
             hist_pr_path = climate_dir / model / "historical" / "pr" / f"{model}_historical_pr_{country}.nc"
-            hist_pr = pr_daily(hist_pr_path, cells, "historical", datasets_cfg)
+            hist_start, hist_end = period_years("historical", datasets_cfg)
+            hist_pr = pr_daily(hist_pr_path, cells, hist_start, hist_end)
             hist_pr["period"] = "baseline"
             p95 = precip.wet_day_p95(hist_pr, p95_pct)
             del hist_pr
@@ -74,16 +75,18 @@ def main() -> None:
 
             for scenario in datasets_cfg["scenarios"]:
                 period = "baseline" if scenario == "historical" else "future"
+                start_year, end_year = period_years(scenario, datasets_cfg)
 
                 tasmax_path = climate_dir / model / scenario / "tasmax" / f"{model}_{scenario}_tasmax_{country}.nc"
-                tasmax = tasmax_daily(tasmax_path, cells, scenario, datasets_cfg)
+                tasmax = tasmax_daily(tasmax_path, cells, start_year, end_year)
                 tx35 = with_labels(heat.annual_hot_day_counts(tasmax, tx35_c), model, scenario, period)
                 tx40 = with_labels(heat.annual_hot_day_counts(tasmax, tx40_c), model, scenario, period)
                 n35 = with_labels(heat.monthly_hot_day_counts(tasmax, tx35_c), model, scenario, period)
                 del tasmax
                 gc.collect()
 
-                pr = pr_daily(climate_dir / model / scenario / "pr" / f"{model}_{scenario}_pr_{country}.nc", cells, scenario, datasets_cfg)
+                pr_path = climate_dir / model / scenario / "pr" / f"{model}_{scenario}_pr_{country}.nc"
+                pr = pr_daily(pr_path, cells, start_year, end_year)
                 exceed = precip.exceedance_frequency(pr, p95).rename(columns={"exceedance_frequency": "value"})
                 exceed = with_labels(exceed, model, scenario, period)
                 rx5day = with_labels(precip.annual_rx5day(pr), model, scenario, period)

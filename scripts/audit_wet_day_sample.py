@@ -7,6 +7,14 @@ by definition. It says nothing about whether each cell/model's baseline
 script measures that directly: wet-day counts per country/model, and which
 plants depend on the driest cells (< 300 wet days in 30 years). Prints only;
 does not decide an exclusion or write a limitation (see O06 in DECISIONS.md).
+
+Runs on `unique_cells_by_country` -- the same 1,871 plant-nearest-cell set
+COMANDO 15 used (967 BRA + 862 IND + 42 PRT), not COMANDO 16's larger
+3,202-cell union with hydro catchments (`cells_with_catchments_by_country`):
+H4 (this audit's subject) is a per-plant local index, evaluated at each
+plant's own nearest cell only -- a hydro plant's upstream catchment cells
+play no part in it (see PROGRESS.json C15's Action-4 note, COMANDO 16
+follow-up).
 """
 
 from pathlib import Path
@@ -16,7 +24,7 @@ import pandas as pd
 from craei.acquire.isimip import STUDY_COUNTRIES
 from craei.config import load_datasets, load_paths
 from craei.hazards import precip
-from craei.hazards.loading import pr_daily, unique_cells_by_country
+from craei.hazards.loading import period_years, pr_daily, unique_cells_by_country
 
 CUTOFFS = (300, 500, 1000)
 
@@ -35,7 +43,8 @@ def main() -> None:
         cells = cells_by_country[country]
         for model in datasets_cfg["models"]:
             hist_pr_path = climate_dir / model / "historical" / "pr" / f"{model}_historical_pr_{country}.nc"
-            hist_pr = pr_daily(hist_pr_path, cells, "historical", datasets_cfg)
+            start_year, end_year = period_years("historical", datasets_cfg)
+            hist_pr = pr_daily(hist_pr_path, cells, start_year, end_year)
             hist_pr["period"] = "baseline"
             wd = precip.wet_day_count(hist_pr)
             wd["country"], wd["model"] = country, model
