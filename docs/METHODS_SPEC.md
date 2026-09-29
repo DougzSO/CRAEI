@@ -206,11 +206,11 @@ Time: completed successfully (COMANDO 16, this machine) but without a logged sta
 
 **Step 6. SPEI and SPI**
 Input: Step 5 outputs.
-Processing: 12-month and 3-month accumulation; log-logistic fit per calendar month on 1985-2014 per model (xclim standardized index functions with a calibration period, or explicit fit with scipy); apply the same parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution. Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
-Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12).
-Time: 1-2 h (not measured).
+Processing: 12-month and 3-month accumulation; SPEI is fit per calendar month on 1985-2014 per model via a hybrid PWM log-logistic + Pearson III MLE fallback (COMANDO 17-F, see the Step 6 note below); apply the same parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution. Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
+Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12, distribution).
+Time: measured (COMANDO 17-F, this machine, fit+standardize loop only): 3,649s (~61 min) with the hybrid fallback vs. 189s (~3.2 min) PWM-only on the same data -- ~19.3x overhead (see the Step 6 note below).
 
-**Step 6 note: PWM log-logistic fit failures (COMANDO 17-C/17-D/17-E; `docs/DECISIONS.md` D45)**
+**Step 6 note: PWM log-logistic fit failures and hybrid fallback (COMANDO 17-C/17-D/17-E/17-F; `docs/DECISIONS.md` D45, closed)**
 
 The three-parameter log-logistic distribution in Step 6 is fit by unbiased
 probability-weighted moments (PWMs), the closed-form estimator of
@@ -306,10 +306,53 @@ failures (100%) with zero failures of their own, at 150-735x PWM's
 wall-clock cost. All three land somewhat above the ~6.7% expectation (PWM's
 own passing-only F_D lands somewhat below it); Pearson III is closest to
 6.7% and cheapest among the three alternatives, GEV furthest and most
-expensive. No estimator change has been adopted in the production pipeline
-from this benchmark; `spei.parquet` still uses the PWM estimator with the
-`NaN`-and-count treatment above. Adopting an alternative estimator for Step
-6 remains an open author decision (`docs/DECISIONS.md` D45).
+expensive. Following this benchmark, COMANDO 17-F adopted the hybrid
+strategy below.
+
+**Fitting strategy (hybrid PWM + MLE fallback, COMANDO 17-F, closes
+`docs/DECISIONS.md` D45):**
+
+We fit the log-logistic distribution via closed-form probability-weighted
+moments (PWM; Vicente-Serrano et al. 2010) when the estimator yields valid
+parameters (shape beta > 0, and location gamma <= min(sample), the
+log-logistic support restriction, COMANDO 17-D). In practice 29.6% of
+(plant/cell, model, calendar-month) baseline combinations across the 3
+SPEI series (hydro catchment SPEI-12, run-of-river SPEI-3, thermal-cell
+SPEI-12; `spei.parquet`'s `distribution` column) need the fallback -- close
+to, if a little below, the ~30% COMANDO 17-B/17-C measured for PWM's own
+failure rate, since the fallback only fires on PWM's actual rejects, not a
+fixed quota. The PWM estimator produces beta <= 0 for these because of high
+skewness in the water balance D = P - PET over a 30-sample baseline
+(COMANDO 17-C: a shape-parameter sign flip, beta ranging -2.96 to -21,878,
+not a near-zero edge case, and not concentrated in any particular season --
+see the "Why PWM fails" note above). For these cases we fall back to
+fitting the Pearson Type III distribution via maximum likelihood estimation
+(`scipy.stats.pearson3.fit`), which is numerically stable under high
+skewness and used in hydrological drought analysis (Bobee and Robitaille
+1977). The hybrid recovers 100% of PWM's fitting failures on this
+project's real data (0/3,275 hydro catchment, 0/1,305 run-of-river, 0/16,010
+thermal-cell (group, calendar-month) combinations left unfit; the 3.03%
+`NaN` rate remaining in `spei.parquet`'s `SPEI_12` column is the
+already-documented, structural lead-in `NaN` from `accumulate()`'s
+`min_periods=window` behavior -- the first 11 months of each of the
+baseline and 3 future scenario blocks per group, Spec L05 -- not a fitting
+failure). Baseline F_D (SPEI-12 <= -1.5), hydro and thermal combined, mean
+over (id, model) groups: 6.21%, close to the ~6.7% standard-normal
+expectation. Computational overhead: measured directly, both sides of the
+same comparison, on the real full ~247,000 baseline (plant/cell, model,
+calendar-month) combinations -- 3,649s (~61 min) for the hybrid
+fit+standardize loop vs. 189s (~3.2 min) for an otherwise-identical
+PWM-only pass (`fit_spei_distribution` swapped for `loglogistic_fit_fn`,
+same data, same machine), a **~19.3x overhead**. This is higher than a
+draft estimate of ~15x and far higher than an earlier, pre-measurement
+draft's "minimal (~1.2-1.4x)" framing, which is not supported by
+measurement and is corrected here; ~19.3x is acceptable for this project's
+batch, offline scientific processing (a single Step 6 run, not a
+latency-sensitive path). The final SPEI values are
+distribution-agnostic (standardized via inverse normal CDF regardless of
+which distribution produced them), preserving comparability with the SPEI
+literature for the majority (70.4%) of baseline combinations still fit by
+the standard log-logistic estimator.
 
 **Step 7. Plant-level hazard table**
 Input: Steps 3-6.

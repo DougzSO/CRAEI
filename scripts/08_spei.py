@@ -4,9 +4,11 @@ Reads COMANDO 16's monthly water balance (`water_balance_catchment.parquet`
 for hydro at catchment scale, `water_balance_cell.parquet` for
 water-dependent thermal at cell scale). For each group (plant/cell x model),
 D = P - PET is 12-month accumulated (also 3-month for run-of-river hydro
-plants); the log-logistic distribution is fit per calendar month on
-1985-2014 baseline data only and applied to both periods (SPEI). SPI-12
-does the same with a gamma fit on P alone. Processed one country/model at a
+plants); SPEI uses `spei.fit_spei_distribution`'s hybrid PWM
+log-logistic + Pearson III MLE fallback (COMANDO 17-F, `docs/DECISIONS.md`
+D45) per calendar month on 1985-2014 baseline data only, applied to both
+periods; SPI-12 does the same with a gamma fit on P alone, unaffected by
+the hybrid. Processed one country/model at a
 time with explicit memory release, per COMANDOS 15/16 (`docs/DECISIONS.md`
 D41) -- required here too (COMANDO 17 Action 1), not optional: an earlier
 version of this script loaded and processed the full water-balance tables in
@@ -22,10 +24,10 @@ and `cells_with_catchments_by_country`, not a further parquet read.
 """
 
 import gc
+import time
 from pathlib import Path
 
 import pandas as pd
-from scipy import stats
 
 from craei.acquire.isimip import STUDY_COUNTRIES
 from craei.config import load_params, load_paths
@@ -47,12 +49,12 @@ TRUNCATED_CELLS_WEIGHT_FLAG_THRESHOLD = 0.2  # Action 4: named-basin cutoff (spe
 H2_EXCLUDED_PLANT_IDS = {"5131763b8e53f91a7783faeea1fb15095453fd967630297cac52261097daf54c"}
 
 
-def _fit_and_standardize(acc, acc_col, group_cols, fit_fn, dist, out_col, clip_bound):
+def _fit_and_standardize(acc, acc_col, group_cols, fit_fn, out_col, clip_bound):
     baseline_acc = acc[
         (acc["period"] == "baseline") & (acc["month"] >= f"{spei.BASELINE_START_YEAR}-01-01")
     ]
     fitted = spei.fit_baseline(baseline_acc, acc_col, group_cols, fit_fn)
-    out = spei.standardize(acc, acc_col, fitted, group_cols, dist, clip_bound, out_col)
+    out = spei.standardize(acc, acc_col, fitted, group_cols, clip_bound, out_col)
     failures = spei.fit_failure_summary(fitted, group_cols)
     return out, failures
 
@@ -70,7 +72,7 @@ def process_hydro(water_balance_catchment: pd.DataFrame, run_of_river_ids: set[s
     # columns plus the one value column it accumulates.
     acc12 = spei.accumulate(water_balance_catchment[d_cols], window=12, value_col="D")
     spei12, fail12 = _fit_and_standardize(
-        acc12, "D_acc12", group_cols, spei.loglogistic_fit_fn, stats.fisk, "SPEI_12", clip_bound
+        acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound
     )
 
     acc_p12 = spei.accumulate(
@@ -81,16 +83,16 @@ def process_hydro(water_balance_catchment: pd.DataFrame, run_of_river_ids: set[s
         value_col="P_for_acc",
     )
     spi12, _ = _fit_and_standardize(
-        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, stats.gamma, "SPI_12", clip_bound
+        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, "SPI_12", clip_bound
     )
 
     ror = water_balance_catchment.loc[water_balance_catchment["id"].isin(run_of_river_ids), d_cols]
     acc3 = spei.accumulate(ror, window=3, value_col="D")
     spei3, fail3 = _fit_and_standardize(
-        acc3, "D_acc3", group_cols, spei.loglogistic_fit_fn, stats.fisk, "SPEI_3", clip_bound
+        acc3, "D_acc3", group_cols, spei.fit_spei_distribution, "SPEI_3", clip_bound
     )
 
-    out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12"]].merge(
+    out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12", "distribution"]].merge(
         spi12[["id", "model", "scenario", "period", "month", "SPI_12"]],
         on=["id", "model", "scenario", "period", "month"],
         how="left",
@@ -111,9 +113,9 @@ def process_thermal_cell(water_balance_cell: pd.DataFrame, clip_bound: float):
 
     acc12 = spei.accumulate(d[[*group_cols, "scenario", "period", "month", "D"]], window=12, value_col="D")
     spei12, fail12 = _fit_and_standardize(
-        acc12, "D_acc12", group_cols, spei.loglogistic_fit_fn, stats.fisk, "SPEI_12", clip_bound
+        acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound
     )
-    out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12"]].copy()
+    out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12", "distribution"]].copy()
     out["SPI_12"] = pd.NA
     out["SPEI_3"] = pd.NA
     out["scale"] = "cell"
@@ -157,6 +159,7 @@ def main() -> None:
 
     hydro_out_parts, hydro_fail12_parts, hydro_fail3_parts = [], [], []
     thermal_out_parts, thermal_fail12_parts = [], []
+    t_start = time.perf_counter()
 
     for model in models:
         catchment_model = pd.read_parquet(catchment_path, filters=[("model", "=", model)])
@@ -197,10 +200,13 @@ def main() -> None:
     del thermal_out_parts, thermal_fail12_parts
     gc.collect()
 
+    elapsed_s = time.perf_counter() - t_start
+
     out = pd.concat([hydro_out, thermal_out], ignore_index=True)
     out_path = processed_dir / "spei.parquet"
     out.to_parquet(out_path, index=False)
     print(f"\nwrote {out_path}: {len(out)} rows")
+    print(f"processing wall time (fit+standardize loop, this run): {elapsed_s:.1f}s")
 
     # Action 3: F_D baseline distribution per model (hydro catchment scale).
     baseline = hydro_out[hydro_out["period"] == "baseline"]
@@ -246,6 +252,30 @@ def main() -> None:
     print("\n=== Action 6: first valid SPEI-12 date per period (hydro catchment) ===")
     for period, g in hydro_out.dropna(subset=["SPEI_12"]).groupby("period"):
         print(f"period={period}: first month={g['month'].min()}, last month={g['month'].max()}")
+
+    # COMANDO 17-F Action 5: hybrid PWM+Pearson III fallback -- final failure
+    # rate, distribution split, F_D, and timing.
+    print("\n=== COMANDO 17-F Action 5: hybrid fallback results ===")
+    spei12_all = out["distribution"].notna() | out["SPEI_12"].notna()
+    n_spei12_total = int(spei12_all.sum())
+    n_spei12_nan = int(out["SPEI_12"].isna().sum())
+    print(
+        f"SPEI-12 (hydro catchment + thermal cell combined) final failure rate: "
+        f"{n_spei12_nan}/{n_spei12_total} = {n_spei12_nan / n_spei12_total:.4%} "
+        f"(both PWM and Pearson III failed, or accumulation itself was NaN)"
+    )
+    dist_counts = out["distribution"].value_counts(dropna=False)
+    print("distribution used, SPEI-12 rows with a successful fit:")
+    print((dist_counts / dist_counts.sum()).to_string())
+
+    baseline_all = out[out["period"] == "baseline"].dropna(subset=["SPEI_12"])
+    fd_all = spei.severe_drought_frequency(
+        baseline_all, "SPEI_12", severe_threshold, group_cols=["id", "model"]
+    )
+    print(
+        f"F_D baseline (SPEI-12 <= {severe_threshold}), hydro+thermal combined, "
+        f"mean over (id, model) groups: {fd_all['F_D'].mean():.4%}"
+    )
 
 
 if __name__ == "__main__":

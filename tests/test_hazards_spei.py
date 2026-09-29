@@ -45,7 +45,7 @@ def test_fit_baseline_and_standardize_roundtrip_gives_finite_clipped_index():
     assert fitted["fit_ok"].all()
 
     out = spei.standardize(
-        baseline_acc, "D_acc12", fitted, ["id", "model"], stats.fisk, clip_bound=3.0, out_col="SPEI_12"
+        baseline_acc, "D_acc12", fitted, ["id", "model"], clip_bound=3.0, out_col="SPEI_12"
     )
     assert out["SPEI_12"].notna().all()
     assert out["SPEI_12"].between(-3.0, 3.0).all()
@@ -57,10 +57,105 @@ def test_standardize_leaves_nan_for_failed_fit_group_without_substituting():
     df = _monthly("p1", "m1", "historical", "1985-01-01", 12, [10.0] * 12)
     acc = spei.accumulate(df, window=12, value_col="D")
     fitted = pd.DataFrame(
-        [{"id": "p1", "model": "m1", "cal_month": 12, "fit_ok": False, "fit_params": None}]
+        [{"id": "p1", "model": "m1", "cal_month": 12, "fit_ok": False, "fit_params": None,
+          "distribution": None}]
     )
-    out = spei.standardize(acc, "D_acc12", fitted, ["id", "model"], stats.fisk, clip_bound=3.0, out_col="SPEI_12")
+    out = spei.standardize(
+        acc, "D_acc12", fitted, ["id", "model"], clip_bound=3.0, out_col="SPEI_12"
+    )
     assert out["SPEI_12"].isna().all()
+
+
+def test_fit_loglogistic_pwm_status_success():
+    rng = np.random.default_rng(2)
+    values = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=30, random_state=rng)
+    params, status = spei._fit_loglogistic_pwm(values)
+    assert status == "success"
+    assert params["shape"] > 0
+    assert params["loc"] <= values.min()
+
+
+def test_fit_loglogistic_pwm_status_beta_nonpositive_on_known_failing_sample():
+    # A near-symmetric sample is a known PWM failure mode (COMANDO 17-C):
+    # the PWM triplet lands outside the log-logistic's valid beta>0 region.
+    rng = np.random.default_rng(3)
+    values = rng.normal(0.0, 1.0, 30)
+    params, status = spei._fit_loglogistic_pwm(values)
+    if status == "success":
+        pytest.skip("this particular draw happened to fit; status logic covered by other draws")
+    assert status in ("beta_nonpositive", "loc_violation")
+    assert params is None
+
+
+def _find_pwm_failing_sample(rng, max_draws=200):
+    """A strongly left-skewed sample is the shape that makes PWM fail in
+    practice (COMANDO 17-C): a plain symmetric normal draw sometimes also
+    defeats the Pearson III MLE fallback (an edge case at skew=0 that does
+    not arise on this project's real, always-skewed D = P - PET data)."""
+    for _ in range(max_draws):
+        values = stats.skewnorm.rvs(a=-6, size=30, random_state=rng)
+        _, pwm_status = spei._fit_loglogistic_pwm(values)
+        if pwm_status != "success":
+            return values
+    return None
+
+
+def test_fit_pearson3_mle_recovers_a_pwm_failure():
+    rng = np.random.default_rng(4)
+    values = _find_pwm_failing_sample(rng)
+    if values is None:
+        pytest.skip("no PWM failure found to test recovery against")
+    params, status = spei._fit_pearson3_mle(values)
+    assert status == "success"
+    assert params["scale"] > 0
+
+
+def test_fit_spei_distribution_falls_back_to_pearson3_on_pwm_failure():
+    rng = np.random.default_rng(4)
+    values = _find_pwm_failing_sample(rng)
+    if values is None:
+        pytest.skip("no PWM failure found to test fallback against")
+    params, distribution, status = spei.fit_spei_distribution(values)
+    assert distribution == "pearson3"
+    assert status == "success"
+    assert params is not None
+
+
+def test_fit_spei_distribution_uses_pwm_when_it_succeeds():
+    rng = np.random.default_rng(2)
+    values = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=30, random_state=rng)
+    params, distribution, status = spei.fit_spei_distribution(values)
+    assert distribution == "loglogistic"
+    assert status == "success"
+
+
+def test_fit_baseline_and_standardize_hybrid_never_leaves_recoverable_nan():
+    # Mix of a PWM-friendly plant and a PWM-hostile one (near-symmetric D):
+    # fit_spei_distribution should recover both via the hybrid, unlike
+    # loglogistic_fit_fn alone which would leave the second one NaN.
+    rng = np.random.default_rng(5)
+    n_months = 12 * 31
+    friendly = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=n_months, random_state=rng)
+    hostile = stats.skewnorm.rvs(a=-6, size=n_months, random_state=rng)
+    df = pd.concat(
+        [
+            _monthly("friendly", "m1", "historical", "1984-01-01", n_months, friendly),
+            _monthly("hostile", "m1", "historical", "1984-01-01", n_months, hostile),
+        ],
+        ignore_index=True,
+    )
+    acc = spei.accumulate(df, window=12, value_col="D")
+    baseline_acc = acc[acc["month"] >= "1985-01-01"]
+
+    fitted = spei.fit_baseline(baseline_acc, "D_acc12", ["id", "model"], spei.fit_spei_distribution)
+    assert fitted["fit_ok"].all()
+    assert set(fitted["distribution"]) <= {"loglogistic", "pearson3"}
+
+    out = spei.standardize(
+        baseline_acc, "D_acc12", fitted, ["id", "model"], clip_bound=3.0, out_col="SPEI_12"
+    )
+    assert out["SPEI_12"].notna().all()
+    assert out["SPEI_12"].between(-3.0, 3.0).all()
 
 
 def test_severe_drought_frequency_counts_at_or_below_threshold():
