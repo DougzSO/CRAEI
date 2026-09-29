@@ -36,6 +36,16 @@ SEVERE_THRESHOLD = None  # set from params.yaml in main()
 CLIP_BOUND = None  # set from params.yaml in main()
 TRUNCATED_CELLS_WEIGHT_FLAG_THRESHOLD = 0.2  # Action 4: named-basin cutoff (spec-stated value)
 
+# docs/LIMITATIONS.md L16, COMANDO 17-C Action 6: Nimoo Bazgo hydroelectric
+# plant (India, 45 MW, basin_id 4060623190) has 100% of its catchment weight
+# on a single PET-truncated glacial cell (COMANDO 16) -- its SPEI-12 would be
+# entirely constructed from a truncation-artifact water balance, not a real
+# one. Excluded from H2 entirely (not imputed); the plant itself stays in
+# plants.parquet (only H2/spei.parquet drops it) since the exclusion reason
+# is specific to this hazard's PET-driven water balance, not the plant's
+# eligibility for H1/H3.
+H2_EXCLUDED_PLANT_IDS = {"5131763b8e53f91a7783faeea1fb15095453fd967630297cac52261097daf54c"}
+
 
 def _fit_and_standardize(acc, acc_col, group_cols, fit_fn, dist, out_col, clip_bound):
     baseline_acc = acc[
@@ -123,8 +133,14 @@ def main() -> None:
         columns=["plant_uid", "country", "tech_class", "hydro_type"],
     )
     hydro_plants = plants[plants["tech_class"] == "hydro"]
+    n_hydro_before_exclusion = len(hydro_plants)
+    hydro_plants = hydro_plants[~hydro_plants["plant_uid"].isin(H2_EXCLUDED_PLANT_IDS)]
+    print(
+        f"hydro plants: {n_hydro_before_exclusion}, {len(H2_EXCLUDED_PLANT_IDS)} excluded from H2 "
+        f"(docs/LIMITATIONS.md L16), {len(hydro_plants)} processed"
+    )
     run_of_river_ids = set(hydro_plants.loc[hydro_plants["hydro_type"] == "run-of-river", "plant_uid"])
-    print(f"hydro plants: {len(hydro_plants)}; run-of-river (SPEI-3 also reported): {len(run_of_river_ids)}")
+    print(f"run-of-river (SPEI-3 also reported): {len(run_of_river_ids)}")
 
     hydro_ids_by_country = {
         country: set(hydro_plants.loc[hydro_plants["country"] == country, "plant_uid"])

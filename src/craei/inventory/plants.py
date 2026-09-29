@@ -136,6 +136,7 @@ def build_inventory(
     plants = (
         kept.groupby("plant_uid", as_index=False)
         .agg(
+            plant_name=("Plant / Project name", "first"),
             country=("iso3", "first"),
             fleet=("fleet", lambda s: s.mode().iat[0]),
             tech_class=("tech_class", lambda s: s.mode().iat[0]),
@@ -147,6 +148,23 @@ def build_inventory(
         )
     )
     return plants, discarded, len(df)
+
+
+def attach_basin_id(plants: pd.DataFrame, catchment_validation_path: Path) -> pd.DataFrame:
+    """Left-join each hydro plant's `basin_id` (HydroBASINS `HYBAS_ID`) from
+    COMANDO 14's `catchment_validation.csv` (`spatial.catchments.build_catchment_weights`'s
+    `validation` output, already written to disk by `scripts/06_spatial.py`).
+
+    `plant_uid` is deterministic (name/lat/lon hash) and COMANDO 14 was run
+    against this same plant set, so this is a plain join, not a
+    recomputation -- `basin_id` is `<NA>` for every non-hydro plant (no
+    catchment concept applies) and, if `catchment_validation_path` predates a
+    later COMANDO 13 rerun, for any hydro plant COMANDO 14 has not yet seen.
+    """
+    validation = pd.read_csv(catchment_validation_path, usecols=["plant_uid", "basin_id"])
+    out = plants.merge(validation, on="plant_uid", how="left")
+    out["basin_id"] = out["basin_id"].astype("Int64")
+    return out
 
 
 def add_coastal_distance(

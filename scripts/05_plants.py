@@ -7,6 +7,8 @@ classifies technology (D15) and computes distance to coast (D24). Writes
 
 from pathlib import Path
 
+import pandas as pd
+
 from craei.config import load_datasets, load_paths
 from craei.inventory import plants as inv
 
@@ -24,6 +26,19 @@ def main() -> None:
     plants, discarded, n_units_in_scope = inv.build_inventory(gem)
     kept_units = n_units_in_scope - len(discarded)
     plants = inv.add_coastal_distance(plants, coastline_path, datasets_cfg["bboxes"])
+
+    # basin_id (COMANDO 17-B Action 6) comes from COMANDO 14's own output, not
+    # recomputed here -- plant_uid is a deterministic name/lat/lon hash, so
+    # this is a plain join against an existing artifact, not a dependency
+    # inversion. Only present once COMANDO 14 has run against this plant set.
+    catchment_validation_path = processed_dir / "catchment_validation.csv"
+    if catchment_validation_path.exists():
+        plants = inv.attach_basin_id(plants, catchment_validation_path)
+        print(f"basin_id attached from {catchment_validation_path}")
+    else:
+        plants["basin_id"] = pd.array([pd.NA] * len(plants), dtype="Int64")
+        print(f"{catchment_validation_path} not found -- basin_id left null; rerun after C14")
+
     out_path = inv.write_plants(plants, discarded, processed_dir)
 
     print(f"{len(plants)} plants aggregated from {kept_units} kept GEM units")

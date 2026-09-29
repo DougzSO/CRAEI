@@ -40,7 +40,12 @@ def _fit_loglogistic_pwm(values: np.ndarray):
     `1 / (1 + ((x-loc)/scale)^-c)`, matches the paper's with
     `c=beta`, `scale=alpha`, `loc=gamma`), or None if the sample is too
     small or the closed-form estimate is degenerate (beta <= 0, alpha <= 0,
-    or a non-finite Gamma-function evaluation).
+    a non-finite Gamma-function evaluation, or `loc` above the sample
+    minimum -- COMANDO 17-C follow-up: the log-logistic's support is
+    `[loc, inf)`, so a `loc` greater than the smallest observed value means
+    that observation (and possibly others) falls outside the fitted
+    distribution's support, an invalid fit the PWM formula does not rule out
+    on its own).
     """
     x = np.sort(values)
     n = len(x)
@@ -66,6 +71,8 @@ def _fit_loglogistic_pwm(values: np.ndarray):
         return None
     loc = w0 - alpha * g1 * g2
     if not np.isfinite(loc):
+        return None
+    if loc > x[0]:  # log-logistic support restriction: loc <= min(sample)
         return None
     return (beta, loc, alpha)
 

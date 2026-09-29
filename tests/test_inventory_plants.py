@@ -173,3 +173,27 @@ def test_fleet_and_tech_class_mapping():
     assert c["fleet"] == "planned_early"
     assert c["tech_class"] == "thermal_air_only"
     assert bool(c["water_dependent"]) is False
+
+
+def test_plant_name_preserved():
+    gem = _synthetic_gem()
+    plants, _discarded, _n = inv.build_inventory(gem)
+    by_name = plants.set_index("plant_uid")
+    a = by_name.loc[inv.plant_uid("Plant A", -10.0, -50.0)]
+    assert a["plant_name"] == "Plant A"
+
+
+def test_attach_basin_id_joins_hydro_only_and_leaves_others_null(tmp_path):
+    gem = _synthetic_gem()
+    plants, _discarded, _n = inv.build_inventory(gem)
+    a_uid = inv.plant_uid("Plant A", -10.0, -50.0)  # the only hydro plant here
+
+    validation_path = tmp_path / "catchment_validation.csv"
+    pd.DataFrame([{"plant_uid": a_uid, "basin_id": 4060123456, "n_upstream_basins": 3,
+                    "pct_diff_up_area": 0.1}]).to_csv(validation_path, index=False)
+
+    out = inv.attach_basin_id(plants, validation_path)
+    by_uid = out.set_index("plant_uid")
+    assert by_uid.loc[a_uid, "basin_id"] == 4060123456
+    b_uid = inv.plant_uid("Plant B", -15.0, -47.0)  # thermal, no catchment
+    assert pd.isna(by_uid.loc[b_uid, "basin_id"])
