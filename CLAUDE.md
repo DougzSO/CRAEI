@@ -39,6 +39,17 @@ single source of truth for all numeric choices and definitions.
 10. Modules shared between the production pipeline and audit scripts take no
     flag for divergent behavior between the two. If an audit needs its own
     behavior, it gets its own code.
+11. This machine has ~6 GB RAM, well under the Spec's assumed 8+ cores/32 GB
+    (D41). Never call `groupby(...).transform(...)`, `groupby(...).apply(...)`,
+    or `groupby(...).rolling(...)` over a full multi-country/model/scenario
+    table: these materialize one object per group and concat them, which
+    inflates memory far past the raw data size long before it as data grows
+    (crashed this project once already, COMANDO 17, `docs/DECISIONS.md` D44).
+    Use `craei.rolling.rolling_sum_by_group` (or an equally vectorized
+    cumsum/cumcount approach) for a rolling aggregate, and process one
+    country/model(/scenario) chunk at a time with explicit `del` +
+    `gc.collect()` between chunks (COMANDOS 15/16/17 pattern) for anything
+    else over the full climate data.
 
 ## Stack
 

@@ -11,6 +11,8 @@ Rx5day are then computed for both periods against that fixed threshold.
 import numpy as np
 import pandas as pd
 
+from craei.rolling import rolling_sum_by_group
+
 WET_DAY_THRESHOLD_MM = 1.0  # Spec §1.4 H4, wet-day definition
 
 
@@ -76,11 +78,17 @@ def exceedance_frequency(
 
 
 def annual_rx5day(daily: pd.DataFrame, value_col: str = "pr_mm") -> pd.DataFrame:
-    """Annual maximum 5-day precipitation total, per group."""
+    """Annual maximum 5-day precipitation total, per group.
+
+    Uses `craei.rolling.rolling_sum_by_group` (vectorized cumsum), not
+    `groupby(...).transform(...)` -- see that module's docstring: the naive
+    `transform` pattern risks the same `MemoryError` found in COMANDO 17's
+    SPEI accumulation on data with many groups, even though this call has
+    not itself crashed (COMANDOS 15/16's per-country/model/scenario chunking
+    kept each call's group count small enough).
+    """
     group_cols = [c for c in daily.columns if c not in ("date", value_col)]
-    d = daily.sort_values("date").copy()
-    d["roll5"] = d.groupby(group_cols)[value_col].transform(
-        lambda s: s.rolling(5, min_periods=5).sum()
-    )
+    d = daily.sort_values(group_cols + ["date"]).reset_index(drop=True)
+    d["roll5"] = rolling_sum_by_group(d, group_cols, "date", value_col, window=5)
     d["year"] = d["date"].dt.year
     return d.groupby(group_cols + ["year"], as_index=False).agg(value=("roll5", "max"))

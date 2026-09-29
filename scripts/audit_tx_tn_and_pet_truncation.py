@@ -141,6 +141,10 @@ def main() -> None:
     print(f"distinct (country, cell) with truncated PET: {len(all_trunc)}")
     print(all_trunc.groupby("country").size())
 
+    trunc_out = processed_dir / "truncated_pet_cells.parquet"
+    all_trunc.to_parquet(trunc_out, index=False)
+    print(f"wrote {trunc_out}: {len(all_trunc)} rows (COMANDO 17 Action 4 input)")
+
     lat_bins = pd.cut(all_trunc["cell_lat"], bins=range(0, 40, 5))
     print("\nlatitude distribution of truncated cells (5-degree bins):")
     print(all_trunc.groupby(lat_bins, observed=True).size())
