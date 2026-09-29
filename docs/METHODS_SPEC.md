@@ -210,6 +210,107 @@ Processing: 12-month and 3-month accumulation; log-logistic fit per calendar mon
 Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12).
 Time: 1-2 h (not measured).
 
+**Step 6 note: PWM log-logistic fit failures (COMANDO 17-C/17-D/17-E; `docs/DECISIONS.md` D45)**
+
+The three-parameter log-logistic distribution in Step 6 is fit by unbiased
+probability-weighted moments (PWMs), the closed-form estimator of
+Vicente-Serrano et al. (2010): from a calendar month's 30 baseline values
+(1985-2014), sample PWMs b0, b1, b2 give a shape parameter beta =
+(2b1-b0)/(6b1-b0-6b2), then scale alpha and location gamma from beta. The
+production implementation (`craei.hazards.spei._fit_loglogistic_pwm`)
+rejects a fit whenever beta is non-positive or non-finite, any Gamma-function
+evaluation in the alpha step is non-finite or zero, or the fitted gamma
+(location) exceeds the sample minimum (a log-logistic's support is
+[gamma, infinity), so gamma above the smallest observed value is a support
+violation, fixed in COMANDO 17-D). On this project's real water-balance
+deficit D = P - PET, roughly 30% of (plant/cell, model, calendar-month)
+baseline fits are rejected this way (COMANDO 17-B: 32.4% hydro catchment
+SPEI-12, 14.4% run-of-river SPEI-3, 29.1% thermal-cell SPEI-12, all with the
+full 30-sample baseline and zero missing months -- COMANDO 17-C ruled out
+sample size and data gaps as causes). Every rejected fit is left as `NaN` in
+`spei.parquet` and counted, never silently replaced by a default value.
+
+*Why PWM fails for the 3-parameter log-logistic under high skewness.* The
+PWM estimator inverts three sample moments (b0, b1, b2) into three
+distribution parameters through the closed-form relation above. That
+relation is only defined, and only gives a physically meaningful beta > 0,
+for a restricted region of the (b0, b1, b2) space consistent with a
+log-logistic shape; a 30-observation empirical sample of a distribution that
+is more sharply skewed, more symmetric, or otherwise differently shaped than
+a log-logistic (as D = P - PET can be, month to month and cell to cell, in
+this project's real data) can and does land the PWM triplet outside that
+region, most commonly flipping the sign of the numerator/denominator ratio
+that defines beta. COMANDO 17-C measured this directly: 100% of the failures
+are the beta <= 0 branch, with beta ranging from -2.96 to -21,878 -- not
+values near zero, but sign-flipped and often large in magnitude, consistent
+with the sample's L-moments falling well outside the PWM formula's valid
+domain for this distribution family rather than marginally missing it.
+COMANDO 17-C also found no support for two alternative explanations tested
+directly: the failures are not concentrated in any particular season (16-50%
+across every calendar month in all three countries, with Brazil's rate
+higher than India's dry-season rate if anything), and failing vs. passing
+groups show no consistent difference in coefficient of variation. This
+matches a known small-sample weakness of the L-moment/PWM estimator for the
+three-parameter log-logistic reported in the hydrological literature, not a
+defect specific to this implementation.
+
+*Why taking the absolute value of beta is mathematically and physically
+invalid.* The sign of beta determines which tail of the log-logistic
+distribution is heavier: a positive beta gives the standard right-skewed
+log-logistic form used for SPEI (Vicente-Serrano et al. 2010); replacing a
+computed beta < 0 with |beta| does not recover a valid alternative fit to
+the same data -- it substitutes the parameters of a different distribution
+shape than the one the sample's moments actually support, with the tail
+direction inverted. Because SPEI's standardization step
+(`norm.ppf(cdf(D_acc, *params))`) maps quantiles of the fitted distribution
+onto the standard normal, inverting the tail inverts which end of the
+distribution reads as extreme: a real wet anomaly could be reported as an
+extreme dry SPEI value, and vice versa, silently corrupting both the
+severe-drought frequency F_D (Sec. 1.4 H2) and any classification built on
+it. `|beta|` was considered and rejected on exactly this basis, not adopted.
+
+*Alternative estimators measured, not adopted (COMANDO 17-E).* A
+stratified-sample benchmark (`scripts/benchmark_spei_fitters.py`, fixed
+seed) compared the production PWM estimator against a moment-seeded
+3-parameter log-logistic MLE, a Generalized Extreme Value fit (MLE), and a
+Pearson Type III fit (MLE). Fitting every alternative on the full ~247,000
+baseline combos was measured as computationally infeasible in this session
+(a 200-combo pilot: ~60-100ms per MLE call vs. PWM's closed-form
+microseconds), so each bucket's evaluation is a fixed-seed random sample of
+up to 800 PWM-failing and 800 PWM-passing combos (not the full population;
+treat every percentage below as approximate, not exact):
+
+| Bucket | Method | Failure rate | Recovery on PWM failures | F_D | Relative time |
+|---|---|---|---|---|---|
+| Hydro catchment SPEI-12 | PWM (production) | 50.0%\* | 0.0% | 5.90% | 1.0x |
+| | MLE log-logistic | 0.0% | 100.0% | 7.71% | 396x |
+| | GEV (MLE) | 0.0% | 100.0% | 7.94% | 580x |
+| | Pearson III (MLE) | 0.0% | 100.0% | 7.46% | 219x |
+| Run-of-river SPEI-3 | PWM (production) | 50.0%\* | 0.0% | 5.35% | 1.0x |
+| | MLE log-logistic | 0.0% | 100.0% | 7.86% | 449x |
+| | GEV (MLE) | 0.0% | 100.0% | 8.13% | 735x |
+| | Pearson III (MLE) | 0.0% | 100.0% | 7.26% | 288x |
+| Thermal cell SPEI-12 | PWM (production) | 50.0%\* | 0.0% | 5.70% | 1.0x |
+| | MLE log-logistic | 0.0% | 100.0% | 7.74% | 262x |
+| | GEV (MLE) | 0.0% | 100.0% | 8.72% | 480x |
+| | Pearson III (MLE) | 0.0% | 100.0% | 7.37% | 154x |
+
+\*PWM's 50.0% sample failure rate is the stratified sample design (800
+failing + 800 passing drawn on purpose to measure recovery), not the real
+population rate (32.4% / 14.4% / 29.1%, COMANDO 17-B); its F_D is computed
+only from the sample's passing half, consistent with the real production
+run's 5.9-6.6% (COMANDO 17-D).
+
+All three alternatives recovered every one of the 2,400 sampled PWM
+failures (100%) with zero failures of their own, at 150-735x PWM's
+wall-clock cost. All three land somewhat above the ~6.7% expectation (PWM's
+own passing-only F_D lands somewhat below it); Pearson III is closest to
+6.7% and cheapest among the three alternatives, GEV furthest and most
+expensive. No estimator change has been adopted in the production pipeline
+from this benchmark; `spei.parquet` still uses the PWM estimator with the
+`NaN`-and-count treatment above. Adopting an alternative estimator for Step
+6 remains an open author decision (`docs/DECISIONS.md` D45).
+
 **Step 7. Plant-level hazard table**
 Input: Steps 3-6.
 Processing: join indices to plants; compute ΔTX35, ΔTX40, F_D, R_D, R95 ratio, ΔRx5day per plant, model, scenario.
