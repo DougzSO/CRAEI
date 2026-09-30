@@ -161,6 +161,61 @@ def test_compute_w5e5_overlap_reports_real_month_count_not_assumed():
     assert overlap.common_available_months == 9 + 12 * 4
 
 
+def test_check_annual_field_in_raw_response_false_for_real_shape():
+    # Real shape observed for every inspected REN response (2015-2025): a
+    # single monthly series, no annual/weight/production field anywhere.
+    raw = {
+        "xAxis": {},
+        "yAxis": {},
+        "legend": {},
+        "plotOptions": {},
+        "chart": {},
+        "series": [{"data": [1.0] * 12}],
+    }
+    assert ren_iph.check_annual_field_in_raw_response(raw) is False
+
+
+def test_check_annual_field_in_raw_response_true_when_extra_key_present():
+    raw = {
+        "xAxis": {},
+        "yAxis": {},
+        "legend": {},
+        "plotOptions": {},
+        "chart": {},
+        "series": [{"data": [1.0] * 12}],
+        "annualTotal": 1.0,
+    }
+    assert ren_iph.check_annual_field_in_raw_response(raw) is True
+
+
+def test_check_annual_field_in_raw_response_true_when_extra_series_present():
+    raw = {"series": [{"data": [1.0] * 12}, {"data": [2.0]}]}
+    assert ren_iph.check_annual_field_in_raw_response(raw) is True
+
+
+def test_compare_dgeg_auxiliary_reports_correlations_not_a_threshold():
+    df = _make_df(
+        [
+            {"date": f"2016-{m:02d}-01", "year": 2016, "month": m, "iph": v}
+            for m, v in enumerate([1.0, 1.2, 1.4, 1.1, 0.9, 0.8, 0.7, 0.6, 0.7, 0.9, 1.1, 1.3], 1)
+        ]
+    )
+    dgeg_df = pd.DataFrame(
+        [
+            {"date": pd.Timestamp(2016, m, 1), "hydro_generation_gwh": v}
+            for m, v in enumerate(
+                [1000, 1200, 1400, 1100, 900, 800, 700, 600, 700, 900, 1100, 1300], 1
+            )
+        ]
+    )
+    result = ren_iph.compare_dgeg_auxiliary(df, dgeg_df)
+
+    assert result["n_months_compared"] == 12
+    assert result["years_compared"] == [2016]
+    assert result["monthly_pearson_r"] > 0.9  # constructed to co-move
+    assert "pass" not in result  # no forced pass/fail gate on this check
+
+
 def test_compute_w5e5_overlap_does_not_assume_twelve_per_year():
     # A naive `n_years * 12` would silently overstate coverage: this test
     # locks in that the function reports the real, possibly-lower count.

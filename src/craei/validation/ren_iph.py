@@ -96,15 +96,23 @@ def compare_annual_erse(df: pd.DataFrame, erse_ref: pd.DataFrame) -> dict:
     value (calendar-year arithmetic mean of the acquired monthly series).
 
     This derived quantity is reported for the record, but it is NOT assumed
-    to be the same quantity REN itself uses for its annual/civil-year figure
-    -- the monthly endpoint used for acquisition exposes no annual field and
-    no per-month weighting scheme, and a simple mean does not reproduce the
-    reference in general (see the module docstring's point A/B distinction
-    and `reports/ren_iph_validation.md` Section 5 for the evidence: 2017 is
-    the clearest case -- high mid-year monthly values during a year ERSE
-    records as a low-productivity year overall, consistent with the annual
-    figure being production-weighted rather than equally-weighted across
-    months). Rows are still reported per year, not suppressed.
+    to be the same quantity REN itself uses for its annual/civil-year figure.
+    Confirmed directly (COMANDO 23, Part A1) by inspecting every raw REN
+    response saved during acquisition (`check_annual_field_in_raw_response`):
+    the `RegimeYearly` endpoint used for acquisition carries no annual field,
+    no per-month weight, and no production/afluência denominator of any kind
+    -- only the 12 monthly values. A simple calendar mean of those 12 values
+    does not reproduce ERSE's published annual figure in general (2017 is the
+    clearest case: ERSE reports 0.47, a low-productivity year, while the
+    derived mean is far higher because 2017's mid-year monthly values happen
+    to be unusually high and a simple mean over-weights them relative to
+    whatever REN's real aggregation applies). No official description of
+    REN's annual aggregation formula was found (checked REN/ERSE/DGEG
+    published technical documentation, COMANDO 23 Part A3) with which to
+    reproduce it exactly, so this comparison is retained as a documented
+    methodological limitation of the annual figure, not evidence against the
+    monthly series (see `compare_monthly_apa`, which independently PASSes).
+    Rows are still reported per year, not suppressed.
     """
     rows = []
     for _, ref_row in erse_ref.iterrows():
@@ -131,6 +139,54 @@ def compare_annual_erse(df: pd.DataFrame, erse_ref: pd.DataFrame) -> dict:
         "pass": bool(result["pass_at_2dp"].all()),
         "n_years": len(result),
         "n_pass": int(result["pass_at_2dp"].sum()),
+    }
+
+
+def check_annual_field_in_raw_response(raw_response: dict) -> bool:
+    """Whether a raw REN `RegimeYearly` JSON response exposes any annual/
+    aggregate field beyond the 12 monthly values (COMANDO 23, Part A1).
+
+    Checked directly against every saved raw response (2015-2025): the only
+    keys are `xAxis`/`yAxis`/`legend`/`plotOptions`/`chart`/`series`, and
+    `series` always has exactly one entry whose `data` is the 12 monthly
+    values -- no annual total, weight, production or afluência field exists
+    anywhere in the payload. This function lets that fact be asserted by a
+    test against the real saved fixtures rather than only stated in prose.
+    """
+    series = raw_response.get("series", [])
+    if len(series) != 1:
+        return True  # an extra series would be a candidate annual/aux field
+    known_keys = {"xAxis", "yAxis", "legend", "plotOptions", "chart", "series"}
+    return bool(set(raw_response.keys()) - known_keys)
+
+
+def compare_dgeg_auxiliary(df: pd.DataFrame, dgeg_df: pd.DataFrame) -> dict:
+    """Auxiliary consistency check: REN IPH (productivity ratio) vs DGEG gross
+    hydro generation (GWh, a production volume). These are different physical
+    quantities -- broad co-movement is expected (both track wet/dry years),
+    exact agreement is not, and no threshold is imposed as pass/fail here.
+    """
+    merged = df[["date", "year", "month", "iph"]].merge(
+        dgeg_df[["date", "hydro_generation_gwh"]], on="date", how="inner"
+    )
+    monthly_pearson = float(merged["iph"].corr(merged["hydro_generation_gwh"], method="pearson"))
+    monthly_spearman = float(merged["iph"].corr(merged["hydro_generation_gwh"], method="spearman"))
+
+    annual = merged.groupby("year").agg(
+        iph_mean=("iph", "mean"), hydro_generation_gwh_sum=("hydro_generation_gwh", "sum")
+    )
+    annual_pearson = float(annual["iph_mean"].corr(annual["hydro_generation_gwh_sum"], "pearson"))
+    annual_spearman = float(annual["iph_mean"].corr(annual["hydro_generation_gwh_sum"], "spearman"))
+
+    return {
+        "n_months_compared": int(len(merged)),
+        "years_compared": sorted(int(y) for y in annual.index),
+        "monthly_table": merged,
+        "annual_table": annual.reset_index(),
+        "monthly_pearson_r": monthly_pearson,
+        "monthly_spearman_r": monthly_spearman,
+        "annual_pearson_r": annual_pearson,
+        "annual_spearman_r": annual_spearman,
     }
 
 

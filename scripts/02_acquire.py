@@ -8,7 +8,7 @@ Usage:
 import argparse
 from pathlib import Path
 
-from craei.acquire import auxiliary, isimip, ren, w5e5
+from craei.acquire import auxiliary, dgeg, isimip, ren, w5e5
 from craei.config import load_datasets, load_paths
 from craei.manifest import Manifest
 
@@ -72,6 +72,7 @@ def main() -> None:
     auxiliary.run_natural_earth(manifest, paths, raw_dir)
     auxiliary.run_ons_ena(manifest, raw_dir)
     ren.run(manifest, raw_dir, Path(paths["processed_dir"]))
+    dgeg.run(manifest, raw_dir, Path(paths["processed_dir"]))
     auxiliary.import_existing_local_data(paths, manifest, raw_dir)
 
 
