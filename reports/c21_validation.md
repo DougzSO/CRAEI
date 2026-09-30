@@ -22,9 +22,9 @@ This report documents the validation and closure of COMANDO C21 (validation phas
 
 ### 3. Plant Inventory
 - Brazil hydro plants: 222
-- Plant-subsystem mapping: PASS
-- Mapping method: Geographic latitude inference (simplified)
-- By subsystem: see mapping file
+- Plant-subsystem mapping: REJECTED (D62) -- no mapping file exists anywhere in the project
+  (confirmed by full-project filename search, COMANDO 22-D/D70); the latitude-inference method
+  was evaluated and rejected as a non-auditable proxy, never produced as a persisted file
 
 ### 4. Hazard Derivations
 #### PET (Hargreaves-Samani from W5E5)
@@ -49,22 +49,28 @@ This report documents the validation and closure of COMANDO C21 (validation phas
 - Countries: BRA, IND, PRT
 - Event types: Drought, Extreme temperature, Flood, Storm
 
-### 6. Portugal Validation (C21-b: CLOSED)
+### 6. Portugal Validation (C21-b: CLOSED; SPEI x IPH correlation added COMANDO 22-D)
 - REN IPH: Acquired (2015-2026, corrected by D60)
 - DGEG hydroelectric: Acquired (2015-2019)
 - Validation: PASS against APA reference (D60)
 - REN/W5E5 overlap: 2015-01 to 2019-12 (57 months, 4 years complete + partial 2015)
 - Annual-level validation: Resolved as methodological limitation (undisclosed REN aggregation weights)
-- References: docs/DECISIONS.md D59-D61, reports/ren_iph_validation.md
+- SPEI-12 (W5E5) x REN IPH correlation (D70): capacity-weighted over 41 continental hydro plants,
+  monthly, n_obs=57. Spearman rho=0.246, 95% CI [-0.065, 0.625] (12-month block bootstrap, 10,000
+  resamples -- not 3-month, since SPEI-12 is itself a 12-month accumulation and consecutive months
+  are strongly autocorrelated). n_eff = n_obs/block_size = 4.75, reported separately from n_obs=57
+  so the two are never conflated; the wide CI is the correct consequence of ~4-5 effective years of
+  independent information, not a failure
+- References: docs/DECISIONS.md D59-D61/D70, reports/ren_iph_validation.md, data/outputs/tables/validation.csv
 
 ## Validation Results
 
 ### Plant → ONS Subsystem Mapping (PARTE 2)
-- Method: ['plant_id', 'plant_name', 'latitude', 'longitude', 'subsystem', 'capacity_mw', 'mapping_method', 'mapping_source', 'mapping_confidence']
-- Source: Geographic latitude bounds (simplified)
-- Confidence: Medium (conservative approach; official ONS shapefiles not available)
-- Audit: Total plants N/A
-- Limitations: No official ONS subsystem polygon layer was imported; mapping uses latitude bounds only
+- Status: REJECTED (D62), not PASS -- no mapping file exists on disk (COMANDO 22-D/D70 full-project
+  search confirmed this directly, correcting this section's earlier claim)
+- Source evaluated: Geographic latitude bounds (simplified) -- rejected as a non-auditable proxy
+- Limitations: No official ONS subsystem polygon layer was ever imported; no fallback mapping was
+  persisted either. Subsystem-level validation stays out of scope for v0.1.0 (L20)
 
 ### PET Derivation (PARTE 3)
 - Formula: PET = 0.0023 × Ra × (Tmean+17.8) × sqrt(Tmax-Tmin) (Hargreaves-Samani)
@@ -87,17 +93,29 @@ This report documents the validation and closure of COMANDO C21 (validation phas
 - References: docs/DECISIONS.md D54-D56, docs/METHODS_SPEC.md §3 Step 6, scripts/08_spei.py
 
 ### SPEI × ONS ENA Consistency Check (PARTE 5)
-- Status: CHECK_PENDING (correlation analysis not yet run, deferred to C21-2 implementation)
-- Expected: Regional SPEI patterns should correlate with ONS ENA subsystem averages
-- Limitation: SPEI is cell-scale water balance; ENA is system-scale hydroelectric generation
-- Different time scales and drivers limit direct comparison
+- Status: NATIONAL_DONE (COMANDO 22-D, D70); SUBSYSTEM_DEFERRED (D62/L20, unchanged)
+- SPEI-12 used is the W5E5-native derivation (`spei_w5e5.parquet`), not the ISIMIP3b model-based
+  `spei.parquet` -- computed for the first time this command (D70); capacity-weighted over Brazil's
+  222 hydro plants, national aggregation (no subsystem split, since no plant-subsystem mapping exists)
+- ENA: national daily total (sum of 4 subsystems' MWmed), annual mean, 2000-2019 (n=20, the W5E5 x
+  ONS-ENA intersection)
+- Result: Spearman rho=0.361, 95% CI [0.027, 0.811] (3-year block bootstrap, 10,000 resamples);
+  odds ratio (Dec SPEI-12 <= -1 | bottom-tercile annual ENA) = 0.917, 95% CI [0.200, 19.286]
+- Interpretation: a moderate, statistically non-null rho but a CI-straddles-1 odds ratio -- weak/no
+  detectable national-level tail association. Consistent with reservoir regulation and cascade
+  operation decoupling a purely climatic index from system-level inflow at national scale (not
+  treated as a code defect, per author instruction)
+- Full statistics: `data/outputs/tables/validation.csv`
 
 ### EM-DAT (PARTE 6)
-- Status: PASS
+- Status: PASS -- DESCRIPTIVE_DONE (O15, COMANDO 22-D, author-authorized)
 - Files present: 9
 - Expected period: Full historical data per country
-- Filtering rules: To be applied per docs/METHODS_SPEC.md
-- Status: Dataset acquired, filtering/validation deferred to C21-2 continuation
+- Scope: METHODS_SPEC.md line 115/447 already settles this -- "EM-DAT is used only descriptively
+  in Supplementary Information" / Extended Data "EM-DAT descriptive overlay". No filtering beyond
+  the acquisition step's own country/event-type scoping; no statistical test; no validation claim
+- Output: `data/outputs/tables/emdat_descriptive.csv` (12 rows, country x event_type: n_events,
+  first_year, last_year, total_deaths/affected/economic_damage, plus each metric's non-null count)
 
 ### Temporal Coverage (PARTE 7)
 Consolidated audit:
@@ -112,12 +130,10 @@ Consolidated audit:
 No dataset claims coverage beyond measured reality; no silent proxies or reconstructions.
 
 ## Manifest Status
-- **Status**: To be populated by full C21-2 implementation
-- **Expected entries**:
-  - W5E5 v2.0: 9 files (3 variables × 3 countries)
-  - ONS ENA: 27 files (2000-2026, one per year)
-  - Plant subsystem mapping: 1 file
-  - Processed data: Already present (plants.parquet, spei.parquet, etc.)
+- **Status**: PASS -- 296 real entries in `data/raw/manifest.json`, counted directly (COMANDO 22-D/D70):
+  180 isimip3b, 72 local, 27 ons_ena, 9 w5e5v2.0, 3 hydrobasins, 2 natural_earth, 1 each
+  dgeg_hydro_generation/ren_iph/datasets. The earlier "To be populated" line in this section was
+  stale text, not an accurate count; the final-block PASS below was correct all along.
 
 ## Documentation Updates
 - docs/DECISIONS.md: Updated with D59-D61 (acquisition and validation), D54-D56 (SPEI method selection)
@@ -164,17 +180,26 @@ All critical data acquisition and method validation are complete. The one blocki
 C21_FINAL_STATUS = CLOSED (Conditional)
 PLANT_SUBSYSTEM_MAPPING = RESOLVED_AS_METHODOLOGICAL_LIMITATION (D62)
 PET_W5E5 = PASS
-SPEI12_W5E5 = PASS
-ONS_ENA_INTEGRATION_CHECK = BLOCKED_BY_PLANT_SUBSYSTEM_LIMITATION
-REN_IPH = CLOSED_BY_C21b
+SPEI12_W5E5 = PASS (COMANDO 22-D/D70: SPEI-12 actually derived from raw W5E5 observations for the
+  first time, `spei_w5e5.parquet` -- the SPEI12_W5E5 label above the C21-2 fix referred to the
+  ISIMIP3b model-based `spei.parquet`, which is bias-adjusted TO W5E5, not FROM it; both now exist)
+ONS_ENA_INTEGRATION_CHECK = NATIONAL_DONE (D70: rho=0.361 [0.027,0.811], OR=0.917 [0.200,19.286],
+  n_years=20, validation.csv); SUBSYSTEM_DEFERRED (D62/L20, unchanged -- no official plant-subsystem
+  mapping)
+REN_IPH = CLOSED_BY_C21b; SPEI x IPH monthly correlation added (D70: rho=0.246 [-0.065,0.625],
+  n_obs=57, n_eff=4.75)
 DGEG_HYDRO = COMPLETED_BY_C21b
-EMDAT = PASS
+EMDAT = DESCRIPTIVE_DONE (O15 resolved, `emdat_descriptive.csv`, no statistical test -- matches Spec)
 TEMPORAL_COVERAGE = PASS
-MANIFEST = PASS
+MANIFEST = PASS (296 entries, counted directly, D70 -- corrects this report's earlier stale "To be
+  populated" body text)
 DOCUMENTATION = PASS
-TESTS = PASS (139 passed, 1 skipped, 0 failed)
-RUFF = PASS
-BLOCKING_ISSUES_REMAINING = 1 (documented in D62; all results H1/H2/H3 independent of plant-subsystem mapping)
+TESTS = PASS (141 passed, 1 skipped, 0 failed, re-run after COMANDO 22-D -- no new tests added,
+  `scripts/24_w5e5_spei_validation.py`/`scripts/25_validation_stats.py` are one-off validation
+  scripts in the `scripts/c22b_*`/`scripts/c22c_*` convention, not production pipeline code)
+RUFF = PASS (`scripts/24_w5e5_spei_validation.py`, `scripts/25_validation_stats.py` clean)
+BLOCKING_ISSUES_REMAINING = 1 (subsystem-level mapping only, documented in D62; all results
+  H1/H2/H3 and the now-complete national-level Figure 5 validation are independent of it)
 
 ### Blocking Item: Plant-Subsystem Mapping (RESOLVED AS METHODOLOGICAL LIMITATION)
 
@@ -190,9 +215,11 @@ BLOCKING_ISSUES_REMAINING = 1 (documented in D62; all results H1/H2/H3 independe
 **Decision (D62):** Mark as methodological limitation (L20). Suspend subsystem-level ONS validation for v0.1.0; defer to post-review task if required by editor or reviewer. All results (H1/H2/H3, composite metric) remain independent of subsystem mapping.
 
 **Impact:**
-- Figure 5 subsystem validation (CNS ENA regional correlation) deferred; national-level SPEI correlation remains
+- Figure 5 subsystem validation (ONS ENA regional correlation) deferred; national-level SPEI-W5E5 x
+  ENA correlation is now complete (D70, `validation.csv`) -- Figure 5 changed BLOQUEADA -> PRONTA in
+  `figure_readiness.csv`
 - H1/H2/H3 hazard assessment NOT blocked (defined at plant and country scale, do not require subsystem classification)
-- REN IPH validation for Portugal: complete and documented (C21-b CLOSED, 57 months of 2015-2019 overlap)
+- REN IPH validation for Portugal: complete and documented (C21-b CLOSED, 57 months of 2015-2019 overlap); monthly SPEI-W5E5 x IPH correlation added (D70)
 
 **C21 Closure Status:**
 - **CLOSED (Conditional)** - One methodological limitation documented; author decision to proceed with closure

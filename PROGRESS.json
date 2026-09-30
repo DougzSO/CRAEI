@@ -246,7 +246,7 @@
           "id": "C21",
           "status": "done",
           "commit": null,
-          "check": "CLOSED (Conditional), C21-2/C21-2-FIX, 2026-09-30: PET/SPEI-12/EM-DAT/manifest PASS; plant-subsystem ONS mapping RESOLVED_AS_METHODOLOGICAL_LIMITATION (D62/L20); Portugal REN IPH validated 2015-2019 (D59-D61); India no independent validation (L02)."
+          "check": "CLOSED (Conditional), C21-2/C21-2-FIX/C22-D, 2026-09-30: PET/SPEI-12/EM-DAT/manifest PASS; plant-subsystem ONS mapping RESOLVED_AS_METHODOLOGICAL_LIMITATION (D62/L20); ONS_ENA_INTEGRATION_CHECK NATIONAL_DONE (D70, validation.csv: BRA rho=0.361 [0.027,0.811] n=20, PRT rho=0.246 [-0.065,0.625] n_obs=57/n_eff=4.75), subsystem-level SUBSYSTEM_DEFERRED (D62 unchanged); Portugal REN IPH validated 2015-2019 (D59-D61); India no independent validation (L02); EM-DAT descriptive-only per O15/METHODS_SPEC (emdat_descriptive.csv)."
         },
         {
           "id": "P6-R",
@@ -271,7 +271,7 @@
           "id": "C22",
           "status": "done",
           "commit": null,
-          "check": "Phase 7 readiness audit + compound-metric closure, COMANDO 22/22-B/22-C, 2026-09-30: LR_C dropped, closed as diff_pp + dependence_ratio (D63/D64); dependence quantified and reported at the collective level (D65-D67, O12/O13 resolved); two defects found and fixed (D68/D69 region-assignment edge cases; O14 opened). Figure 5 is BLOQUEADA pending O14: validation.csv/emdat_descriptive.csv (Spec Step 11) do not exist and were never implemented -- not lost in the outputs/ reorg. Figures 1-4 and Extended Data: PRONTA/PRONTA COM RESSALVA, cleared for Phase 7. See data/outputs/audit/audit_report.md Section 7 and docs/DECISIONS.md D63-D69/O12-O14."
+          "check": "Phase 7 readiness audit + compound-metric closure, COMANDO 22/22-B/22-C/22-D, 2026-09-30: LR_C dropped, closed as diff_pp + dependence_ratio (D63/D64); dependence quantified and reported at the collective level (D65-D67, O12/O13 resolved); two defects found and fixed (D68/D69 region-assignment edge cases). O14 resolved by D70: validation.csv now exists (national Brazil + Portugal SPEI-W5E5 x ONS-ENA/REN-IPH correlation), Figure 5 changed BLOQUEADA -> PRONTA. Figures 1-5 and Extended Data: all PRONTA/PRONTA COM RESSALVA, cleared for Phase 7. O15 also resolved (emdat_descriptive.csv, author-authorized). See data/outputs/audit/audit_report.md Section 7 and docs/DECISIONS.md D63-D70/O12-O15."
         },
         {
           "id": "C23",
