@@ -1,14 +1,17 @@
 """Auxiliary and validation data acquisition (Spec §1.7, §5; COMANDO 09).
 
-Four sources, matching the COMANDO 09 audit in `docs/DECISIONS.md`:
+Three sources, matching the COMANDO 09 audit in `docs/DECISIONS.md`:
 
 - HydroBASINS level 6 (download): one zip per country's continent region.
 - Natural Earth coastline/rivers (import): already present as local files
   (see `config/paths.local.yaml`); copied into `raw_dir` and registered.
 - ONS ENA diario por subsistema (download): one CSV per year, 2000-present.
-- REN hydroelectric productivity index (import): no confirmed API endpoint
-  (COMANDO 09 finding); expects a manually exported file at
-  `paths.local.yaml: ren_file`. Skipped with a warning if that key is absent.
+
+REN's hydroelectric productivity index (COMANDO 09's fourth source) has its
+own acquisition module, `craei.acquire.ren` -- the real endpoint behind it
+was only found by instrumenting a real browser (COMANDO 21 follow-up), not
+one of the documented generic REN API endpoints, so it did not fit this
+module's request-per-source shape.
 
 `import_existing_local_data` separately copies the GEM/GADM/EM-DAT/Aqueduct
 files already audited in COMANDO 07 into `raw_dir`, registering each in the
@@ -39,7 +42,6 @@ def build_jobs() -> list[AuxJob]:
         AuxJob(name="hydrobasins", kind="download"),
         AuxJob(name="natural_earth", kind="import"),
         AuxJob(name="ons_ena", kind="download"),
-        AuxJob(name="ren_productivity", kind="import"),
     ]
 
 
@@ -105,20 +107,6 @@ def run_ons_ena(manifest: Manifest, raw_dir: Path) -> list[dict]:
         _download(url, dest)
         registered.append(manifest.register(key, dest, origin=url))
     return registered
-
-
-def run_ren_productivity(manifest: Manifest, local_paths: dict, raw_dir: Path) -> dict | None:
-    source = local_paths.get("ren_file")
-    if not source:
-        return None
-    source = Path(source)
-    key = "ren_productivity"
-    if manifest.is_intact(key):
-        return None
-    dest = raw_dir / "validation" / source.name
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, dest)
-    return manifest.register(key, dest, origin=str(source))
 
 
 _LOCAL_DATASET_KEYS = ("gem_file", "aqueduct_dir", "emdat_dir", "gadm_dir")

@@ -4,10 +4,10 @@ from craei.acquire import auxiliary
 from craei.manifest import Manifest
 
 
-def test_build_jobs_has_4_sources():
+def test_build_jobs_has_3_sources():
     jobs = auxiliary.build_jobs()
-    assert len(jobs) == 4
-    assert {j.name for j in jobs} == {"hydrobasins", "natural_earth", "ons_ena", "ren_productivity"}
+    assert len(jobs) == 3
+    assert {j.name for j in jobs} == {"hydrobasins", "natural_earth", "ons_ena"}
 
 
 def test_run_hydrobasins_downloads_and_registers(tmp_path, monkeypatch):
@@ -99,12 +99,6 @@ def test_run_ons_ena_downloads_csv_resources(tmp_path, monkeypatch):
 
     assert len(registered) == 1  # only the CSV resource, not XLSX/PDF
     assert manifest.is_intact("ons_ena/ENA_Diario_por_Subsistema-2020")
-
-
-def test_run_ren_productivity_skipped_without_local_file(tmp_path):
-    manifest = Manifest(tmp_path / "manifest.json")
-    result = auxiliary.run_ren_productivity(manifest, {}, tmp_path / "raw")
-    assert result is None
 
 
 def test_import_existing_local_data_copies_gem_and_gadm(tmp_path):

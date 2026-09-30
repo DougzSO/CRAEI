@@ -1,7 +1,7 @@
 {
   "project": "CRAEI",
   "updated": "2026-09-30",
-  "current_command": "C19",
+  "current_command": "C21",
   "phases": [
     {
       "id": "P0",
@@ -98,7 +98,7 @@
     {
       "id": "P2",
       "name": "Data acquisition",
-      "status": "todo",
+      "status": "done",
       "commands": [
         {
           "id": "C10",
@@ -120,15 +120,15 @@
         },
         {
           "id": "P2-R",
-          "status": "todo",
+          "status": "done",
           "commit": null,
-          "check": "phase review approved"
+          "check": "phase review approved 2026-09-30 (author, closing session): C10-C12 verified complete against PROGRESS.json and git log"
         },
         {
           "id": "P2-C",
-          "status": "todo",
-          "commit": null,
-          "check": "git status clean; git log -1 shows message"
+          "status": "done",
+          "commit": "47b95ea",
+          "check": "git status clean; git log -1 shows message -- verified 2026-09-30"
         }
       ]
     },
@@ -166,7 +166,7 @@
     {
       "id": "P4",
       "name": "Hazard indices",
-      "status": "todo",
+      "status": "done",
       "commands": [
         {
           "id": "C15",
@@ -194,22 +194,22 @@
         },
         {
           "id": "P4-R",
-          "status": "todo",
+          "status": "done",
           "commit": null,
-          "check": "phase review approved"
+          "check": "phase review approved 2026-09-30 (author, closing session): C15-C18 verified complete, O08/O09 both closed by D54-D56"
         },
         {
           "id": "P4-C",
-          "status": "todo",
-          "commit": null,
-          "check": "git status clean; git log -1 shows message"
+          "status": "done",
+          "commit": "1e7e70a",
+          "check": "git status clean; git log -1 shows message -- verified 2026-09-30"
         }
       ]
     },
     {
       "id": "P5",
       "name": "Exposure and compound metric",
-      "status": "todo",
+      "status": "done",
       "commands": [
         {
           "id": "C19",
@@ -225,15 +225,15 @@
         },
         {
           "id": "P5-R",
-          "status": "todo",
+          "status": "done",
           "commit": null,
-          "check": "phase review approved"
+          "check": "phase review approved 2026-09-30 (author, closing session): C19-C20 verified complete"
         },
         {
           "id": "P5-C",
-          "status": "todo",
-          "commit": null,
-          "check": "git status clean; git log -1 shows message"
+          "status": "done",
+          "commit": "241a256",
+          "check": "git status clean; git log -1 shows message -- verified 2026-09-30"
         }
       ]
     },

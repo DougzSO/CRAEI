@@ -4,10 +4,12 @@ One cutout per variable per country: 3 variables x 3 countries = 9 files.
 """
 
 import re
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
-from craei.acquire.isimip import poll_job
+from craei.acquire.isimip import _validate_raw_netcdf, poll_job
 from craei.manifest import Manifest
 
 DATE_RANGE_RE = re.compile(r"_(\d{4})\d{4}-(\d{4})\d{4}\.nc$")
@@ -59,7 +61,19 @@ def run_job(
     out_dir = raw_dir / "climate" / "w5e5v2.0" / job.variable
     out_dir.mkdir(parents=True, exist_ok=True)
     file_url = finished["file_url"]
-    local_path = client.download(file_url, path=str(out_dir), validate=True, extract=True)
+    # `validate=True` relies on a per-job checksum JSON sidecar that ISIMIP's
+    # files API does not always publish for cutout_bbox jobs (observed 404 on
+    # an otherwise complete, valid download); `DownloadMixin.download` also
+    # returns None on success rather than the local path, so it cannot be
+    # relied on for either checksum or path. Download without server-side
+    # validation, then apply the same h5py structural check the project
+    # already uses for cached ISIMIP3b files (COMANDO 12 self-heal).
+    client.download(file_url, path=str(out_dir), validate=False, extract=True)
+    local_path = out_dir / Path(urlparse(file_url).path.split("/")[-1])
+    with zipfile.ZipFile(local_path) as zf:
+        for member in zf.namelist():
+            if member.endswith(".nc"):
+                _validate_raw_netcdf(out_dir / member)
     return manifest.register(key, local_path, origin=file_url)
 
 
