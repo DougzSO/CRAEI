@@ -1,4 +1,4 @@
-"""SPEI-12, SPEI-3 and SPI-12 (Spec §1.4 H2, §3 Step 6; COMANDO 17).
+"""SPEI-12, SPEI-3 and SPI-12 (Spec §1.4 H2, §3 Step 6; COMANDO 17, D45).
 
 The monthly water-balance deficit D = P - PET (SPEI) or precipitation P
 alone (SPI) is accumulated over a rolling window (12 or 3 months) per group
@@ -9,20 +9,26 @@ accumulated values to a standard-normal index via `norm.ppf(cdf(x,
 
 SPEI (`fit_spei_distribution`, COMANDO 17-F) is a hybrid: try the
 closed-form log-logistic PWM estimator (Vicente-Serrano et al. 2010, the
-paper Spec §1.4 H2 cites) first -- fast, and standard in the SPEI
-literature -- and fall back to a Pearson III MLE fit only for the ~30% of
-(group, calendar-month) baseline samples where PWM's closed-form validity
-conditions are not met (COMANDO 17-C: overwhelmingly a shape parameter
-sign flip caused by high skewness in a 30-sample D series, not a data
-problem -- see `docs/METHODS_SPEC.md` §3 Step 6 note for the full
-derivation and `docs/DECISIONS.md` D45 for the decision this closes).
-COMANDO 17-E measured this fallback recovering 100% of a large sample of
-PWM's failures at ~1.2-1.4x PWM-alone's wall-clock cost. Which
-distribution actually fit a given (group, calendar-month) is recorded (the
-`distribution` column fed through to `spei.parquet`), since a downstream
-consumer computing anything beyond the already-standardized index (e.g. a
-tail-shape-sensitive statistic) needs to know it is not one distribution
-family throughout.
+paper Spec §1.4 H2 cites) first, and fall back to a Pearson III MLE fit
+only for the ~30% of (group, calendar-month) baseline samples where PWM's
+closed-form validity conditions are not met (COMANDO 17-C/D45). This is
+the current production method -- CRAEI briefly (COMANDO 18-E) replaced it
+with regional-pool PWM fitting (grouping many plants/cells and models
+together by country+bucket to raise the fitted sample size), which D51
+adopted and this module's docstring described for one command cycle, but
+that pool mixes different series' own climatologies into one shared
+reference, which COMANDO 18-F found breaks SPEI's basic definition (a
+deviation from a series' OWN local climatology, not a regional peer
+group) -- most (plant/cell, model) baseline F_D collapsed toward 0%
+relative to the pool while a minority spiked, and per-plant R_D became
+undefined for 24-64% of series (docs/DECISIONS.md O09). Reverted to this
+hybrid (COMANDO 18-F Action 6) while a temporal (same-series, not
+cross-series) alternative to raising the sample size is evaluated;
+`docs/DECISIONS.md` D51 stays on the record with the reversion reason
+rather than being deleted. `fit_baseline`/`standardize` remain generic
+over `group_cols`, so a temporal-pooling variant (e.g. a calendar-month
+window within the same series) can reuse them without a spei.py change,
+the same way the (now-reverted) regional pool did.
 
 SPI uses a two-parameter gamma distribution (`scipy.stats.gamma` MLE with
 `loc` fixed at 0, since accumulated precipitation is non-negative and gamma
@@ -272,16 +278,88 @@ def fit_baseline(acc: pd.DataFrame, acc_col: str, group_cols: list[str], fit_fn)
     before calling this.
     """
     d = acc.dropna(subset=[acc_col]).copy()
-    years = d["month"].dt.year
-    if len(d) and ((years < BASELINE_START_YEAR).any() or (years > BASELINE_END_YEAR).any()):
-        raise ValueError(
-            f"fit_baseline received data outside {BASELINE_START_YEAR}-{BASELINE_END_YEAR}: "
-            f"years {years.min()}-{years.max()}"
-        )
+    _check_baseline_years(d)
     d["cal_month"] = d["month"].dt.month
 
     rows = []
     for keys, g in d.groupby(group_cols + ["cal_month"], sort=False):
+        keys = keys if isinstance(keys, tuple) else (keys,)
+        result = fit_fn(g[acc_col].to_numpy(dtype=float))
+        params, distribution = result[0], result[1]
+        row = dict(zip(group_cols + ["cal_month"], keys))
+        row["fit_ok"] = params is not None
+        row["fit_params"] = params
+        row["distribution"] = distribution
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def _check_baseline_years(d: pd.DataFrame) -> None:
+    """Rule 4 (CLAUDE.md): baseline fitting never sees data outside 1985-2014."""
+    years = d["month"].dt.year
+    if len(d) and ((years < BASELINE_START_YEAR).any() or (years > BASELINE_END_YEAR).any()):
+        raise ValueError(
+            f"baseline fit received data outside {BASELINE_START_YEAR}-{BASELINE_END_YEAR}: "
+            f"years {years.min()}-{years.max()}"
+        )
+
+
+def fit_baseline_single(acc: pd.DataFrame, acc_col: str, group_cols: list[str], fit_fn) -> pd.DataFrame:
+    """Fit `fit_fn` once per `group_cols` series on ALL 360 baseline values, no calendar-month
+    stratification (COMANDO 18-G, D54 -- adopted for SPEI-12: a 12-month accumulation already
+    removes essentially all seasonality, measured directly, COMANDO 18-F Action 5, mean
+    standardized SPEI by calendar month -0.003 to +0.009).
+
+    Same `fit_fn` contract as `fit_baseline`. The single fit is replicated
+    across `cal_month` 1-12 in the returned table so `standardize()` (which
+    always matches on `group_cols + ["cal_month"]`, computed from each row's
+    own true calendar month) applies it to every month unchanged -- no
+    modification to `standardize()` needed.
+    """
+    d = acc.dropna(subset=[acc_col]).copy()
+    _check_baseline_years(d)
+
+    rows = []
+    for keys, g in d.groupby(group_cols, sort=False):
+        keys = keys if isinstance(keys, tuple) else (keys,)
+        result = fit_fn(g[acc_col].to_numpy(dtype=float))
+        params, distribution = result[0], result[1]
+        row = dict(zip(group_cols, keys))
+        row["fit_ok"] = params is not None
+        row["fit_params"] = params
+        row["distribution"] = distribution
+        rows.append(row)
+    single = pd.DataFrame(rows)
+    months = pd.DataFrame({"cal_month": range(1, 13)})
+    return single.merge(months, how="cross") if len(single) else single.assign(cal_month=pd.Series(dtype=int))
+
+
+def fit_baseline_windowed(acc: pd.DataFrame, acc_col: str, group_cols: list[str], k: int, fit_fn) -> pd.DataFrame:
+    """Fit `fit_fn` per (group_cols, calendar month) using that month's own 30 values PLUS its
+    `k` adjacent calendar months (circular) across all 30 years (COMANDO 18-G, D54 -- adopted
+    for SPEI-3 at k=1, n=90: measured failure rate 7.4% vs. 14.4% for the unwindowed n=30 fit,
+    and k=2's 9.3% is worse -- non-monotonic, consistent with mixing across seasons, so k=1 is
+    the adopted window, not the larger one).
+
+    Same `fit_fn` contract as `fit_baseline`. Unlike the (reverted) regional
+    pool, this never mixes different `group_cols` series -- only widens the
+    TIME window within each series' own record, preserving SPEI's
+    deviation-from-own-climatology definition (COMANDO 18-F, D51's
+    reversion reason).
+    """
+    d = acc.dropna(subset=[acc_col]).copy()
+    _check_baseline_years(d)
+    d["true_month"] = d["month"].dt.month
+
+    parts = []
+    for offset in range(-k, k + 1):
+        tmp = d.copy()
+        tmp["cal_month"] = ((tmp["true_month"] - 1 + offset) % 12) + 1
+        parts.append(tmp)
+    expanded = pd.concat(parts, ignore_index=True)
+
+    rows = []
+    for keys, g in expanded.groupby(group_cols + ["cal_month"], sort=False):
         keys = keys if isinstance(keys, tuple) else (keys,)
         result = fit_fn(g[acc_col].to_numpy(dtype=float))
         params, distribution = result[0], result[1]

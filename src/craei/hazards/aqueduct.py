@@ -197,25 +197,44 @@ def join_plants_to_pfaf(
     return pd.DataFrame(rows).astype({"pfaf_id": "Int64"})
 
 
+# L01: GEM has no cooling-technology field, so H3's freshwater/coastal split
+# (Spec §1.4 H3, §1.2) is approximated by distance to coast rather than an
+# actual cooling-technology flag. Two bounds are reported, not one:
+# "upper" keeps every water-dependent thermal plant (assumes freshwater
+# cooling everywhere, the maximal-exposure case); "lower" excludes plants
+# within `coastal_buffer_km` of the coast (assumes those use seawater
+# cooling and are therefore Aqueduct-irrelevant, the minimal-exposure
+# case). Neither bound is "the" answer; both are reported side by side.
+_COOLING_BOUNDS = ("upper", "lower")
+
+
 def plant_aqueduct_exposure(
     plant_pfaf: pd.DataFrame,
     aqueduct_future: pd.DataFrame,
     aqueduct_baseline: pd.DataFrame | None = None,
+    coastal_flag: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Water-dependent thermal plant exposure to Aqueduct categories.
 
-    Output shape per Spec §3 Step 8: `plant_uid`, `scenario`, `ws_value`,
-    `ws_category`. Baseline `bws_value`/`bws_category` columns are present
-    but all-NaN until `aqueduct_baseline` is supplied (D32).
+    Output shape per Spec §3 Step 8: `plant_uid`, `scenario`,
+    `cooling_bound`, `ws_value`, `ws_category`. Baseline
+    `bws_value`/`bws_category` columns are present but all-NaN until
+    `aqueduct_baseline` is supplied (D32).
 
-    Every plant gets exactly 3 output rows (one per SSP scenario), even if
-    its `pfaf_id` has no match anywhere in `aqueduct_future` (D37 -- observed
-    for some plants whose HydroBASINS polygon has no counterpart in the
-    Aqueduct export, e.g. small islands): those rows get `ws_category`
-    `"no_data"` rather than silently disappearing, which a plain merge on
-    the already scenario-stacked `aqueduct_future` would do (a fully
-    unmatched plant would contribute one NaN-scenario row instead of three
-    "no_data" rows).
+    Every plant gets exactly 3 x 2 output rows (one per SSP scenario x
+    cooling bound), even if its `pfaf_id` has no match anywhere in
+    `aqueduct_future` (D37 -- observed for some plants whose HydroBASINS
+    polygon has no counterpart in the Aqueduct export, e.g. small islands):
+    those rows get `ws_category` `"no_data"` rather than silently
+    disappearing, which a plain merge on the already scenario-stacked
+    `aqueduct_future` would do (a fully unmatched plant would contribute one
+    NaN-scenario row instead of three "no_data" rows).
+
+    `coastal_flag`: `plant_uid`, `coastal_<N>km` (bool, from
+    `plants.parquet`, L01's coastal cutoff). If given, the "lower" cooling
+    bound drops rows for plants where this is True (assumed seawater-cooled,
+    Aqueduct-irrelevant); if omitted, "lower" is identical to "upper" (no
+    coastal information available to narrow it).
     """
     scenarios = pd.DataFrame({"scenario": sorted(set(_SCENARIO_TO_SSP.values()))})
     plant_scenario = plant_pfaf.merge(scenarios, how="cross")
@@ -240,6 +259,17 @@ def plant_aqueduct_exposure(
         out["bws_value"] = pd.NA
         out["bws_category"] = pd.NA
 
-    return out[
-        ["plant_uid", "scenario", "ws_value", "ws_category", "bws_value", "bws_category"]
+    out = out[["plant_uid", "scenario", "ws_value", "ws_category", "bws_value", "bws_category"]]
+
+    upper = out.copy()
+    upper["cooling_bound"] = "upper"
+    lower = out.copy()
+    lower["cooling_bound"] = "lower"
+    if coastal_flag is not None:
+        coastal_col = [c for c in coastal_flag.columns if c.startswith("coastal_")][0]
+        is_coastal = coastal_flag.set_index("plant_uid")[coastal_col]
+        lower = lower[~lower["plant_uid"].map(is_coastal).fillna(False)]
+
+    return pd.concat([upper, lower], ignore_index=True)[
+        ["plant_uid", "scenario", "cooling_bound", "ws_value", "ws_category", "bws_value", "bws_category"]
     ]

@@ -1,26 +1,28 @@
-"""COMANDO 17: SPEI-12, SPEI-3 and SPI-12 (Spec §1.4 H2, §3 Step 6).
+"""COMANDO 17/18-G: SPEI-12, SPEI-3 and SPI-12 via per-series temporal
+fitting (Spec §1.4 H2, §3 Step 6; docs/DECISIONS.md D54/D55).
 
-Reads COMANDO 16's monthly water balance (`water_balance_catchment.parquet`
-for hydro at catchment scale, `water_balance_cell.parquet` for
-water-dependent thermal at cell scale). For each group (plant/cell x model),
-D = P - PET is 12-month accumulated (also 3-month for run-of-river hydro
-plants); SPEI uses `spei.fit_spei_distribution`'s hybrid PWM
-log-logistic + Pearson III MLE fallback (COMANDO 17-F, `docs/DECISIONS.md`
-D45) per calendar month on 1985-2014 baseline data only, applied to both
-periods; SPI-12 does the same with a gamma fit on P alone, unaffected by
-the hybrid. Processed one country/model at a
-time with explicit memory release, per COMANDOS 15/16 (`docs/DECISIONS.md`
-D41) -- required here too (COMANDO 17 Action 1), not optional: an earlier
-version of this script loaded and processed the full water-balance tables in
-one call and `MemoryError`'d on this ~6 GB machine (see `craei.rolling` and
-`docs/DECISIONS.md` for the accompanying `accumulate()` vectorization fix;
-this per-(model, country) chunking is the second, independent half of that
-fix -- it bounds each `fit_baseline`/`standardize` call's group count even
-though those no longer concat per group).  Each `model` is read from parquet
-with a predicate-pushdown filter (`filters=[("model", "=", model)]`), so a
-chunk's data is never resident for other models; each `country` subsets
-in-memory via a small id/cell membership set built once from `plants.parquet`
-and `cells_with_catchments_by_country`, not a further parquet read.
+SPEI-12 (hydro catchment and thermal cell) is fit once per (id, model)
+series over all 360 baseline values, no calendar-month stratification
+(`spei.fit_baseline_single`) -- a 12-month accumulation already removes
+essentially all seasonality (COMANDO 18-F Action 5: mean standardized SPEI
+by calendar month -0.003 to +0.009). SPEI-3 (run-of-river only) is fit per
+calendar month using a +/-1 adjacent-month window across all 30 years
+(`spei.fit_baseline_windowed`, k=1, n=90) -- measured failure rate 7.4% vs.
+14.4% for the unwindowed n=30 fit, k=2 is worse (9.3%, non-monotonic,
+mixes seasons). Both use `spei.fit_spei_distribution`'s PWM + Pearson III
+MLE fallback (D55: the F_D gap between the two estimators at n=360, on
+series where both converge, has median 0.000-0.833pp across every country
+and bucket -- well under the 1pp stop threshold, so the fallback is kept,
+not replaced). Neither method mixes different (id, model) series -- unlike
+the reverted regional pool (D51/D52), each series is still standardized
+against its own climatology, not a regional peer group.
+
+SPI-12 is unaffected (gamma on P alone, per (id, model), original n=30
+calendar-month fit -- out of this command's scope, D45's original
+"unaffected" note carries over).
+
+Processed one country/model at a time with explicit memory release, per
+COMANDOS 15/16 (`docs/DECISIONS.md` D41).
 """
 
 import gc
@@ -37,23 +39,27 @@ from craei.hazards.loading import cells_with_catchments_by_country
 SEVERE_THRESHOLD = None  # set from params.yaml in main()
 CLIP_BOUND = None  # set from params.yaml in main()
 TRUNCATED_CELLS_WEIGHT_FLAG_THRESHOLD = 0.2  # Action 4: named-basin cutoff (spec-stated value)
+SPEI3_WINDOW_K = 1  # D54: k=1 (n=90) adopted, k=2 measured worse (COMANDO 18-F)
 
 # docs/LIMITATIONS.md L16, COMANDO 17-C Action 6: Nimoo Bazgo hydroelectric
 # plant (India, 45 MW, basin_id 4060623190) has 100% of its catchment weight
 # on a single PET-truncated glacial cell (COMANDO 16) -- its SPEI-12 would be
 # entirely constructed from a truncation-artifact water balance, not a real
 # one. Excluded from H2 entirely (not imputed); the plant itself stays in
-# plants.parquet (only H2/spei.parquet drops it) since the exclusion reason
-# is specific to this hazard's PET-driven water balance, not the plant's
-# eligibility for H1/H3.
+# plants.parquet (only H2/spei.parquet drops it).
 H2_EXCLUDED_PLANT_IDS = {"5131763b8e53f91a7783faeea1fb15095453fd967630297cac52261097daf54c"}
 
 
-def _fit_and_standardize(acc, acc_col, group_cols, fit_fn, out_col, clip_bound):
+def _fit_and_standardize(acc, acc_col, group_cols, fit_fn, out_col, clip_bound, fit_kind="calendar"):
     baseline_acc = acc[
         (acc["period"] == "baseline") & (acc["month"] >= f"{spei.BASELINE_START_YEAR}-01-01")
     ]
-    fitted = spei.fit_baseline(baseline_acc, acc_col, group_cols, fit_fn)
+    if fit_kind == "single":
+        fitted = spei.fit_baseline_single(baseline_acc, acc_col, group_cols, fit_fn)
+    elif fit_kind == "windowed":
+        fitted = spei.fit_baseline_windowed(baseline_acc, acc_col, group_cols, SPEI3_WINDOW_K, fit_fn)
+    else:
+        fitted = spei.fit_baseline(baseline_acc, acc_col, group_cols, fit_fn)
     out = spei.standardize(acc, acc_col, fitted, group_cols, clip_bound, out_col)
     failures = spei.fit_failure_summary(fitted, group_cols)
     return out, failures
@@ -63,16 +69,9 @@ def process_hydro(water_balance_catchment: pd.DataFrame, run_of_river_ids: set[s
     group_cols = ["id", "model"]
     d_cols = [*group_cols, "scenario", "period", "month", "D"]
 
-    # `accumulate` infers its grouping columns as "every column but month and
-    # value_col" -- passing P/PET along unselected would make every row its
-    # own group (they vary month to month) and silently NaN every
-    # accumulation (COMANDO 17 follow-up: caught only after fixing the
-    # memory crash that had masked it, since the run never got this far
-    # before). Each `accumulate` call below is given exactly its grouping
-    # columns plus the one value column it accumulates.
     acc12 = spei.accumulate(water_balance_catchment[d_cols], window=12, value_col="D")
     spei12, fail12 = _fit_and_standardize(
-        acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound
+        acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound, fit_kind="single"
     )
 
     acc_p12 = spei.accumulate(
@@ -83,13 +82,13 @@ def process_hydro(water_balance_catchment: pd.DataFrame, run_of_river_ids: set[s
         value_col="P_for_acc",
     )
     spi12, _ = _fit_and_standardize(
-        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, "SPI_12", clip_bound
+        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, "SPI_12", clip_bound, fit_kind="calendar"
     )
 
     ror = water_balance_catchment.loc[water_balance_catchment["id"].isin(run_of_river_ids), d_cols]
     acc3 = spei.accumulate(ror, window=3, value_col="D")
     spei3, fail3 = _fit_and_standardize(
-        acc3, "D_acc3", group_cols, spei.fit_spei_distribution, "SPEI_3", clip_bound
+        acc3, "D_acc3", group_cols, spei.fit_spei_distribution, "SPEI_3", clip_bound, fit_kind="windowed"
     )
 
     out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12", "distribution"]].merge(
@@ -113,7 +112,7 @@ def process_thermal_cell(water_balance_cell: pd.DataFrame, clip_bound: float):
 
     acc12 = spei.accumulate(d[[*group_cols, "scenario", "period", "month", "D"]], window=12, value_col="D")
     spei12, fail12 = _fit_and_standardize(
-        acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound
+        acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound, fit_kind="single"
     )
     out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12", "distribution"]].copy()
     out["SPI_12"] = pd.NA
@@ -253,9 +252,9 @@ def main() -> None:
     for period, g in hydro_out.dropna(subset=["SPEI_12"]).groupby("period"):
         print(f"period={period}: first month={g['month'].min()}, last month={g['month'].max()}")
 
-    # COMANDO 17-F Action 5: hybrid PWM+Pearson III fallback -- final failure
-    # rate, distribution split, F_D, and timing.
-    print("\n=== COMANDO 17-F Action 5: hybrid fallback results ===")
+    # COMANDO 18-G: per-series temporal fitting (D54/D55) -- final failure
+    # rate, distribution split, F_D.
+    print("\n=== COMANDO 18-G: per-series temporal fitting results ===")
     spei12_all = out["distribution"].notna() | out["SPEI_12"].notna()
     n_spei12_total = int(spei12_all.sum())
     n_spei12_nan = int(out["SPEI_12"].isna().sum())

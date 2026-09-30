@@ -153,11 +153,29 @@ def test_plant_aqueduct_exposure_classifies_and_leaves_baseline_nan(tmp_path):
 
     out = aq.plant_aqueduct_exposure(plant_pfaf, future)
 
-    assert len(out) == 3  # one row per scenario
-    pes_row = out[out["scenario"] == "ssp585"].iloc[0]
+    assert len(out) == 6  # one row per scenario x 2 cooling bounds (L01)
+    assert set(out["cooling_bound"]) == {"upper", "lower"}
+    pes_row = out[(out["scenario"] == "ssp585") & (out["cooling_bound"] == "upper")].iloc[0]
     assert pes_row["ws_value"] == 0.85
     assert pes_row["ws_category"] == "extremely high"
-    opt_row = out[out["scenario"] == "ssp126"].iloc[0]
+    opt_row = out[(out["scenario"] == "ssp126") & (out["cooling_bound"] == "upper")].iloc[0]
     assert opt_row["ws_category"] == "low"
     assert out["bws_value"].isna().all()
     assert out["bws_category"].isna().all()
+
+
+def test_plant_aqueduct_exposure_lower_cooling_bound_drops_coastal_plants(tmp_path):
+    _write_aqueduct_csv(tmp_path, "Brazil", pfaf_ids=[111])
+    future = aq.load_aqueduct_future(tmp_path, countries={"BRA": "Brazil"})
+    plant_pfaf = pd.DataFrame(
+        {"plant_uid": ["p1", "p2"], "country": ["BRA", "BRA"], "pfaf_id": [111, 111]}
+    )
+    coastal_flag = pd.DataFrame({"plant_uid": ["p1", "p2"], "coastal_5km": [True, False]})
+
+    out = aq.plant_aqueduct_exposure(plant_pfaf, future, coastal_flag=coastal_flag)
+
+    assert len(out) == 9  # 2 plants x 3 scenarios (upper) + 1 plant x 3 scenarios (lower)
+    lower = out[out["cooling_bound"] == "lower"]
+    assert set(lower["plant_uid"]) == {"p2"}
+    upper = out[out["cooling_bound"] == "upper"]
+    assert set(upper["plant_uid"]) == {"p1", "p2"}

@@ -1,21 +1,61 @@
 {
   "project": "CRAEI",
-  "updated": "2026-09-29",
-  "current_command": "C18",
+  "updated": "2026-09-30",
+  "current_command": "C19",
   "phases": [
     {
       "id": "P0",
       "name": "Bootstrap",
       "status": "done",
       "commands": [
-        {"id": "C01", "status": "done", "commit": null, "check": "tree matches plan"},
-        {"id": "C02", "status": "done", "commit": null, "check": "CLAUDE.md <= 80 lines, 8 rules present"},
-        {"id": "C03", "status": "done", "commit": null, "check": "PROGRESS.json valid; 12 D + 4 O; 10 L"},
-        {"id": "C04", "status": "done", "commit": null, "check": "pip install -e . ok; pytest passes; 16 params reported"},
-        {"id": "C05", "status": "done", "commit": null, "check": "paths.local.yaml and data files gitignored"},
-        {"id": "P0-R", "status": "done", "commit": null, "check": "phase review approved"},
-        {"id": "P0-C", "status": "done", "commit": null, "check": "git status clean; git log -1 shows message"},
-        {"id": "C06", "status": "done", "commit": "39afbb9", "check": "gh run list -L 1 shows CI success"}
+        {
+          "id": "C01",
+          "status": "done",
+          "commit": null,
+          "check": "tree matches plan"
+        },
+        {
+          "id": "C02",
+          "status": "done",
+          "commit": null,
+          "check": "CLAUDE.md <= 80 lines, 8 rules present"
+        },
+        {
+          "id": "C03",
+          "status": "done",
+          "commit": null,
+          "check": "PROGRESS.json valid; 12 D + 4 O; 10 L"
+        },
+        {
+          "id": "C04",
+          "status": "done",
+          "commit": null,
+          "check": "pip install -e . ok; pytest passes; 16 params reported"
+        },
+        {
+          "id": "C05",
+          "status": "done",
+          "commit": null,
+          "check": "paths.local.yaml and data files gitignored"
+        },
+        {
+          "id": "P0-R",
+          "status": "done",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P0-C",
+          "status": "done",
+          "commit": null,
+          "check": "git status clean; git log -1 shows message"
+        },
+        {
+          "id": "C06",
+          "status": "done",
+          "commit": "39afbb9",
+          "check": "gh run list -L 1 shows CI success"
+        }
       ]
     },
     {
@@ -23,11 +63,36 @@
       "name": "Blocking verifications",
       "status": "done",
       "commands": [
-        {"id": "C07", "status": "done", "commit": "3933799", "check": "per-country counts match file totals"},
-        {"id": "C08", "status": "done", "commit": "3933799", "check": "60/60 combinations covering required periods"},
-        {"id": "C09", "status": "done", "commit": "3933799", "check": "4 sources with confirmed period or open decision"},
-        {"id": "P1-R", "status": "done", "commit": null, "check": "phase review approved"},
-        {"id": "P1-C", "status": "done", "commit": "3933799", "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C07",
+          "status": "done",
+          "commit": "3933799",
+          "check": "per-country counts match file totals"
+        },
+        {
+          "id": "C08",
+          "status": "done",
+          "commit": "3933799",
+          "check": "60/60 combinations covering required periods"
+        },
+        {
+          "id": "C09",
+          "status": "done",
+          "commit": "3933799",
+          "check": "4 sources with confirmed period or open decision"
+        },
+        {
+          "id": "P1-R",
+          "status": "done",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P1-C",
+          "status": "done",
+          "commit": "3933799",
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     },
     {
@@ -35,11 +100,36 @@
       "name": "Data acquisition",
       "status": "todo",
       "commands": [
-        {"id": "C10", "status": "done", "commit": null, "check": "dry-run lists 60 datasets + W5E5 + auxiliaries; pytest passes"},
-        {"id": "C11", "status": "done", "commit": null, "check": "Closed with a reduced criterion (D19-D23 in DECISIONS.md): job gfdl-esm4/historical/tasmax downloaded once (4 decadal files, 7,025,320,822 bytes total), cropped to all 3 countries in the same pass, registered in manifest with sha256 (BRA f04c9e18..., IND 71a6f4ca..., PRT 637718fa...) and content_length; 0 global files remain on disk after crop. Confirmed in ~1376s. Acquisition route decided: direct download + local crop (D19); remote crop ruled out by HDF5 chunking (D20); server-side cutout preferred-but-blocked, not a phase prerequisite (D21); NEX-GDDP-CMIP6 documented as Plan B with numeric trigger, not activated (D22-D23)."},
-        {"id": "C12", "status": "done", "commit": "5b5d785", "check": "COMPLETE 2026-09-28: 60/60 jobs, 180/180 country crops registered in the manifest (5 models x 4 scenarios x 3 variables x 3 countries). Two of 60 jobs (4: gfdl-esm4/ssp126/tasmax; 24: ipsl-cm6a-lr/ssp585/pr) failed on every restart for days with a rotating, misleading set of symptoms (WinError 32, an xarray guess_engine ValueError, h5py 'file signature not found'); root-caused to a silently corrupted cache file on D: (right byte count, garbage content, a leftover from an earlier interrupted manual promotion) that the cache-hit fast path never re-validated before reuse. Fixed in src/craei/acquire/isimip.py: download_global_files now sequentially re-validates (h5py) every already-cached path before a job's download pool starts, self-healing (delete + redownload) any corruption found, instead of trusting a bare path.exists(); a genuinely transient _ProgressTracker.advance KeyError (an unregistered name when the HEAD size-probe returns 0) was also fixed. Both previously-failing jobs verified to complete end to end against the real cache. DOWNLOAD_CONNECTIONS lowered 3->2 and MIN_FREE_SPACE_BYTES lowered 20GB->12GB earlier in this session for staging-disk headroom; also fixed a real UKESM1-0-LL CMIP6 variant-label bug (r1i1p1f1 hardcoded vs its actual r1i1p1f2) in the metadata-API-down pattern-fallback path."},
-        {"id": "P2-R", "status": "todo", "commit": null, "check": "phase review approved"},
-        {"id": "P2-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C10",
+          "status": "done",
+          "commit": null,
+          "check": "dry-run lists 60 datasets + W5E5 + auxiliaries; pytest passes"
+        },
+        {
+          "id": "C11",
+          "status": "done",
+          "commit": null,
+          "check": "Closed with a reduced criterion (D19-D23 in DECISIONS.md): job gfdl-esm4/historical/tasmax downloaded once (4 decadal files, 7,025,320,822 bytes total), cropped to all 3 countries in the same pass, registered in manifest with sha256 (BRA f04c9e18..., IND 71a6f4ca..., PRT 637718fa...) and content_length; 0 global files remain on disk after crop. Confirmed in ~1376s. Acquisition route decided: direct download + local crop (D19); remote crop ruled out by HDF5 chunking (D20); server-side cutout preferred-but-blocked, not a phase prerequisite (D21); NEX-GDDP-CMIP6 documented as Plan B with numeric trigger, not activated (D22-D23)."
+        },
+        {
+          "id": "C12",
+          "status": "done",
+          "commit": "5b5d785",
+          "check": "COMPLETE 2026-09-28: 60/60 jobs, 180/180 country crops registered in the manifest (5 models x 4 scenarios x 3 variables x 3 countries). Two of 60 jobs (4: gfdl-esm4/ssp126/tasmax; 24: ipsl-cm6a-lr/ssp585/pr) failed on every restart for days with a rotating, misleading set of symptoms (WinError 32, an xarray guess_engine ValueError, h5py 'file signature not found'); root-caused to a silently corrupted cache file on D: (right byte count, garbage content, a leftover from an earlier interrupted manual promotion) that the cache-hit fast path never re-validated before reuse. Fixed in src/craei/acquire/isimip.py: download_global_files now sequentially re-validates (h5py) every already-cached path before a job's download pool starts, self-healing (delete + redownload) any corruption found, instead of trusting a bare path.exists(); a genuinely transient _ProgressTracker.advance KeyError (an unregistered name when the HEAD size-probe returns 0) was also fixed. Both previously-failing jobs verified to complete end to end against the real cache. DOWNLOAD_CONNECTIONS lowered 3->2 and MIN_FREE_SPACE_BYTES lowered 20GB->12GB earlier in this session for staging-disk headroom; also fixed a real UKESM1-0-LL CMIP6 variant-label bug (r1i1p1f1 hardcoded vs its actual r1i1p1f2) in the metadata-API-down pattern-fallback path."
+        },
+        {
+          "id": "P2-R",
+          "status": "todo",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P2-C",
+          "status": "todo",
+          "commit": null,
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     },
     {
@@ -47,10 +137,30 @@
       "name": "Inventory and spatial mapping",
       "status": "done",
       "commands": [
-        {"id": "C13", "status": "done", "commit": "99dd494", "check": "AMENDED 2026-09-20 (D40, COMANDO 18 session): kept + discarded = input total (19,517 = 14,280 kept + 5,237 discarded: 3,114 technology_excluded, 2,105 status_excluded, 18 non_mainland_excluded [new D40 reason, Azores/Madeira out of continental scope], 0 no_coordinate, 0 no_capacity); zero duplicate plant_uid (12,459 plants, down from 12,468 -- 9 fewer, the excluded PRT island plants). D24 added for per-country aeqd projected CRS (Spec §3 Step 1 'projected CRS per country' had no explicit source). plants.parquet has dist_coast_km + coastal_2/5/10km flags. src/craei/inventory/plants.py, scripts/05_plants.py, tests/test_inventory_plants.py (7 tests, synthetic GEM rows, +2 for D40)."},
-        {"id": "C14", "status": "done", "commit": "99dd494", "check": "AMENDED 2026-09-20 (rerun after D40 changed plants.parquet): 100% plants with cell (12,459/12,459); max dist_to_cell_km 49.9; 656 hydro plants (unchanged -- excluded plants were thermal, not hydro), catchment weights sum to 1 for all (0 exceptions); UP_AREA validation 655/656 within 1% (same 1 exception as before, unaffected by D40: IND planned_early plant at 25.19,77.18, 10 upstream basins, 4.51% diff, catchment likely crosses the IND cropped-bbox edge, L12). D25 added for GADM-derived land mask (ISIMIP files carry no ocean NaN). src/craei/spatial/grid.py, src/craei/spatial/catchments.py, scripts/06_spatial.py, tests/test_spatial_grid.py + tests/test_spatial_catchments.py (8 tests, synthetic topology, unchanged)."},
-        {"id": "P3-R", "status": "done", "commit": null, "check": "phase review approved"},
-        {"id": "P3-C", "status": "done", "commit": "99dd494", "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C13",
+          "status": "done",
+          "commit": "99dd494",
+          "check": "AMENDED 2026-09-20 (D40, COMANDO 18 session): kept + discarded = input total (19,517 = 14,280 kept + 5,237 discarded: 3,114 technology_excluded, 2,105 status_excluded, 18 non_mainland_excluded [new D40 reason, Azores/Madeira out of continental scope], 0 no_coordinate, 0 no_capacity); zero duplicate plant_uid (12,459 plants, down from 12,468 -- 9 fewer, the excluded PRT island plants). D24 added for per-country aeqd projected CRS (Spec \u00c2\u00a73 Step 1 'projected CRS per country' had no explicit source). plants.parquet has dist_coast_km + coastal_2/5/10km flags. src/craei/inventory/plants.py, scripts/05_plants.py, tests/test_inventory_plants.py (7 tests, synthetic GEM rows, +2 for D40)."
+        },
+        {
+          "id": "C14",
+          "status": "done",
+          "commit": "99dd494",
+          "check": "AMENDED 2026-09-20 (rerun after D40 changed plants.parquet): 100% plants with cell (12,459/12,459); max dist_to_cell_km 49.9; 656 hydro plants (unchanged -- excluded plants were thermal, not hydro), catchment weights sum to 1 for all (0 exceptions); UP_AREA validation 655/656 within 1% (same 1 exception as before, unaffected by D40: IND planned_early plant at 25.19,77.18, 10 upstream basins, 4.51% diff, catchment likely crosses the IND cropped-bbox edge, L12). D25 added for GADM-derived land mask (ISIMIP files carry no ocean NaN). src/craei/spatial/grid.py, src/craei/spatial/catchments.py, scripts/06_spatial.py, tests/test_spatial_grid.py + tests/test_spatial_catchments.py (8 tests, synthetic topology, unchanged)."
+        },
+        {
+          "id": "P3-R",
+          "status": "done",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P3-C",
+          "status": "done",
+          "commit": "99dd494",
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     },
     {
@@ -58,12 +168,42 @@
       "name": "Hazard indices",
       "status": "todo",
       "commands": [
-        {"id": "C15", "status": "done", "commit": null, "check": "COMPLETE 2026-09-28: baseline P95 exceedance frequency (pooled over 1985-2014, not averaged per year -- a per-year mean was tried first and failed at 3.07-6.03% at sparse-rain cells with few wet days/year, e.g. Rajasthan; the pooled ratio, matching Spec H4's 'by construction' framing, is the correct statistic) is 4.99-5.25% across all cell/model combinations, inside [4.5%, 5.5%]. indices_daily.parquet: 16,876,420 rows (tx35, tx40 annual; n35 monthly; p95_exceedance_frequency and rx5day annual/period per Spec H1/H4). Ran over exactly the 1,871 plant-nearest cells (967 BRA + 862 IND + 42 PRT, `unique_cells_by_country`/`plant_cell.parquet`) -- H1 and H4 are both per-plant indices at a plant's own nearest cell only, so the larger 3,202-cell union COMANDO 16 needed (adding hydro-catchment cells, for H2's catchment-scale water balance) does not apply here; verified 2026-09-28, no recompute needed (see COMANDO 16 follow-up notes on C16 below). src/craei/hazards/heat.py, src/craei/hazards/precip.py (10 tests, synthetic series incl. a P95-unaffected-by-future-rows test per Rule 4), scripts/04_daily_indices.py. Script processes one (country, model, scenario) at a time with explicit del+gc.collect() between steps: this machine has ~6 GB RAM, not the Spec's assumed 32 GB, and an unbatched cross product of country x scenario daily rows hit a MemoryError on the first attempt. AMENDED 2026-09-28 (COMANDO 15 follow-up, O06): the 4.5-5.5% exceedance check above confirms arithmetic (a pooled ratio against its own percentile lands near 5% by construction), not baseline data quality -- it says nothing about whether each cell/model has enough baseline wet days for that P95 to be a stable estimate. The substantive check is the wet-day sample size itself, measured separately: min/P5/median/max wet days (1985-2014) are BRA 1701/2637/4429/8295, IND 334/675/1611/7060, PRT 1863/2065/2624/3982; 0 cells below 300 in any country, 73 (IND only) below 500, 607 (IND only) below 1000; the 10 driest cell/model combinations are all in India's Thar desert region (334-377 wet days); no plant is linked to a cell below 300. See O06 in docs/DECISIONS.md (open, two options not yet chosen) and scripts/audit_wet_day_sample.py / wet_day_sample_size.parquet."},
-        {"id": "C16", "status": "done", "commit": null, "check": "COMPLETE 2026-09-28: FAO-56 Example 8 check reported both values, not assumed (source docs/refs/fao56_example8.md, fetched from the primary FAO document this session): calculated Ra=32.1940 MJ m-2 d-1 vs published 32.2 MJ m-2 d-1 (lat=-20.0, day_of_year=246). TX<TN guard (Action 3): 0 occurrences (0.0000%) in all 60 model/scenario/country combinations, well under the 0.1%-of-days stop threshold -- reported before any treatment, per real data, not assumed clean. PET truncated to zero (Action 4, not an error, see L16): 0 days in Brazil and Portugal, 50,221 cell-days in India (high-altitude cells), out of ~101M total cell-days. Water balance date range confirmed (Action 5): baseline 1984-01 to 2014-12 (starts 1984, not the Spec baseline's 1985, so SPEI-12 in Step 6 has enough history for January 1985), future 2041-01 to 2070-12. Catchment weights sum to 1 for all 656 hydro plants (222 BRA + 393 IND + 41 PRT) after the join to each country's actual cell set (Action 6). Zero NaN in P/PET/D, both water_balance_cell.parquet (23,246,520 rows) and water_balance_catchment.parquet (4,762,560 rows). src/craei/hazards/pet.py (+count_tx_below_tn, daily_pet, catchment_water_balance; 9 tests total), src/craei/hazards/loading.py (+cells_with_catchments_by_country, tasmin_daily, period_years/download_years_span -- the union of plant-nearest-cell and hydro-catchment cells is needed here since a catchment spans more cells than the nearest-cell set Step 4 used: 3,202 cells total (1,993 BRA + 1,155 IND + 54 PRT), vs. C15's 1,871 plant-nearest cells -- H1/H4 do not need the extra 1,331 catchment-only cells, only H2's catchment-scale water balance does, so C15's indices_daily.parquet was not recomputed), scripts/07_water_balance.py. Processed one country/model/scenario at a time (D41 discipline); catchment weighting for each chunk's ~40-400 hydro plants runs as a single merge+groupby, not a further per-plant loop -- already memory-safe at this chunk size. VERIFIED 2026-09-29 (COMANDO 16 follow-up, scripts/audit_tx_tn_and_pet_truncation.py): the TX<TN guard runs on tasmax/tasmin merged by (date, cell_lat, cell_lon) right after loading (K->C only, no other treatment), strict `<`, counted per cell then summed to the country/model/scenario totals already reported -- confirmed 0 TX<TN AND 0 TX==TN in all 60 combinations (so the TX==TN/truncated-PET distinguishability question is moot here: it never occurs on this dataset). tasmax/tasmin are float32 both on disk and as loaded (verified directly), so exact equality is not numerically implausible at that precision; re-ran with a tolerance check (|TX-TN| <= 1e-6, compared in float64) anyway per instruction -- also 0 across all 707,545,940 cell-days tested (all 5 models x 4 scenarios x 3 countries, every plant-catchment cell). docs/METHODS_SPEC.md §1.3 now states this. The 50,221 truncated-PET cell-days trace to 51 distinct India cells (9 at 25-30N, 41 at 30-35N); 855 of these (cell, hydro-plant) catchment-weight pairs belong to 144 of India's 393 hydro plants (37%). REVISED 2026-09-29: an earlier version of this entry claimed the truncation had a specific SPEI-bias direction (relative to the untreated negative PET value); withdrawn -- a negative Hargreaves PET is a formula artifact below T_mean < -17.8 degC, never a physically valid quantity, so there is no meaningful 'untreated' baseline to be biased relative to, and truncating to zero is a correction, not a bias-introducing treatment. The real limitation (L16, docs/LIMITATIONS.md, rewritten) is that Hargreaves-Samani/the water-balance-SPEI framework has no snow accumulation/melt process and so cannot represent a glacial-regime catchment's water balance at all, independent of the truncation choice; affects the same 51 cells / 144 India hydro plants (37% of the country's hydro fleet). No local elevation dataset was available, so altitude was checked indirectly via per-cell mean T_mean on the affected days: min -19.89 degC, median -19.15 degC, max -18.03 degC across all 51 cells -- none above the -17.8 degC formula threshold, confirming all 51 are genuinely extreme-cold cells, not an artifact of a few outlier days."},
-        {"id": "C17", "status": "done", "commit": null, "check": "COMPLETE 2026-09-29: 5/5 calibration tests pass. spei.parquet: 28,009,080 rows (SPEI-12/SPEI-3 catchment-scale hydro incl. run-of-river, SPEI-12 cell-scale water-dependent thermal, SPI-12 hydro). Action 3 F_D baseline (SPEI-12 <= -1.5) per model: median 0.0587-0.0664, P5 0.0332-0.0416, P95 0.0833-0.0932 -- all close to the ~6.7% standard-normal expectation, no acceptable-range assumed ahead of time. Action 4: 48 hydro plants (all India) have >20% of catchment weight on a PET-truncated cell (COMANDO 16's 51 cells), max weight sum 1.0000, median (of the 48 flagged) ~0.40 -- see docs/LIMITATIONS.md L16 for whether this stays a footnote or needs basin names in the article text. Action 5: baseline fit failures counted, not substituted -- 12,752/39,360 (32%) hydro-catchment SPEI-12 calendar-month fits failed (2,271/3,280 groups with >=1), 2,237/15,720 (14%) SPEI-3 run-of-river, 55,780/192,120 (29%) thermal-cell SPEI-12; flagged for author attention, not yet triaged as acceptable or a sample-size problem (candidate O line if MIN_FIT_SAMPLES=8 or the baseline's 30-year-per-calendar-month sample turns out too small). Action 6: baseline period's first valid SPEI-12 is 1984-12 (the extra pre-baseline history month, Spec L05), future's is 2041-12, both consistent with the 12-month lead-in mechanism. Found and fixed two bugs while getting a real run to complete (docs/DECISIONS.md D44): (1) spei.accumulate()'s groupby(...).transform(...) MemoryError'd this ~6 GB machine and left a zombie process that also crashed the Claude Code host process -- replaced with craei.rolling.rolling_sum_by_group (vectorized cumsum/cumcount, no per-group concat), same fix applied to precip.annual_rx5day (COMANDO 15, same pattern, not yet crashed only by luck of smaller chunking); scripts/08_spei.py also now chunks by (model, country) with explicit gc.collect(), per this command's own Action 1 instruction, which the first implementation had not followed. (2) process_hydro's first accumulate() call passed P/PET columns along unselected, silently NaN-ing 100% of D_acc12 (accumulate infers its group key as every non-month/value column) -- masked until (1) was fixed and the run got far enough to reach it. CLAUDE.md Rule 11 (memory discipline) added. src/craei/rolling.py, src/craei/hazards/spei.py, scripts/08_spei.py, tests/test_hazards_spei.py (5 tests). AMENDED 2026-09-29 (COMANDO 17-B/17-C diagnostic follow-up): the 32%/14%/29% fit-failure rate is now fully explained, not just counted. 17-B: every failing (group, calendar-month) has the full 30-sample baseline (median=P5=min=30, 0 below 25) and 0 gaps in 13,120 hydro-catchment + 64,040 thermal-cell (id, model, scenario) series (D41 join is complete) -- ruling out sample size and missing months as causes. 17-C: 100% of failures are `_fit_loglogistic_pwm`'s `beta <= 0` branch (beta range -2.96 to -21,878, a sign flip, not near-zero); 0 due to too few samples or a near-constant series. The hypothesized concentration in India's dry monsoon months is not supported -- failure rate is 16-50% and spread across every calendar month in all 3 countries (Brazil's rate, 36-50%, is if anything higher than India's, 14-37%); failing vs. passing groups show no consistent CV difference. A 2-parameter (loc=0) MLE log-logistic recovers essentially none of the failures (1/12,752, 1/2,255, 1/55,817). Conclusion (docs/DECISIONS.md D45, open): the 3-parameter log-logistic PWM/L-moment estimator is intrinsically numerically fragile for a meaningful fraction of size-30 samples of this data -- a known small-sample weakness of the estimator, not a bug, and not fixable via MIN_FIT_SAMPLES; needs an author decision on whether/how to address the estimator itself. A separate, real correctness gap was found as a byproduct (not asked to be fixed, flagged only): `_fit_loglogistic_pwm` never checks the log-logistic support constraint `loc <= min(sample)` -- 18 (SPEI-3 run-of-river) + 37 (SPEI-12 thermal cell) currently-\"successful\" fits in the committed spei.parquet violate it. COMANDO 17-C Action 6 (D46, closed): plants.parquet gained plant_name and basin_id (C13 rerun, counts unchanged: 12,459 plants, 656 hydro all with basin_id); Nimoo Bazgo hydroelectric plant (India, basin_id 4060623190, 45 MW, the 1 plant with truncated-PET-cell weight sum == 1.0) excluded from H2 (H2_EXCLUDED_PLANT_IDS in scripts/08_spei.py), docs/LIMITATIONS.md L16 amended; spei.parquet rerun, 655/656 hydro plants processed, 28,001,820 rows. New: src/craei/inventory/plants.py (attach_basin_id), scripts/05_plants.py, scripts/audit_spei_fit_diagnostics.py, scripts/audit_spei_pwm_failure_causes.py; 78/78 tests pass. AMENDED 2026-09-29 (COMANDO 17-D): _fit_loglogistic_pwm now rejects loc > min(sample) (log-logistic support restriction, docs/DECISIONS.md D45), verified against COMANDO 17-C's diagnostic count -- exactly 0 hydro catchment / 18 SPEI-3 run-of-river / 37 SPEI-12 thermal cell fits newly rejected, 55 total as predicted. spei.parquet regenerated: 655/656 hydro plants (Nimoo Bazgo excluded), failure rate 12,739/39,300=32.415% hydro catchment (unchanged), 2,252/15,660=14.381% SPEI-3 run-of-river (was 14.266%), 55,817/192,120=29.053% SPEI-12 thermal cell (was 29.034%). 78/78 tests still pass. COMPLETE 2026-09-29 (COMANDO 17-F): SPEI fitting failures eliminated via hybrid PWM (70.4%) + Pearson III MLE fallback (29.6%). Final: 0% failures (0/3,275 hydro catchment, 0/1,305 run-of-river, 0/16,010 thermal-cell (group, calendar-month) combinations; the 3.03% remaining NaN in spei.parquet's SPEI_12 is the pre-existing, documented accumulate() lead-in NaN, Spec L05, unrelated to fitting), F_D=6.21% (hydro+thermal combined, mean over (id, model) groups), 61 min processing (3,649s hybrid vs. 189s/~3.2 min measured PWM-only on the same ~247,000 combinations -- ~19.3x overhead, higher than a pre-measurement ~15x guess; acceptable for this project's batch processing). Nimoo Bazgo (45 MW, India, 100% truncated-PET-cell catchment weight) excluded from H2 (docs/LIMITATIONS.md L16). PWM beta<=0 mathematical limitation (a shape-parameter sign flip under high sample skewness, not a data or sample-size problem) documented in docs/METHODS_SPEC.md Sec. 3 Step 6 note, alongside the hybrid fitting strategy and the measured overhead. docs/DECISIONS.md D45 closed. spei.py's fit_baseline/standardize API changed to carry a per-row distribution (new spei.parquet column); scipy.stats.pearson3.fit's floc=None pitfall found and fixed (raises TypeError, unlike omitting the kwarg). 83/83 tests pass."},
-        {"id": "C18", "status": "blocked", "commit": null, "check": "Aqueduct side fully unblocked 2026-09-20: all of D31-D40/O04/O05 closed. hazards/aqueduct.py has real load_aqueduct_future/join_plants_to_pfaf/plant_aqueduct_exposure/load_aqueduct_baseline; schema confirmed against the primary source (docs/refs/aqueduct40_data_dictionary.md); baseline_annual acquired and deduplicated (D38, empirically exact, no weighting needed). Two correctness bugs found and fixed while running the real water-dependent-thermal-plant join (not just synthetic tests): D36 (WRI's cat=-1 'Arid and Low Water Use' rows have raw=1.0, previously misclassified as 'extremely high' by raw cutoffs alone) and D37 (Azores/Madeira plants were silently snapped to a mainland basin 1000-1800 km away by the shared basin_containing_point nearest-fallback; now rejected beyond 1 degree). Following D37's finding, author decided (D40) to scope the study to continental Portugal only: Azores/Madeira are now excluded at the inventory stage (COMANDO 13 rerun, plants.parquet 12,468->12,459, C14 rerun accordingly), not just given a no_data H3 value, so D37's guard has no PRT case left to catch in the current dataset (kept as a general correctness fix). Real-data counts (1,936 water-dependent thermal plants post-D40): BRA 3/3/3 arid_low_water_use across ssp126/370/585 (1 plant), IND 17/17/17 no_data (unrelated join gap, not an island issue). 10/10 aqueduct tests pass, 58/58 project tests pass. Manifest updated with the 261 MB official zip's sha256 and origin. Remaining, unrelated to Aqueduct data itself: not yet wired into a scripts/08_aqueduct.py entrypoint (this session ran the real join ad hoc), and C15-C17 (separately blocked on the full C12 dataset) are needed to close this command's actual criteria."},
-        {"id": "P4-R", "status": "todo", "commit": null, "check": "phase review approved"},
-        {"id": "P4-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C15",
+          "status": "done",
+          "commit": null,
+          "check": "COMPLETE 2026-09-28: baseline P95 exceedance frequency (pooled over 1985-2014, not averaged per year -- a per-year mean was tried first and failed at 3.07-6.03% at sparse-rain cells with few wet days/year, e.g. Rajasthan; the pooled ratio, matching Spec H4's 'by construction' framing, is the correct statistic) is 4.99-5.25% across all cell/model combinations, inside [4.5%, 5.5%]. indices_daily.parquet: 16,876,420 rows (tx35, tx40 annual; n35 monthly; p95_exceedance_frequency and rx5day annual/period per Spec H1/H4). Ran over exactly the 1,871 plant-nearest cells (967 BRA + 862 IND + 42 PRT, `unique_cells_by_country`/`plant_cell.parquet`) -- H1 and H4 are both per-plant indices at a plant's own nearest cell only, so the larger 3,202-cell union COMANDO 16 needed (adding hydro-catchment cells, for H2's catchment-scale water balance) does not apply here; verified 2026-09-28, no recompute needed (see COMANDO 16 follow-up notes on C16 below). src/craei/hazards/heat.py, src/craei/hazards/precip.py (10 tests, synthetic series incl. a P95-unaffected-by-future-rows test per Rule 4), scripts/04_daily_indices.py. Script processes one (country, model, scenario) at a time with explicit del+gc.collect() between steps: this machine has ~6 GB RAM, not the Spec's assumed 32 GB, and an unbatched cross product of country x scenario daily rows hit a MemoryError on the first attempt. AMENDED 2026-09-28 (COMANDO 15 follow-up, O06): the 4.5-5.5% exceedance check above confirms arithmetic (a pooled ratio against its own percentile lands near 5% by construction), not baseline data quality -- it says nothing about whether each cell/model has enough baseline wet days for that P95 to be a stable estimate. The substantive check is the wet-day sample size itself, measured separately: min/P5/median/max wet days (1985-2014) are BRA 1701/2637/4429/8295, IND 334/675/1611/7060, PRT 1863/2065/2624/3982; 0 cells below 300 in any country, 73 (IND only) below 500, 607 (IND only) below 1000; the 10 driest cell/model combinations are all in India's Thar desert region (334-377 wet days); no plant is linked to a cell below 300. See O06 in docs/DECISIONS.md (open, two options not yet chosen) and scripts/audit_wet_day_sample.py / wet_day_sample_size.parquet."
+        },
+        {
+          "id": "C16",
+          "status": "done",
+          "commit": null,
+          "check": "COMPLETE 2026-09-28: FAO-56 Example 8 check reported both values, not assumed (source docs/refs/fao56_example8.md, fetched from the primary FAO document this session): calculated Ra=32.1940 MJ m-2 d-1 vs published 32.2 MJ m-2 d-1 (lat=-20.0, day_of_year=246). TX<TN guard (Action 3): 0 occurrences (0.0000%) in all 60 model/scenario/country combinations, well under the 0.1%-of-days stop threshold -- reported before any treatment, per real data, not assumed clean. PET truncated to zero (Action 4, not an error, see L16): 0 days in Brazil and Portugal, 50,221 cell-days in India (high-altitude cells), out of ~101M total cell-days. Water balance date range confirmed (Action 5): baseline 1984-01 to 2014-12 (starts 1984, not the Spec baseline's 1985, so SPEI-12 in Step 6 has enough history for January 1985), future 2041-01 to 2070-12. Catchment weights sum to 1 for all 656 hydro plants (222 BRA + 393 IND + 41 PRT) after the join to each country's actual cell set (Action 6). Zero NaN in P/PET/D, both water_balance_cell.parquet (23,246,520 rows) and water_balance_catchment.parquet (4,762,560 rows). src/craei/hazards/pet.py (+count_tx_below_tn, daily_pet, catchment_water_balance; 9 tests total), src/craei/hazards/loading.py (+cells_with_catchments_by_country, tasmin_daily, period_years/download_years_span -- the union of plant-nearest-cell and hydro-catchment cells is needed here since a catchment spans more cells than the nearest-cell set Step 4 used: 3,202 cells total (1,993 BRA + 1,155 IND + 54 PRT), vs. C15's 1,871 plant-nearest cells -- H1/H4 do not need the extra 1,331 catchment-only cells, only H2's catchment-scale water balance does, so C15's indices_daily.parquet was not recomputed), scripts/07_water_balance.py. Processed one country/model/scenario at a time (D41 discipline); catchment weighting for each chunk's ~40-400 hydro plants runs as a single merge+groupby, not a further per-plant loop -- already memory-safe at this chunk size. VERIFIED 2026-09-29 (COMANDO 16 follow-up, scripts/audit_tx_tn_and_pet_truncation.py): the TX<TN guard runs on tasmax/tasmin merged by (date, cell_lat, cell_lon) right after loading (K->C only, no other treatment), strict `<`, counted per cell then summed to the country/model/scenario totals already reported -- confirmed 0 TX<TN AND 0 TX==TN in all 60 combinations (so the TX==TN/truncated-PET distinguishability question is moot here: it never occurs on this dataset). tasmax/tasmin are float32 both on disk and as loaded (verified directly), so exact equality is not numerically implausible at that precision; re-ran with a tolerance check (|TX-TN| <= 1e-6, compared in float64) anyway per instruction -- also 0 across all 707,545,940 cell-days tested (all 5 models x 4 scenarios x 3 countries, every plant-catchment cell). docs/METHODS_SPEC.md \u00c2\u00a71.3 now states this. The 50,221 truncated-PET cell-days trace to 51 distinct India cells (9 at 25-30N, 41 at 30-35N); 855 of these (cell, hydro-plant) catchment-weight pairs belong to 144 of India's 393 hydro plants (37%). REVISED 2026-09-29: an earlier version of this entry claimed the truncation had a specific SPEI-bias direction (relative to the untreated negative PET value); withdrawn -- a negative Hargreaves PET is a formula artifact below T_mean < -17.8 degC, never a physically valid quantity, so there is no meaningful 'untreated' baseline to be biased relative to, and truncating to zero is a correction, not a bias-introducing treatment. The real limitation (L16, docs/LIMITATIONS.md, rewritten) is that Hargreaves-Samani/the water-balance-SPEI framework has no snow accumulation/melt process and so cannot represent a glacial-regime catchment's water balance at all, independent of the truncation choice; affects the same 51 cells / 144 India hydro plants (37% of the country's hydro fleet). No local elevation dataset was available, so altitude was checked indirectly via per-cell mean T_mean on the affected days: min -19.89 degC, median -19.15 degC, max -18.03 degC across all 51 cells -- none above the -17.8 degC formula threshold, confirming all 51 are genuinely extreme-cold cells, not an artifact of a few outlier days."
+        },
+        {
+          "id": "C17",
+          "status": "done",
+          "commit": null,
+          "check": "COMPLETE 2026-09-29: 5/5 calibration tests pass. spei.parquet: 28,009,080 rows (SPEI-12/SPEI-3 catchment-scale hydro incl. run-of-river, SPEI-12 cell-scale water-dependent thermal, SPI-12 hydro). Action 3 F_D baseline (SPEI-12 <= -1.5) per model: median 0.0587-0.0664, P5 0.0332-0.0416, P95 0.0833-0.0932 -- all close to the ~6.7% standard-normal expectation, no acceptable-range assumed ahead of time. Action 4: 48 hydro plants (all India) have >20% of catchment weight on a PET-truncated cell (COMANDO 16's 51 cells), max weight sum 1.0000, median (of the 48 flagged) ~0.40 -- see docs/LIMITATIONS.md L16 for whether this stays a footnote or needs basin names in the article text. Action 5: baseline fit failures counted, not substituted -- 12,752/39,360 (32%) hydro-catchment SPEI-12 calendar-month fits failed (2,271/3,280 groups with >=1), 2,237/15,720 (14%) SPEI-3 run-of-river, 55,780/192,120 (29%) thermal-cell SPEI-12; flagged for author attention, not yet triaged as acceptable or a sample-size problem (candidate O line if MIN_FIT_SAMPLES=8 or the baseline's 30-year-per-calendar-month sample turns out too small). Action 6: baseline period's first valid SPEI-12 is 1984-12 (the extra pre-baseline history month, Spec L05), future's is 2041-12, both consistent with the 12-month lead-in mechanism. Found and fixed two bugs while getting a real run to complete (docs/DECISIONS.md D44): (1) spei.accumulate()'s groupby(...).transform(...) MemoryError'd this ~6 GB machine and left a zombie process that also crashed the Claude Code host process -- replaced with craei.rolling.rolling_sum_by_group (vectorized cumsum/cumcount, no per-group concat), same fix applied to precip.annual_rx5day (COMANDO 15, same pattern, not yet crashed only by luck of smaller chunking); scripts/08_spei.py also now chunks by (model, country) with explicit gc.collect(), per this command's own Action 1 instruction, which the first implementation had not followed. (2) process_hydro's first accumulate() call passed P/PET columns along unselected, silently NaN-ing 100% of D_acc12 (accumulate infers its group key as every non-month/value column) -- masked until (1) was fixed and the run got far enough to reach it. CLAUDE.md Rule 11 (memory discipline) added. src/craei/rolling.py, src/craei/hazards/spei.py, scripts/08_spei.py, tests/test_hazards_spei.py (5 tests). AMENDED 2026-09-29 (COMANDO 17-B/17-C diagnostic follow-up): the 32%/14%/29% fit-failure rate is now fully explained, not just counted. 17-B: every failing (group, calendar-month) has the full 30-sample baseline (median=P5=min=30, 0 below 25) and 0 gaps in 13,120 hydro-catchment + 64,040 thermal-cell (id, model, scenario) series (D41 join is complete) -- ruling out sample size and missing months as causes. 17-C: 100% of failures are `_fit_loglogistic_pwm`'s `beta <= 0` branch (beta range -2.96 to -21,878, a sign flip, not near-zero); 0 due to too few samples or a near-constant series. The hypothesized concentration in India's dry monsoon months is not supported -- failure rate is 16-50% and spread across every calendar month in all 3 countries (Brazil's rate, 36-50%, is if anything higher than India's, 14-37%); failing vs. passing groups show no consistent CV difference. A 2-parameter (loc=0) MLE log-logistic recovers essentially none of the failures (1/12,752, 1/2,255, 1/55,817). Conclusion (docs/DECISIONS.md D45, open): the 3-parameter log-logistic PWM/L-moment estimator is intrinsically numerically fragile for a meaningful fraction of size-30 samples of this data -- a known small-sample weakness of the estimator, not a bug, and not fixable via MIN_FIT_SAMPLES; needs an author decision on whether/how to address the estimator itself. A separate, real correctness gap was found as a byproduct (not asked to be fixed, flagged only): `_fit_loglogistic_pwm` never checks the log-logistic support constraint `loc <= min(sample)` -- 18 (SPEI-3 run-of-river) + 37 (SPEI-12 thermal cell) currently-\"successful\" fits in the committed spei.parquet violate it. COMANDO 17-C Action 6 (D46, closed): plants.parquet gained plant_name and basin_id (C13 rerun, counts unchanged: 12,459 plants, 656 hydro all with basin_id); Nimoo Bazgo hydroelectric plant (India, basin_id 4060623190, 45 MW, the 1 plant with truncated-PET-cell weight sum == 1.0) excluded from H2 (H2_EXCLUDED_PLANT_IDS in scripts/08_spei.py), docs/LIMITATIONS.md L16 amended; spei.parquet rerun, 655/656 hydro plants processed, 28,001,820 rows. New: src/craei/inventory/plants.py (attach_basin_id), scripts/05_plants.py, scripts/audit_spei_fit_diagnostics.py, scripts/audit_spei_pwm_failure_causes.py; 78/78 tests pass. AMENDED 2026-09-29 (COMANDO 17-D): _fit_loglogistic_pwm now rejects loc > min(sample) (log-logistic support restriction, docs/DECISIONS.md D45), verified against COMANDO 17-C's diagnostic count -- exactly 0 hydro catchment / 18 SPEI-3 run-of-river / 37 SPEI-12 thermal cell fits newly rejected, 55 total as predicted. spei.parquet regenerated: 655/656 hydro plants (Nimoo Bazgo excluded), failure rate 12,739/39,300=32.415% hydro catchment (unchanged), 2,252/15,660=14.381% SPEI-3 run-of-river (was 14.266%), 55,817/192,120=29.053% SPEI-12 thermal cell (was 29.034%). 78/78 tests still pass. COMPLETE 2026-09-29 (COMANDO 17-F): SPEI fitting failures eliminated via hybrid PWM (70.4%) + Pearson III MLE fallback (29.6%). Final: 0% failures (0/3,275 hydro catchment, 0/1,305 run-of-river, 0/16,010 thermal-cell (group, calendar-month) combinations; the 3.03% remaining NaN in spei.parquet's SPEI_12 is the pre-existing, documented accumulate() lead-in NaN, Spec L05, unrelated to fitting), F_D=6.21% (hydro+thermal combined, mean over (id, model) groups), 61 min processing (3,649s hybrid vs. 189s/~3.2 min measured PWM-only on the same ~247,000 combinations -- ~19.3x overhead, higher than a pre-measurement ~15x guess; acceptable for this project's batch processing). Nimoo Bazgo (45 MW, India, 100% truncated-PET-cell catchment weight) excluded from H2 (docs/LIMITATIONS.md L16). PWM beta<=0 mathematical limitation (a shape-parameter sign flip under high sample skewness, not a data or sample-size problem) documented in docs/METHODS_SPEC.md Sec. 3 Step 6 note, alongside the hybrid fitting strategy and the measured overhead. docs/DECISIONS.md D45 closed. spei.py's fit_baseline/standardize API changed to carry a per-row distribution (new spei.parquet column); scipy.stats.pearson3.fit's floc=None pitfall found and fixed (raises TypeError, unlike omitting the kwarg). 83/83 tests pass."
+        },
+        {
+          "id": "C18",
+          "status": "done",
+          "commit": null,
+          "check": "COMPLETE 2026-09-29 (COMANDO 18, Spec Steps 7-8): new craei.hazards.consolidate (plant_hazards()) joins H1/H2/H4(SI) onto every plant bucketed as hydro_reservoir (incl. pumped storage, D11 precedent), hydro_run_of_river, thermal_water_dependent, thermal_air_only, solar; craei.hazards.aqueduct.plant_aqueduct_exposure gained a cooling_bound dimension (upper/lower, L01, not previously implemented). Real run (scripts/09_consolidate.py, this machine, 68s): plant_hazards.parquet 446,700 rows (394 hydro_reservoir, 262 hydro_run_of_river, 1,280 thermal_water_dependent, 53 thermal_air_only, 10,470 solar plants x their applicable hazards). NaN counts fully explained: ratio NaN 100% for TX35/TX40 (drought-only metric) and for h4_rx5day_pct_change (percentage stored in delta, not ratio, by design); f_d_spei12 ratio NaN in exactly 3/19,200 thermal_water_dependent and 0/9,825 hydro (group, model, scenario) combos, all Action 2 R_D-baseline-zero cases, not fit failures. Action 2 stop condition (>1% R_D-baseline-zero in a bucket) did NOT trigger: 0.000% hydro_reservoir, 0.000% hydro_run_of_river (SPEI-12 and SPEI-3), 0.016% thermal_water_dependent. plant_aqueduct.parquet: 7,311 rows = 1,280 water-dependent thermal plants x 3 SSP scenarios x 2 cooling bounds (7,680) minus 369 rows (123 plants x 3 scenarios) dropped from the lower bound as coastal_5km. Category -1 (arid_low_water_use) and no_data (no Aqueduct match) counts: 0 in every country and both cooling bounds this run -- flagged against an earlier pre-D37/D40-fix ad-hoc session note citing 17 India no_data plants, not reconciled (see docs/DECISIONS.md D47). Validation (Action 4): 0 non-hydro/non-water-thermal plants carry a SPEI hazard row; 0 coastal water-dependent plants leak into the lower cooling bound (both asserted in the script). New: src/craei/hazards/consolidate.py, scripts/09_consolidate.py, tests/test_hazards_consolidate.py (3 tests); tests/test_hazards_aqueduct.py extended (1 new test). 87/88 tests pass (1 skipped, a probabilistic self-skip guard in test_hazards_spei.py, unrelated to this command). docs/DECISIONS.md D47, docs/LIMITATIONS.md L01 amended, docs/METHODS_SPEC.md Sec 3 Steps 7-8 updated with real measured numbers. Not committed (author review pending, CLAUDE.md rule 8). AMENDED 2026-09-29 (COMANDO 18-B reconciliation): the 17 India/1 Brazil no_data/arid_low_water_use discrepancy vs. an earlier ad-hoc note is fully explained (docs/DECISIONS.md D47 amendment) -- that note filtered plants by water_dependent==True (1,936 plants, wrongly including 656 hydro plants) instead of tech_class==\"thermal_water_dependent\" (1,280); reproduced exactly with the old filter. -1 confirmed never read as a numeric category (checked before the raw-value branch). Baseline confirmed present as bws_value/bws_category columns on every row (0/7,311 NaN), not a 4th row; Spec H3 has no formal baseline-to-2050 delta/ratio, so none is precomputed. Bucket name literal duplication found and fixed (scripts/09_consolidate.py hardcoded a 3-bucket list; now imports consolidate.py's now-public BUCKET_* constants). Solar/SI distinction: bucket==\"solar\" and hazard names prefixed h4_ both identify Supplementary Information rows; solar's own PV temperature-loss metric (Spec Solar SI) is NOT implemented, flagged as a real gap. Rx5day % change hand-verified against indices_daily.parquet for one cell/model/scenario: manual -2.805% vs parquet -2.804998%, exact match. New docs/LIMITATIONS.md L17: hybrid PWM/Pearson III baseline F_D differs by branch (5.79% vs 7.22%, ~1.4pp), correlated with country via PWM failure-rate skew (D45) -- flagged before C19 aggregation. 87/88 tests pass (unchanged). Not committed. AMENDED 2026-09-29 (COMANDO 18-C, scripts/audit_fd_pwm_vs_pearson3.py, read-only, not part of the production pipeline): is L17's F_D gap a method artifact or real climate? Refit Pearson III on the same baseline D accumulation for a stratified sample (up to 150/bucket/country, ~10 min) of series where PWM already converges normally -- gap survives (median +0.85 to +3.4pp, Pearson III higher in 89-100% of sampled series per stratum), and a high-|skew(D)| subset shows a similar, not larger, gap -- concluded a method artifact of the Pearson III MLE estimator, not primarily real climate (docs/DECISIONS.md D49). Three country-level F_D scenarios reported, none chosen: current hybrid BRA 6.41%/IND 6.19%/PRT 5.91%; Pearson III everywhere (estimated, not a full refit) BRA 7.36%/IND 7.47%/PRT 8.13% -- Portugal ranking reverses to highest; PWM-only excluding non-converged BRA 5.98%/IND 5.78%/PRT 5.81%, smallest cross-country spread. docs/DECISIONS.md O08 opened: estimator choice affects the cross-country F_D/R_D comparison in the main text, author decision needed before C19 aggregation. PV temperature-loss gap (Action 5) resolved by decision, not left open: NOT implemented (docs/DECISIONS.md D48, docs/LIMITATIONS.md L18) -- needs a new raw-NetCDF daily pass (Spec has no daily TX in indices_daily.parquet), disproportionate cost for a metric the Spec itself frames as a confirmatory footnote; solar's existing H4 rows are kept (Spec requires H4 for all fleets independently). 87/88 tests pass (unchanged, no production code touched this round). Not committed. AMENDED 2026-09-29 (COMANDO 18-D, scripts/audit_pearson3_bias_synthetic.py + scripts/audit_mle_loglogistic_and_2param_fallback.py, read-only): validated whether D49's F_D gap is a bug before O08 goes to the author. Synthetic known-answer test (800 replicates/config, n=30): PWM and Pearson III both carry similar-sized positive small-sample tail bias when correctly specified for their own family (+0.66-1.91pp vs +0.95-1.91pp) -- a shared estimator property, not a Pearson III bug. Code audit: cdf used uniformly (0 uses of .sf() in spei.py), no plotting position in the MLE path, same shared norm.ppf() quantile step for both families -- no asymmetry found. Log-logistic MLE vs PWM (same family, real data): F_D consistently LOWER than PWM (median -1.3 to -4.4pp), opposite direction from Pearson III -- estimator-type effect direction depends on family, reported not adopted. 2-parameter log-logistic fallback: found and fixed a real bug in this audit's own first implementation (stats.fisk.fit(floc=0) silently degenerates to a garbage near-zero-scale fit on samples with negative D, giving a false 100% \"success\" and absurd ~60-76% F_D until a support check was added) -- also present in the pre-existing, closed COMANDO 17-C audit function, flagged not rewritten. Corrected: only 7.151% of PWM 3-param failures rescued this way; country F_D under this option BRA 6.17%/IND 5.88%/PRT 5.89% (still excludes ~93% of the same failures). docs/DECISIONS.md D50 added, O08 rewritten: drops pure exclusion as a neutral option (those are the highest-skew, most drought-relevant series) and adds the measured 2-param option; no option chosen, remains open for the author. 87/88 tests pass (unchanged, no production code touched). Not committed. COMANDO 18-E (2026-09-29): O08 closed by D51 (regional-pool PWM fitting adopted, all 3 prior options rejected), D45 superseded by D52. scripts/08_spei.py rewritten: log-logistic PWM fit once per (country, bucket, calendar month) pool (craei.hazards.consolidate bucket constants reused), applied to every series in the pool; Pearson III fallback removed from production (kept in spei.py, tested, unused). Real run (324.1s): spei.parquet 9,423,480 rows (down from 28M -- thermal cells narrowed to the 643 actually linked to thermal_water_dependent plants, not a pooling effect). Pool sizes 1,800-51,150 (vs n=30 before). Pool fit failures: 0/6 SPEI-12 hydro, 0/3 SPEI-12 thermal, 2/3 SPEI-3 run-of-river pools (3/36 pool-months). Mean F_D by country: BRA 6.49%/IND 6.48%/PRT 5.85% (was 6.41/6.19/5.91 under the hybrid), population-level 6.46% (close to 6.68% target). Synthetic re-test (Action 6) at real pool sizes confirms COMANDO 18-D's n=30 bias (+0.4-1.9pp) collapses to ~0 (-0.01 to +0.02pp) at N=1,800+. Sensitivity (Action 5): pooling by (country, month) only instead of (country, bucket, month) changes the country ranking (IND>BRA>PRT vs BRA>IND>PRT) and nearly doubles the spread (1.16pp vs 0.64pp) -- confirms L17 is material. IMPORTANT: per-series F_D is highly heterogeneous under pooling (median near 0% in most buckets vs mean ~6.5-6.8%) -- flagged in new L17 (replaced). Old COMANDO 17-C degenerate-fit bug (floc=0 support check) fixed in scripts/audit_spei_pwm_failure_causes.py per instruction not to leave it. METHODS_SPEC.md Sec 1.4 H2 rewritten to describe pooling as the method. scripts/09_consolidate.py rerun on the new spei.parquet: plant_hazards.parquet row counts unchanged (446,700, same bucket/hazard breakdown) but R_D-baseline-zero rate jumped to 52.9%/64.3%/24.1%/45.3% by bucket (was ~0.02%) -- triggers the script's own 1% stop condition in every bucket, a direct/expected consequence of pooled standardization (most series baseline F_D near 0 relative to pool). New docs/DECISIONS.md O09 opened: per-plant R_D is not usable for 24-64% of series under pooling, not resolved here (Action 9 only asked to report it). 1 new test (test_fit_baseline_and_standardize_support_regional_pooling). 88/88 tests pass (1 skipped). scripts/audit_pearson3_bias_synthetic.py, audit_mle_loglogistic_and_2param_fallback.py, audit_pool_size_synthetic_bias.py, audit_pool_granularity_sensitivity.py, audit_fd_pwm_vs_pearson3.py are read-only diagnostics, not part of the production pipeline. Not committed (Action 10: present diff, await authorization). COMANDO 18-F (2026-09-30): regional pool (D51/D52) reverted from production (scripts/08_spei.py restored to the committed COMANDO 17-F hybrid, git checkout HEAD; spei.parquet regenerated, verified identical to original 17-F numbers: 6.2139% F_D, 70.4/29.6% split, 3.03% NaN). D51 kept on record with the reversion reason (not deleted); O08 implicitly reopened. Two temporal (same-series) alternatives measured on real, full-population data (scripts/audit_temporal_pooling_variants.py): calendar-month window (k=1 n=90, k=2 n=150) and single per-series fit (n=360, SPEI-12 only). Key finding: all temporal variants keep median/mean F_D ratio near 1 (0.86-1.07, healthy) in every country/bucket, unlike the regional pool's pathological collapse (ratios down to ~0.004); R_D-baseline-zero rate stays 0.00-1.15% under every temporal variant vs the pool's 24-64%. But temporal pooling only modestly reduces PWM's ~30% SPEI-12 convergence failure rate (32.4% to 29.8-31.2%) and helps SPEI-3 substantially only at k=1 (14.4% to 7.4%). Synthetic bias re-test confirms real but partial improvement (+0.26-1.92pp at n=30 down to +0.02-0.18pp at n=360, not the near-zero the spatial pool reached at N=1,800+). Variant (b) seasonal residual: -0.003 to +0.009 across calendar months, negligible. docs/DECISIONS.md D53 written with full comparative table; no option chosen (Action 7, as instructed) -- O08 reopened for author decision among keeping the hybrid, combining hybrid with temporal windowing (untested), or accepting temporal pooling's residual NaN rate. IMPORTANT: plant_hazards.parquet/plant_aqueduct.parquet are now STALE (still reflect the reverted pooled spei.parquet, not rerun this command) -- must not be used until scripts/09_consolidate.py reruns on the restored hybrid data. Old COMANDO 17-C degenerate-fit bug (fixed in COMANDO 18-D/E) stays fixed. 88/88 tests pass (1 skipped, unchanged). Status set to blocked, not done: O08/O09 remain open and plant_hazards.parquet needs a rerun before C18 can close. Not committed. COMANDO 18-G (2026-09-30): O08 closed by D54 (per-series temporal fitting adopted -- SPEI-12 single fit over n=360 baseline values, no calendar split, justified by measured seasonal residual -0.003 to +0.009; SPEI-3 windowed k=1, n=90, justified by failure rate 7.4% vs 14.4% at n=30, k=2 worse at 9.3%). D55 closed: PWM+Pearson III fallback kept -- n=360 gap measured on real full-population data before deciding, median 0.000pp (BRA/IND) to +0.833pp (PRT), all under the 1pp stop threshold (scripts/audit_n360_pwm_vs_pearson3_gap.py). Implemented in src/craei/hazards/spei.py (new fit_baseline_single, fit_baseline_windowed, both reusing the shared 1985-2014 guard, 4 new tests) and scripts/08_spei.py (production, no longer touching group_cols=[country,bucket] pooling). spei.parquet regenerated: 0% total fit failure rate, 73.9%/26.1% loglogistic/pearson3 split, F_D baseline 6.60% (closer to 6.68% target than the original hybrid's 6.21%), 581.5s runtime (vs the original hybrid's 3,649s -- ~6.3x faster, single-fit needs 12x fewer Pearson III calls for SPEI-12). scripts/09_consolidate.py rerun: plant_hazards.parquet 446,700 rows (unchanged structure), R_D-baseline-zero rate 0.000%/0.000%/0.000%/0.203% by bucket (O09 closed, docs/LIMITATIONS.md L19 -- residual cases are a legitimate zero-severe-months result, not an error); plant_aqueduct.parquet 7,311 rows, 0 arid_low_water_use/no_data (unchanged from prior Aqueduct runs). Median/mean F_D ratio 0.93-1.02 across every country and bucket -- confirms production preserves per-series local climatology, no bimodality. L17 withdrawn (no longer a limitation under the adopted method; folded into METHODS_SPEC.md Sec 1.4 H2 as a method note per instruction, gap below the 0.5pp threshold for BRA/IND). METHODS_SPEC.md Sec 1.4 H2 and Sec 3 Step 6 updated to describe the adopted method. 92/92 tests pass (1 skipped, unchanged). C18 marked done: O08 and O09 both closed, both parquets regenerated and consistent with the current spei.parquet. Not committed (Action 9: present diff, await authorization)."
+        },
+        {
+          "id": "P4-R",
+          "status": "todo",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P4-C",
+          "status": "todo",
+          "commit": null,
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     },
     {
@@ -71,10 +211,30 @@
       "name": "Exposure and compound metric",
       "status": "todo",
       "commands": [
-        {"id": "C19", "status": "todo", "commit": null, "check": "MW sums match plants.parquet; synthetic test passes"},
-        {"id": "C20", "status": "todo", "commit": null, "check": "45 rows; fallback count reported"},
-        {"id": "P5-R", "status": "todo", "commit": null, "check": "phase review approved"},
-        {"id": "P5-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C19",
+          "status": "todo",
+          "commit": null,
+          "check": "MW sums match plants.parquet; synthetic test passes"
+        },
+        {
+          "id": "C20",
+          "status": "todo",
+          "commit": null,
+          "check": "45 rows; fallback count reported"
+        },
+        {
+          "id": "P5-R",
+          "status": "todo",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P5-C",
+          "status": "todo",
+          "commit": null,
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     },
     {
@@ -82,9 +242,24 @@
       "name": "Validation",
       "status": "todo",
       "commands": [
-        {"id": "C21", "status": "todo", "commit": null, "check": "5 regions with n_years, rho and CI reported"},
-        {"id": "P6-R", "status": "todo", "commit": null, "check": "phase review approved"},
-        {"id": "P6-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C21",
+          "status": "todo",
+          "commit": null,
+          "check": "5 regions with n_years, rho and CI reported"
+        },
+        {
+          "id": "P6-R",
+          "status": "todo",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P6-C",
+          "status": "todo",
+          "commit": null,
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     },
     {
@@ -92,11 +267,36 @@
       "name": "Sensitivity, figures and release",
       "status": "todo",
       "commands": [
-        {"id": "C22", "status": "todo", "commit": null, "check": "one row per test x main result; ranking-change flag filled"},
-        {"id": "C23", "status": "todo", "commit": null, "check": "5 main figures + Extended Data generated; no calculation in figure modules"},
-        {"id": "C24", "status": "todo", "commit": null, "check": "total time measured and reported per step, on the hardware declared in METHODS_SPEC §3, no ceiling (D43, closes O07); hashes identical; tag created"},
-        {"id": "P7-R", "status": "todo", "commit": null, "check": "phase review approved"},
-        {"id": "P7-C", "status": "todo", "commit": null, "check": "git status clean; git log -1 shows message"}
+        {
+          "id": "C22",
+          "status": "todo",
+          "commit": null,
+          "check": "one row per test x main result; ranking-change flag filled"
+        },
+        {
+          "id": "C23",
+          "status": "todo",
+          "commit": null,
+          "check": "5 main figures + Extended Data generated; no calculation in figure modules"
+        },
+        {
+          "id": "C24",
+          "status": "todo",
+          "commit": null,
+          "check": "total time measured and reported per step, on the hardware declared in METHODS_SPEC \u00c2\u00a73, no ceiling (D43, closes O07); hashes identical; tag created"
+        },
+        {
+          "id": "P7-R",
+          "status": "todo",
+          "commit": null,
+          "check": "phase review approved"
+        },
+        {
+          "id": "P7-C",
+          "status": "todo",
+          "commit": null,
+          "check": "git status clean; git log -1 shows message"
+        }
       ]
     }
   ]

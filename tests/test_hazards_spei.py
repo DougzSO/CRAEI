@@ -29,6 +29,59 @@ def test_fit_baseline_raises_if_data_outside_1985_2014():
         spei.fit_baseline(acc, "D_acc12", ["id", "model"], spei.loglogistic_fit_fn)
 
 
+def test_fit_baseline_single_raises_if_data_outside_1985_2014():
+    rng = np.random.default_rng(0)
+    df = _monthly("p1", "m1", "historical", "1984-01-01", 24, rng.normal(0, 50, 24))
+    acc = spei.accumulate(df, window=12, value_col="D")
+    with pytest.raises(ValueError, match="1985-2014"):
+        spei.fit_baseline_single(acc, "D_acc12", ["id", "model"], spei.loglogistic_fit_fn)
+
+
+def test_fit_baseline_windowed_raises_if_data_outside_1985_2014():
+    rng = np.random.default_rng(0)
+    df = _monthly("p1", "m1", "historical", "1984-01-01", 24, rng.normal(0, 50, 24))
+    acc = spei.accumulate(df, window=12, value_col="D")
+    with pytest.raises(ValueError, match="1985-2014"):
+        spei.fit_baseline_windowed(acc, "D_acc12", ["id", "model"], k=1, fit_fn=spei.loglogistic_fit_fn)
+
+
+def test_fit_baseline_single_fits_once_per_series_and_applies_to_all_months():
+    # D54 (COMANDO 18-G): SPEI-12's adopted method -- one fit per series over
+    # all 360 baseline values, replicated across every calendar month for
+    # standardize()'s merge, not fit per calendar month.
+    rng = np.random.default_rng(1)
+    n_months = 12 * 31
+    values = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=n_months, random_state=rng)
+    df = _monthly("p1", "m1", "historical", "1984-01-01", n_months, values)
+    acc = spei.accumulate(df, window=12, value_col="D")
+    baseline_acc = acc[acc["month"] >= "1985-01-01"]
+
+    fitted = spei.fit_baseline_single(baseline_acc, "D_acc12", ["id", "model"], spei.loglogistic_fit_fn)
+    assert len(fitted) == 12  # replicated across all 12 calendar months
+    assert fitted["fit_ok"].all()
+    assert fitted["fit_params"].apply(lambda p: p["shape"]).nunique() == 1  # same single fit everywhere
+
+    out = spei.standardize(baseline_acc, "D_acc12", fitted, ["id", "model"], clip_bound=3.0, out_col="SPEI_12")
+    assert out["SPEI_12"].notna().all()
+
+
+def test_fit_baseline_windowed_uses_neighboring_calendar_months():
+    # D54: SPEI-3's adopted method -- k=1 window (n=90), never mixing series.
+    rng = np.random.default_rng(2)
+    n_months = 12 * 31
+    values = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=n_months, random_state=rng)
+    df = _monthly("p1", "m1", "historical", "1984-01-01", n_months, values)
+    acc = spei.accumulate(df, window=3, value_col="D")
+    baseline_acc = acc[acc["month"] >= "1985-01-01"]
+
+    fitted = spei.fit_baseline_windowed(baseline_acc, "D_acc3", ["id", "model"], k=1, fit_fn=spei.loglogistic_fit_fn)
+    assert len(fitted) == 12  # one row per calendar month, same schema as fit_baseline
+    assert fitted["fit_ok"].all()
+
+    out = spei.standardize(baseline_acc, "D_acc3", fitted, ["id", "model"], clip_bound=3.0, out_col="SPEI_3")
+    assert out["SPEI_3"].notna().all()
+
+
 def test_fit_baseline_and_standardize_roundtrip_gives_finite_clipped_index():
     rng = np.random.default_rng(1)
     # 1984 extra history year + full 1985-2014 baseline. Drawn from a
@@ -156,6 +209,36 @@ def test_fit_baseline_and_standardize_hybrid_never_leaves_recoverable_nan():
     )
     assert out["SPEI_12"].notna().all()
     assert out["SPEI_12"].between(-3.0, 3.0).all()
+
+
+def test_fit_baseline_and_standardize_support_regional_pooling():
+    # D51/D52 (COMANDO 18-E): production pools by (country, bucket) instead
+    # of (id, model) -- fit_baseline/standardize must support this via the
+    # same generic group_cols, not a separate pooling code path.
+    rng = np.random.default_rng(6)
+    n_months = 12 * 31
+    values_a = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=n_months, random_state=rng)
+    values_b = stats.fisk.rvs(c=3.5, loc=100.0, scale=80.0, size=n_months, random_state=rng)
+    df_a = _monthly("plantA", "m1", "historical", "1984-01-01", n_months, values_a)
+    df_b = _monthly("plantB", "m2", "historical", "1984-01-01", n_months, values_b)
+    df = pd.concat([df_a, df_b], ignore_index=True)
+    df["country"] = "BRA"
+    df["bucket"] = "hydro_reservoir"
+
+    acc = spei.accumulate(df[["id", "model", "scenario", "month", "D", "country", "bucket"]], window=12, value_col="D")
+    baseline_acc = acc[acc["month"] >= "1985-01-01"]
+
+    pool_cols = ["country", "bucket"]
+    fitted = spei.fit_baseline(baseline_acc, "D_acc12", pool_cols, spei.loglogistic_fit_fn)
+    # One pool (BRA, hydro_reservoir) shared by both plants -- 12 calendar-month
+    # fits total, not 24 (one per plant would be the old, unpooled behavior).
+    assert len(fitted) == 12
+    assert fitted["fit_ok"].all()
+
+    out = spei.standardize(baseline_acc, "D_acc12", fitted, pool_cols, clip_bound=3.0, out_col="SPEI_12")
+    # Both plants get standardized values from the SAME pool fit.
+    assert out["SPEI_12"].notna().all()
+    assert set(out["id"]) == {"plantA", "plantB"}
 
 
 def test_severe_drought_frequency_counts_at_or_below_threshold():

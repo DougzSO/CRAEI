@@ -71,7 +71,7 @@ The change metric is ΔTX35 = TX35_future − TX35_baseline (days yr⁻¹). A di
 
 PET_d = 0.0023 × 0.408 × Ra_d × (T̄_d + 17.8) × (TX_d − TN_d)^0.5,  T̄_d = (TX_d + TN_d)/2
 
-where Ra is extraterrestrial radiation (MJ m⁻² d⁻¹; FAO-56, Eq. 21) and 0.408 converts to mm d⁻¹. The monthly water balance D_m = P_m − PET_m is accumulated over 12 months and fitted per calendar month with a three-parameter log-logistic distribution on 1985-2014; the fitted parameters transform both periods. Values are clipped to [−3, 3]. Severe drought frequency is
+where Ra is extraterrestrial radiation (MJ m⁻² d⁻¹; FAO-56, Eq. 21) and 0.408 converts to mm d⁻¹. The monthly water balance D_m = P_m − PET_m is accumulated over 12 months for SPEI-12 (3 months for SPEI-3). The three-parameter log-logistic distribution (probability-weighted moments, Vicente-Serrano et al. 2010) is fit per plant or cell and per GCM on that series' own 1985-2014 baseline, never mixed with other plants/cells/models, so standardization always measures a deviation from that series' own local climatology. SPEI-12 is fit once per series on all 360 baseline months together, without separating by calendar month: a 12-month accumulation already removes essentially all seasonal signal from the accumulated series (verified directly: mean standardized SPEI-12 by calendar month is within ±0.01 of zero in every month). SPEI-3 retains a calendar-month fit but widens each month's sample with its two immediate neighboring calendar months across all 30 years (a 3-month moving window in calendar-month space, not in the accumulation window itself), since a 3-month accumulation keeps more seasonal structure than SPEI-12 does. Where the closed-form estimator does not converge, a Pearson Type III maximum-likelihood fit is used instead (Bobee and Robitaille 1977, about 26% of series for SPEI-12); the two estimators' baseline severe-drought frequency differs by a median at or near zero for two of the three study countries and up to about 0.8 percentage points for the third at this sample size, so the choice between them does not materially affect results. Values are clipped to [−3, 3]. Severe drought frequency is
 
 F_D = fraction of months with SPEI-12 ≤ −1.5,
 
@@ -206,9 +206,9 @@ Time: completed successfully (COMANDO 16, this machine) but without a logged sta
 
 **Step 6. SPEI and SPI**
 Input: Step 5 outputs.
-Processing: 12-month and 3-month accumulation; SPEI is fit per calendar month on 1985-2014 per model via a hybrid PWM log-logistic + Pearson III MLE fallback (COMANDO 17-F, see the Step 6 note below); apply the same parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution. Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
+Processing: 12-month and 3-month accumulation; SPEI-12 is fit once per (id, model) series on its own 360 baseline values (no calendar-month split); SPEI-3 is fit per calendar month with a +/-1 adjacent-month window (n=90); both via PWM log-logistic with a Pearson III MLE fallback where PWM does not converge (docs/DECISIONS.md D54/D55; see the Step 6 note below for the full comparison against alternatives, including a regional pooling approach that was tried and reverted); apply the same per-series parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution, per (id, model) per calendar month, n=30 (unaffected by the SPEI estimator choice). Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
 Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12, distribution).
-Time: measured (COMANDO 17-F, this machine, fit+standardize loop only): 3,649s (~61 min) with the hybrid fallback vs. 189s (~3.2 min) PWM-only on the same data -- ~19.3x overhead (see the Step 6 note below).
+Time: measured (this machine, fit+standardize loop only, D54's per-series temporal method): **581.5s (~9.7 min)** -- faster than the earlier per-calendar-month hybrid's 3,649s (~61 min, D45/17-F) because SPEI-12's single per-series fit needs one fit attempt per series instead of twelve, cutting the number of (slower) Pearson III MLE calls by roughly the same factor.
 
 **Step 6 note: PWM log-logistic fit failures and hybrid fallback (COMANDO 17-C/17-D/17-E/17-F; `docs/DECISIONS.md` D45, closed)**
 
@@ -356,15 +356,15 @@ the standard log-logistic estimator.
 
 **Step 7. Plant-level hazard table**
 Input: Steps 3-6.
-Processing: join indices to plants; compute ΔTX35, ΔTX40, F_D, R_D, R95 ratio, ΔRx5day per plant, model, scenario.
-Output: `plant_hazards.parquet` (plant_uid, model, scenario, hazard, baseline_value, future_value, delta, ratio).
-Time: 0.5 h (not measured).
+Processing (`craei.hazards.consolidate`, COMANDO 18): plants are assigned one bucket each (hydro_reservoir incl. pumped storage, hydro_run_of_river, thermal_water_dependent, thermal_air_only, solar); ΔTX35/ΔTX40 (cell-scale) for the two thermal buckets, F_D/R_D of catchment-scale SPEI-12 for hydro (plus catchment-scale SPEI-3, additional not substitute, for run-of-river) and cell-scale SPEI-12 for water-dependent thermal (SPEI, not SPI -- SPI-12 is COMANDO 22's sensitivity test), and H4 (Supplementary Information: p95 exceedance-frequency ratio, Rx5day percentage change) for every bucket with a linked cell. R_D is left `NaN`, not computed, when the baseline F_D is exactly zero (rare by construction, F_D's baseline expectation is ~6.2%, D45); this is counted, not silently substituted.
+Output: `plant_hazards.parquet` (plant_uid, bucket, model, scenario, hazard, baseline_value, future_value, delta, ratio).
+Time: measured, COMANDO 18, this machine: **68s** (script wall time, includes Step 8). 446,700 rows (5,910 hydro_reservoir F_D-SPEI12 + 2 H4 hazards x 394 plants x 5 models x 3 scenarios; 3,915 hydro_run_of_river F_D-SPEI12 + F_D-SPEI3 x 262 x 5 x 3, plus H4; 19,200 x 4 hazards thermal_water_dependent (1,280 plants); 795 x 4 hazards thermal_air_only (53 plants); 157,050 x 2 H4-only hazards solar (10,470 plants)). R_D-baseline-zero rate (Action 2, stop threshold 1%): 0.000% hydro_reservoir, 0.000% hydro_run_of_river (both SPEI series), 0.016% thermal_water_dependent (3/19,200) -- did not trigger the stop condition. See docs/DECISIONS.md D47 for the full breakdown.
 
 **Step 8. Aqueduct water stress**
-Input: Aqueduct 4.0 `future_annual` `ws` (2050, 3 scenarios; local export present, `pfaf_id`-keyed) and `baseline_annual` `bws` (not yet exported — see DECISIONS.md D32).
-Processing: join to water-dependent thermal plants by catchment `pfaf_id`; categories.
-Output: `plant_aqueduct.parquet` (plant_uid, scenario, ws_value, ws_category) for the join skeleton; baseline columns added once D32 is resolved.
-Time: 0.5 h (not measured).
+Input: Aqueduct 4.0 `future_annual` `ws` (2050, 3 scenarios, `pfaf_id`-keyed) and `baseline_annual` `bws` (acquired and deduplicated to (country, pfaf_id), D32/D38).
+Processing: water-dependent thermal plants joined to their containing HydroBASINS polygon's `pfaf_id` (D37's distance-guarded nearest match); Aqueduct categories applied as published (D33/D36); two cooling bounds reported per L01 (D47) -- "upper" (all water-dependent thermal plants) and "lower" (same set excluding plants within `coastal_buffer_km`=5 km of the coast).
+Output: `plant_aqueduct.parquet` (plant_uid, scenario, cooling_bound, ws_value, ws_category, bws_value, bws_category).
+Time: measured, COMANDO 18, this machine: included in Step 7's 68s (single script run). 7,311 rows = 1,280 water-dependent thermal plants x 3 scenarios x 2 cooling bounds (7,680) minus 369 rows (123 plants x 3 scenarios) excluded from "lower" as coastal. 0 plants in category -1 ("arid_low_water_use") or "no_data" (no Aqueduct match) in this run, in any country or cooling bound (see D47 for a discrepancy this raises against an earlier ad-hoc session note, not reconciled).
 
 **Step 9. Exposure aggregation and agreement**
 Input: Steps 1, 7, 8.

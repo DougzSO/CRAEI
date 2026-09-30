@@ -111,12 +111,26 @@ def pwm_diagnostic(values: np.ndarray) -> dict:
 
 
 def two_param_recovers(values: np.ndarray) -> bool:
-    """Action 5: does fixing loc=0 (2-parameter log-logistic MLE) let a failing sample fit?"""
+    """Action 5: does fixing loc=0 (2-parameter log-logistic MLE) let a failing sample fit?
+
+    FIXED (COMANDO 18-E, Action 3): the original version here only checked
+    `isfinite(c) and isfinite(scale) and scale > 0`, which does not catch
+    `floc=0` being a support violation whenever `values` has any entry
+    below 0 (fisk's support with loc fixed at 0 is `[0, inf)`) -- in that
+    case `scipy.stats.fisk.fit` does not raise, it silently converges to a
+    numerically degenerate near-delta-function fit (observed: `scale`
+    ~1e-26 on a real failing sample with 37% negative values), which still
+    passed the old check and would have been miscounted as a "recovery".
+    COMANDO 18-D's independent audit script found the same gap in its own
+    first draft and fixed it the same way before this one was corrected.
+    """
+    if values.min() < 0.0:  # fisk support [loc, inf) with loc fixed at 0
+        return False
     try:
         c, loc, scale = stats.fisk.fit(values, floc=0.0)
     except Exception:
         return False
-    return np.isfinite(c) and np.isfinite(scale) and scale > 0
+    return np.isfinite(c) and np.isfinite(scale) and scale > 1e-6
 
 
 def diagnose(
