@@ -219,7 +219,7 @@
         },
         {
           "id": "C20",
-          "status": "todo",
+          "status": "done",
           "commit": null,
           "check": "45 rows; fallback count reported"
         },
