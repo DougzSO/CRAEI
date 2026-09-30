@@ -101,11 +101,20 @@ S_hydro(m) = Σ_{i∈hydro} Cap_i × 1[SPEI-12_i(m) ≤ −1.5] / Σ Cap_i (shar
 
 H_thermal(m) = Σ_{j∈thermal} Cap_j × N35_j(m) / Σ Cap_j (capacity-weighted number of TX35 days in the month)
 
-A compound month occurs when both series exceed their own 90th percentile estimated on 1985-2014 of the same model (if the S_hydro percentile is zero, any value above zero qualifies). Under independence the baseline frequency is about 1%; the metric is the future-to-baseline likelihood ratio LR_C = F_C,future / F_C,baseline. The national aggregation is justified by interconnection in Brazil (SIN) and India (national grid) and by Iberian market coupling for Portugal.
+A compound month occurs when both series exceed their own 90th percentile estimated on 1985-2014 of the same model (if the S_hydro percentile is zero, any value above zero qualifies). Under independence the baseline frequency is about 1%. The national aggregation is justified by interconnection in Brazil (SIN) and India (national grid) and by Iberian market coupling for Portugal.
+
+**Metric closure (D63, COMANDO 22, current state, supersedes the LR_C design below this paragraph)**: the future-to-baseline likelihood ratio LR_C = F_C,future / F_C,baseline, as originally specified, is not used as the headline quantity. A direct diagnostic found that in 13 of 45 country x scenario x model cells, at least one of S_hydro or H_thermal exceeds its own baseline P90 in a majority of future months (worst case: Brazil x UKESM1-0-LL, 64-92% of future months across the two series and three scenarios). In those cells the ratio `f_compound_observed / (f_s_above * f_h_above)` -- the observed compound frequency divided by what independence of the two marginals would predict -- is close to 1.0, meaning LR_C's large values there come from each series' own baseline-relative drift (a mean shift), not from extra co-occurrence; the P90 threshold has stopped discriminating extremes in those cases. The metric is reported instead as two separate quantities, both computed directly from the already-aggregated monthly series, no new climate data processed:
+
+- `diff_pp` = 100 x (F_C,future - F_C,baseline): the change in compound-month frequency in percentage points. A difference, not a ratio, so it stays well-defined and interpretable even where a marginal's baseline P90 is exceeded most of the time in the future.
+- `dependence_ratio` = F_C,future / (f_s_above,future x f_h_above,future), where `f_s_above,future` and `f_h_above,future` are each series' own share of future months above its baseline P90: observed future co-occurrence over the co-occurrence independence would predict, from the future marginals only. Values near 1.0 mean the two series are behaving independently above their respective thresholds in the future period (no extra coupling to report); values further from 1.0 indicate measurable dependence.
+
+Restricting to the 32 of 45 cells where the percentile threshold still discriminates (both marginals under 50% of future months), `dependence_ratio` is not uniformly 1.0: median 1.23, 5th/95th percentile 0.78/2.69, and 20/32 cells (62.5%) deviate from 1.0 by more than 20%, mostly upward and most pronounced for India. This is reported as a real, moderate finding of positive dependence in a majority of the cells where the question is answerable, not explained away as pure independence -- see §2.3.
 
 ### 1.7 Validation
 
 Validation targets the one sector with open observed response data. SPEI-12 is computed from W5E5 observations (1985-2019) with the same procedure and aggregated to hydro-capacity-weighted series for the four Brazilian subsystems and for Portugal. These are compared with annual natural energy inflow (ENA) from the Brazilian system operator (ONS) and with the hydro productivity index (IPH) published by the Portuguese transmission operator (REN). Statistics: Spearman correlation with 3-year block bootstrap confidence intervals, and the odds ratio of a bottom-tercile inflow year given December SPEI-12 ≤ −1. Short records produce wide intervals, which are reported as such. W5E5 is derived from ERA5, so a comparison of hazard climatology against ERA5 would not be independent and is not used as validation. EM-DAT is used only descriptively in Supplementary Information. India is not validated, which is stated as a limitation.
+
+**Subsystem validation status**: A desagregação por subsistema ONS (N/NE/S/SE) está suspensa para v0.1.0 por ausência de fonte oficial de mapeamento planta→subsistema (ver D62). A validação de Portugal (REN IPH × SPEI-12, n=57 meses) e a correlação nacional Brasil permanecem.
 
 **Portugal / REN IPH (D59-D61, O10-O11, COMANDO 21-23)**: primary validation variable is REN's monthly Hydro Productivity Index (IPH), acquired directly from REN DataHub's `RegimeYearly` endpoint (`craei.acquire.ren`).
 
@@ -152,13 +161,15 @@ Hypotheses to test, with what would falsify them:
 
 For water stress (H3), report [C] GW of water-dependent thermal capacity in high or extremely high bws in 2050 under the upper bound and [C_low] GW under the coastal lower bound. The gap between the two bounds is itself a result: it quantifies how much the unknown cooling technology matters.
 
-### 2.3 Result 2: More frequent coincidence of hydro drought and thermal heat
+### 2.3 Result 2: Compound hydro-drought/thermal-heat months, and whether the co-occurrence is real
 
-`[FIGURE 3: Likelihood ratio of compound months (LR_C) by country and SSP, with individual model points; inset: seasonal distribution of compound months, baseline vs future]`
+**Current state (D63, COMANDO 22)**: Result 2 is no longer reported as a single likelihood ratio LR_C. Two things are reported together instead: how much more often drought and heat now coincide (`diff_pp`, percentage points), and whether that increase reflects genuine co-occurrence beyond what each hazard's own marginal increase would produce on its own (`dependence_ratio`). This split exists because LR_C's ratio framing broke down in 13 of 45 country x scenario x model cells (see §1.6) -- those cells are not dropped, but their large historical-LR_C-style numbers are not quoted as evidence of coupling.
 
-Expected content: baseline compound frequency ~1% of months under independence (to be compared with the empirical baseline, which may be higher if drought and heat co-vary). Future LR_C of [D] in Brazil, [E] in India, [F] in Portugal under SSP3-7.0.
+`[FIGURE 3 (redefined, D63): two panels. Left: diff_pp (percentage-point change in compound-month frequency) by country and SSP, individual model points with median. Right: dependence_ratio by country and SSP, individual model points with median, reference line at 1.0.]`
 
-Interpretation to write: an LR_C well above 1 means that the months with the largest share of hydro capacity in drought increasingly coincide with the months of highest heat stress on thermal plants, weakening the assumption that thermal backup compensates for low hydro output. If LR_C is near 1 in a country, the implication is that hydro-thermal complementarity is preserved there, which is also a useful result. The Brazil case can be connected qualitatively to the 2021 water crisis, without claiming attribution.
+Expected content: `diff_pp` on the order of several to tens of percentage points depending on country/model/SSP (production range observed: -1.1pp to +74.4pp across the 45 cells; Brazil's UKESM1-0-LL cells are the largest, India's are mostly small and some are negative). `dependence_ratio` for the cells where the threshold still discriminates (32/45): median 1.23, most mass between 0.78 and 2.69, with 62.5% of those cells more than 20% away from 1.0, mostly above it -- reported as a real, moderate, country-dependent finding of positive dependence, most pronounced in India, not as "the series are independent everywhere."
+
+Interpretation to write: `diff_pp` states directly how much of the year moves into compound conditions; a large positive value is the headline regardless of whether `dependence_ratio` is near 1 or not. `dependence_ratio` answers a narrower, separate question -- whether the *increase itself* reflects genuine coupling between the two hazards (worth investigating mechanistically, e.g. shared circulation drivers) versus each hazard simply becoming more common on its own (each series' own marginal trend, already covered by Result 1/§2.2, restated jointly). Where `dependence_ratio` is not computable or not meaningful (a marginal above its baseline P90 in a majority of future months, 13/45 cells, mostly Brazil under UKESM1-0-LL and the higher SSPs), the figure and text report `diff_pp` alone for that cell and state explicitly that the co-occurrence question cannot be separated from the mean-shift there. The Brazil case can still be connected qualitatively to the 2021 water crisis via `diff_pp`, without claiming attribution or citing a compounding ratio that cell's own diagnostic does not support. See L21: because both series are aggregated nationally, part of any measured dependence could reflect drought and heat occurring in different regions of the same country in the same month, not a physically co-located event -- this cannot be resolved without the subsystem mapping D62 could not obtain.
 
 ### 2.4 Result 3: The planned pipeline and future hazard
 
@@ -418,10 +429,10 @@ Type: grouped bars with model-range whiskers, by country × technology × SSP; f
 Data: Step 9.
 Message: magnitude of capacity affected, differences between systems, and the size of cooling and model uncertainty relative to scenario differences.
 
-**Figure 3. Hydro drought and thermal heat increasingly coincide.**
-Type: dot plot of LR_C per model with median, by country and SSP; seasonal inset.
-Data: Step 10.
-Message: the central system-level finding on the reliability of thermal backup.
+**Figure 3. Hydro drought and thermal heat increasingly coincide -- and whether that is real coupling.**
+Type: two panels, both dot plots per model with median, by country and SSP. Left: `diff_pp` (percentage-point change in compound-month frequency). Right: `dependence_ratio` (observed future compound frequency over its independence-implied value), reference line at 1.0.
+Data: Step 10 (`compound.csv`, D63 schema).
+Message: the left panel is the central system-level finding on the reliability of thermal backup (how much more often drought and heat now coincide); the right panel states whether that increase reflects genuine coupling between the two hazards or each hazard's own marginal trend, and is left unmarked (or flagged, per §2.3) in cells where a marginal exceeds its baseline P90 in most future months, since the ratio is not meaningful there.
 
 **Figure 4. New capacity is sited into [worsening/similar] conditions.**
 Type: paired bars, operating vs planned (advanced, early), by country and technology.

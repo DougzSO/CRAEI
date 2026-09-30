@@ -169,9 +169,10 @@ def test_compound_baseline_p90_zero_fallback(
     assert row["h_thermal_p90"] == pytest.approx(0.0)
 
 
-def test_compound_summary_lr_c_and_baseline_frequency(
+def test_compound_summary_closed_metric_and_baseline_frequency(
     synthetic_plants, synthetic_spei, synthetic_indices_daily, synthetic_plant_cell
 ):
+    """D63: compound_summary reports diff_pp and dependence_ratio, not LR_C, as the headline."""
     series = compound.build_compound_series(
         synthetic_plants,
         synthetic_spei,
@@ -190,17 +191,26 @@ def test_compound_summary_lr_c_and_baseline_frequency(
     row = row.iloc[0]
 
     # Baseline: month 1 has s_hydro=0.5>0 and h_thermal=20>0 -> compound; the other
-    # 11 months have s_hydro=0 (not >0) -> not compound. f_baseline = 1/12.
-    assert row["f_baseline"] == pytest.approx(1 / 12)
+    # 11 months have s_hydro=0 (not >0) -> not compound. f_baseline_pct = 100/12.
+    assert row["f_baseline_pct"] == pytest.approx(100 / 12)
 
     # Future ssp370: all 3 months have h1 severe (s_hydro=0.5>0); h_thermal>0 only
-    # in month 1 (25>0), months 2-3 have h_thermal=0 (not >0). f_future = 1/3.
-    assert row["f_future"] == pytest.approx(1 / 3)
+    # in month 1 (25>0), months 2-3 have h_thermal=0 (not >0). f_future_pct = 100/3.
+    assert row["f_future_pct"] == pytest.approx(100 / 3)
+    assert row["diff_pp"] == pytest.approx(100 / 3 - 100 / 12)
 
+    # Marginals (future, relative to baseline P90): s_above in all 3 months (0.5>0),
+    # h_above only in month 1 (25>0) -> f_s_above=1.0, f_h_above=1/3.
+    assert row["f_s_above_future"] == pytest.approx(1.0)
+    assert row["f_h_above_future"] == pytest.approx(1 / 3)
+    assert row["f_compound_independence"] == pytest.approx(1.0 * (1 / 3))
+    assert row["dependence_ratio"] == pytest.approx((1 / 3) / (1.0 * (1 / 3)))
+
+    # Legacy lr_c retained, not the headline (D63).
     assert row["lr_c"] == pytest.approx((1 / 3) / (1 / 12))
 
 
-def test_lr_c_nan_when_baseline_frequency_zero():
+def test_diff_pp_and_dependence_ratio_nan_when_denominators_zero():
     series = pd.DataFrame(
         {
             "country": ["B"] * 4,
@@ -208,13 +218,15 @@ def test_lr_c_nan_when_baseline_frequency_zero():
             "scenario": ["historical", "historical", "ssp370", "ssp370"],
             "period": ["baseline", "baseline", "future", "future"],
             "month": pd.to_datetime(["1985-01-01", "1985-02-01", "2041-01-01", "2041-02-01"]),
-            "s_hydro": [0.0, 0.0, 0.5, 0.5],
-            "h_thermal": [0.0, 0.0, 10.0, 10.0],
+            "s_hydro": [0.0, 0.0, 0.0, 0.0],
+            "h_thermal": [0.0, 0.0, 0.0, 0.0],
         }
     )
     thresholds = compound.baseline_thresholds(series, percentile=90)
     flagged = compound.flag_compound_months(series, thresholds)
     summary = compound.compound_summary(flagged)
     row = summary.iloc[0]
-    assert row["f_baseline"] == 0.0
-    assert np.isnan(row["lr_c"])
+    assert row["f_baseline_pct"] == 0.0
+    assert row["diff_pp"] == 0.0  # difference stays well-defined, unlike the old lr_c ratio
+    assert np.isnan(row["dependence_ratio"])  # independence product is 0/0
+    assert np.isnan(row["lr_c"])  # legacy column keeps its old NaN behaviour

@@ -1,7 +1,7 @@
 {
   "project": "CRAEI",
   "updated": "2026-09-30",
-  "current_command": "C21",
+  "current_command": "C23",
   "phases": [
     {
       "id": "P0",
@@ -244,9 +244,9 @@
       "commands": [
         {
           "id": "C21",
-          "status": "todo",
+          "status": "done",
           "commit": null,
-          "check": "5 regions with n_years, rho and CI reported"
+          "check": "CLOSED (Conditional), C21-2/C21-2-FIX, 2026-09-30: PET/SPEI-12/EM-DAT/manifest PASS; plant-subsystem ONS mapping RESOLVED_AS_METHODOLOGICAL_LIMITATION (D62/L20); Portugal REN IPH validated 2015-2019 (D59-D61); India no independent validation (L02)."
         },
         {
           "id": "P6-R",
@@ -269,9 +269,9 @@
       "commands": [
         {
           "id": "C22",
-          "status": "todo",
+          "status": "done",
           "commit": null,
-          "check": "one row per test x main result; ranking-change flag filled"
+          "check": "Phase 7 readiness audit + compound-metric closure, COMANDO 22/22-B/22-C, 2026-09-30: LR_C dropped, closed as diff_pp + dependence_ratio (D63/D64); dependence quantified and reported at the collective level (D65-D67, O12/O13 resolved); two defects found and fixed (D68/D69 region-assignment edge cases; O14 opened). Figure 5 is BLOQUEADA pending O14: validation.csv/emdat_descriptive.csv (Spec Step 11) do not exist and were never implemented -- not lost in the outputs/ reorg. Figures 1-4 and Extended Data: PRONTA/PRONTA COM RESSALVA, cleared for Phase 7. See data/outputs/audit/audit_report.md Section 7 and docs/DECISIONS.md D63-D69/O12-O14."
         },
         {
           "id": "C23",

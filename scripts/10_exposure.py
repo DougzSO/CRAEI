@@ -3,7 +3,8 @@
 Produces `exposure_summary.csv` (main text: H1/H2, operating + planned
 fleets), `exposure_aqueduct.csv` (H3, own table, both cooling bounds) and
 `exposure_si.csv` (Supplementary Information: H4). Output directory comes
-from `config.py`'s `load_paths()["outputs_dir"]`, never a hardcoded path.
+from `config.py`'s `load_paths()["outputs_tables_dir"]` (COMANDO 22-B Part 3:
+`outputs_dir` itself is never written to directly), never a hardcoded path.
 """
 
 from pathlib import Path
@@ -23,8 +24,7 @@ def main() -> None:
     aqueduct = agg.build_exposure_aqueduct(plants, inputs["plant_aqueduct"])
     si = agg.build_exposure_si(plants, inputs["plant_hazards"])
 
-    outputs_dir = Path(paths["outputs_dir"])
-    outputs_dir.mkdir(parents=True, exist_ok=True)
+    outputs_dir = Path(paths["outputs_tables_dir"])
     summary.to_csv(outputs_dir / "exposure_summary.csv", index=False)
     aqueduct.to_csv(outputs_dir / "exposure_aqueduct.csv", index=False)
     si.to_csv(outputs_dir / "exposure_si.csv", index=False)

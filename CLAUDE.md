@@ -50,6 +50,8 @@ single source of truth for all numeric choices and definitions.
     country/model(/scenario) chunk at a time with explicit `del` +
     `gc.collect()` between chunks (COMANDOS 15/16/17 pattern) for anything
     else over the full climate data.
+12. Comandos de auditoria e de decisão metodológica são executados pelo agente principal, 
+não delegados. Subagente serve para tarefa mecânica com critério objetivo de conclusão.
 
 ## Stack
 
@@ -61,6 +63,19 @@ matplotlib, isimip-client, pytest, ruff.
 - `plant_uid` = blake2s hash of `name|lat|lon`.
 - Tabular data: parquet. Gridded data: NetCDF.
 - Scripts: `NN_name.py`, numbered by spec step.
+- `outputs_dir` is never written to directly (COMANDO 22-B Part 3). It has
+  exactly four subdirectories, each exposed by `config.load_paths()` as its
+  own key so a script never builds the path by hand:
+  - `outputs_tables_dir` (`tables/`): the article's own result tables --
+    `exposure_*.csv`, `compound*.csv`, `validation.csv`, `emdat_descriptive.csv`.
+  - `outputs_audit_dir` (`audit/`): `coverage.csv`, `figure_readiness.csv`,
+    `plausibility_report.txt`, `gap_actions.csv`, `audit_report.md`.
+  - `outputs_diagnostics_dir` (`diagnostics/`): one-off command diagnostics
+    (e.g. `c22_*.csv`, `c22b_*.csv`) that back a `DECISIONS.md` entry but are
+    not themselves read by any figure or production script.
+  - `outputs_figures_dir` (`figures/`): Phase 7 rendered figures.
+  A new command's writer script calls `load_paths()["outputs_<subdir>_dir"]`,
+  never `load_paths()["outputs_dir"]` followed by a literal filename.
 
 ## Command flow
 

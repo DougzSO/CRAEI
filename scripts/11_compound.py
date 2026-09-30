@@ -5,7 +5,8 @@ real monthly `n35` series (not just the annual `tx35` total) -- Spec §1.6's
 H_thermal needs it. `compound.assert_n35_monthly` raises and stops the run
 if it does not.
 
-Output directory comes from `config.py`'s `load_paths()["outputs_dir"]`,
+Output directory comes from `config.py`'s `load_paths()["outputs_tables_dir"]`
+(COMANDO 22-B Part 3: `outputs_dir` itself is never written to directly),
 never a hardcoded path.
 """
 
@@ -38,8 +39,7 @@ def main() -> None:
     flagged = compound.flag_compound_months(series, thresholds)
     summary = compound.compound_summary(flagged)
 
-    outputs_dir = Path(paths["outputs_dir"])
-    outputs_dir.mkdir(parents=True, exist_ok=True)
+    outputs_dir = Path(paths["outputs_tables_dir"])
     summary.to_csv(outputs_dir / "compound.csv", index=False)
     flagged.to_parquet(outputs_dir / "compound_months.parquet", index=False)
 
@@ -64,9 +64,24 @@ def main() -> None:
     n_fallback = int(thresholds["s_hydro_p90_is_zero"].sum())
     print(f"Total (country, model) groups with S_hydro P90 = 0: {n_fallback} / {len(thresholds)}")
 
-    print("\nLR_C = NaN count (Action 5, baseline frequency exactly zero):")
+    print("\nlr_c = NaN count (legacy column, baseline frequency exactly zero):")
     nan_lr_c = summary["lr_c"].isna().sum()
     print(f"{nan_lr_c} / {len(summary)} rows")
+
+    print(
+        "\ndiff_pp (closed headline metric, D63) and dependence_ratio "
+        "(observed future compound frequency over independence-implied), by country/scenario/model:"
+    )
+    print(
+        summary[
+            ["country", "scenario", "model", "diff_pp", "dependence_ratio"]
+        ].to_string(index=False)
+    )
+    nan_dep = summary["dependence_ratio"].isna().sum()
+    print(
+        f"\ndependence_ratio = NaN (independence product exactly zero): "
+        f"{nan_dep} / {len(summary)} rows"
+    )
 
     if len(summary) != 45:
         print(

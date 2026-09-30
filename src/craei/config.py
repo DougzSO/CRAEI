@@ -45,7 +45,18 @@ def load_datasets(config_dir: Path = CONFIG_DIR) -> dict:
     return datasets
 
 
+OUTPUTS_SUBDIRS = ("tables", "audit", "diagnostics", "figures")
+
+
 def load_paths(config_dir: Path = CONFIG_DIR) -> dict:
+    """Load `paths.local.yaml`, plus derived `outputs_{subdir}_dir` keys.
+
+    `outputs_dir` itself is never written to directly (COMANDO 22-B, Part 3):
+    every writer uses one of the four subdirectory keys below instead, so a
+    fresh command cannot reintroduce a file at the outputs root by omission.
+    The subdirectories are created here (not lazily inside each script) so
+    every caller of `load_paths()` gets an existing, writable tree.
+    """
     local_path = config_dir / "paths.local.yaml"
     if not local_path.exists():
         raise FileNotFoundError(
@@ -56,4 +67,11 @@ def load_paths(config_dir: Path = CONFIG_DIR) -> dict:
     missing = set(REQUIRED_PATH_KEYS) - paths.keys()
     if missing:
         raise ValueError(f"paths.local.yaml: missing keys {sorted(missing)}")
+
+    outputs_dir = Path(paths["outputs_dir"])
+    for sub in OUTPUTS_SUBDIRS:
+        sub_path = outputs_dir / sub
+        sub_path.mkdir(parents=True, exist_ok=True)
+        paths[f"outputs_{sub}_dir"] = str(sub_path)
+
     return paths

@@ -16,6 +16,12 @@ qualifies" fallback is the same `>` comparison against a 0.0 threshold, so
 no special-cased branch is needed -- `_baseline_thresholds` flags this case
 for reporting only.
 
+D63 (COMANDO 22) closes the metric as a percentage-point change
+(`diff_pp`) plus a dependence check (`dependence_ratio` = observed future
+compound frequency over the independence-implied frequency), not as the
+single future/baseline likelihood ratio LR_C originally specified here --
+see `compound_summary`'s docstring for why.
+
 Restricted to the operating fleet: the Spec text does not split this
 metric by fleet, and `compound.csv`'s schema (country, scenario, model,
 f_baseline, f_future, lr_c) has no fleet column -- an author judgment call,
@@ -207,26 +213,86 @@ def flag_compound_months(series: pd.DataFrame, thresholds: pd.DataFrame) -> pd.D
 
 
 def compound_summary(flagged: pd.DataFrame) -> pd.DataFrame:
-    """`compound.csv`: country, scenario, model, f_baseline, f_future, lr_c.
+    """`compound.csv`: country, scenario, model, and the closed metric (D63).
 
-    `f_baseline` does not vary by scenario (it comes from each model's own
-    historical run) but is repeated once per scenario row, matching the
+    D63 supersedes the LR_C-as-headline design (D58/COMANDO 20): a
+    diagnostic run (COMANDO 22) found that wherever a marginal series
+    (S_hydro or H_thermal) exceeds its own baseline P90 in a majority of
+    future months, the baseline-relative *ratio* LR_C is dominated by that
+    mean shift, not by co-occurrence -- the two series behave close to
+    independently there (`ratio_obs_to_indep` near 1.0), so a large LR_C in
+    those cells is not evidence of coupling. The metric is therefore closed
+    as two separate quantities instead of one ratio:
+
+    - `diff_pp` = f_future_pct - f_baseline_pct: the change in compound-month
+      frequency in percentage points. Immune to the baseline-instability and
+      mean-shift inflation that broke LR_C, since it is a difference, not a
+      ratio.
+    - `dependence_ratio` = f_future / (f_s_above_future * f_h_above_future):
+      observed future compound frequency over what independence of the two
+      *future* marginals would predict. This isolates whether extra
+      co-occurrence exists beyond each series' own marginal increase.
+      `NaN` when the independence product is exactly zero (counted by the
+      caller, not silently produced here, same convention as the old
+      `lr_c` NaN handling).
+
+    `lr_c` (`f_future / f_baseline`) is kept as a secondary, legacy column
+    for continuity with COMANDO 20's original output -- it is not read by
+    any figure or reported as the headline result (D63).
+
+    `f_baseline_pct` does not vary by scenario (it comes from each model's
+    own historical run) but is repeated once per scenario row, matching the
     Spec's stated output shape (one row per country x scenario x model).
-    `lr_c` is NaN, not infinite, when `f_baseline` is exactly zero -- counted
-    by the caller (Action 5), not silently produced here.
     """
     baseline = flagged[flagged["period"] == "baseline"]
     f_baseline = baseline.groupby(["country", "model"], as_index=False).agg(
         f_baseline=("compound", "mean"), n_baseline_months=("compound", "size")
     )
 
-    future = flagged[flagged["period"] == "future"]
+    future = flagged.loc[flagged["period"] == "future"].copy()
+    future["s_above"] = future["s_hydro"] > future["s_hydro_p90"]
+    future["h_above"] = future["h_thermal"] > future["h_thermal_p90"]
     f_future = future.groupby(["country", "model", "scenario"], as_index=False).agg(
-        f_future=("compound", "mean"), n_future_months=("compound", "size")
+        f_future=("compound", "mean"),
+        n_future_months=("compound", "size"),
+        f_s_above_future=("s_above", "mean"),
+        f_h_above_future=("h_above", "mean"),
     )
 
     out = f_future.merge(
-        f_baseline[["country", "model", "f_baseline"]], on=["country", "model"], how="left"
+        f_baseline[["country", "model", "f_baseline", "n_baseline_months"]],
+        on=["country", "model"],
+        how="left",
     )
+    out["f_baseline_pct"] = out["f_baseline"] * 100
+    out["f_future_pct"] = out["f_future"] * 100
+    out["diff_pp"] = out["f_future_pct"] - out["f_baseline_pct"]
+
+    out["f_compound_independence"] = out["f_s_above_future"] * out["f_h_above_future"]
+    out["dependence_ratio"] = np.where(
+        out["f_compound_independence"] > 0,
+        out["f_future"] / out["f_compound_independence"],
+        np.nan,
+    )
+
     out["lr_c"] = np.where(out["f_baseline"] > 0, out["f_future"] / out["f_baseline"], np.nan)
-    return out[["country", "scenario", "model", "f_baseline", "f_future", "lr_c"]]
+
+    return out[
+        [
+            "country",
+            "scenario",
+            "model",
+            "f_baseline_pct",
+            "f_future_pct",
+            "diff_pp",
+            "f_s_above_future",
+            "f_h_above_future",
+            "f_compound_independence",
+            "dependence_ratio",
+            "n_baseline_months",
+            "n_future_months",
+            "lr_c",
+            "f_baseline",
+            "f_future",
+        ]
+    ]
