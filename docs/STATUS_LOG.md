@@ -26,3 +26,5 @@
 | 2026-10-01 | C35 | done | work plan section G (commit map from git log, floor 164, remaining steps); O25 closed; D84 option A restored; O26 opened (base geography) |
 | 2026-10-01 | W3f-1 | done | Table 1 of Axis 1 joined from W3 tables (exposure/heat_table1.py, w3_table1.py, 3 tests), O25 rule applied; geo_base.py wrote Natural Earth Brazil layers (O26); pytest 167 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C36 | done | D87 accepted, O17 closed, O26 resolved, ruff config note appended to DECISIONS |
+| 2026-10-01 | W3f-3 | done | paired scenario contrast with cell bootstrap (exposure/heat_scenario.py, w3_scenario.py, 3 tests); same draws as W3d checked against w3_heat_bootstrap_shares; per-GCM differences checked against W3a curves; pytest 170 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | C37 | done | D80 and D81 accepted; geography details and Table 1 agreement checks appended to DECISIONS |
