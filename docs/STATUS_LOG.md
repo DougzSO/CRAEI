@@ -40,3 +40,4 @@
 | 2026-10-01 | W3f-6 | done | GCM exclusion: 7 sets, contrast and fuel order under exclusion; 5-GCM checks PASS |
 | 2026-10-01 | C43 | done | W3f-6 docs registered |
 | 2026-10-01 | C44 | done | D88 co-located exposure and lenses; O28-O33; METHODS_SPEC v2.1 addendum; plan G addendum 3 |
+| 2026-10-01 | C45 | done | O28 cuts amended to 10/30/60; O29 thermal cell pool closed |

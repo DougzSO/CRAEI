@@ -573,3 +573,7 @@ Every number in the text comes from one handler. A value is filled only from pas
 | Table 2 | Leave-one-out, 5 largest hydro | W4d table | W4d, O19 |
 | Table 3 | 4 x 4 cross-tab, GW | w4h_coexposure | W4h |
 | Supplementary | ONS validation | validation | none |
+
+### v2.1 amendment (C45)
+- Heat level cuts in section B of the v2.1 addendum are 10 / 30 / 60 days (low < 10; medium 10 to < 30; high 30 to < 60; extreme >= 60), not 10 / 30 / 90. See DECISIONS O28 (C45).
+- Thermal water-dependent drought classes use a cell-scale null pool (O29, closed); hydro uses the catchment pool.

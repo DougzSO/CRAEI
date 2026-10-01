@@ -220,3 +220,5 @@ n_boot for reported bootstrap tables.
 | W6 | Figures: Fig 2 and Fig 4 become class maps; new co-exposure figure | W3g, W4g, W4h | after tables |
 
 - Test floor after C44: 188 passed, 1 skipped (measured 2026-10-01).
+
+- Test floor after C45: 188 passed, 1 skipped (measured 2026-10-01).

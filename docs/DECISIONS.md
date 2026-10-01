@@ -944,3 +944,12 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 ## Status updates appended (C44)
 - Pending, id TO BE DEFINED: re-run W3d and W3f-3 at n_boot = 5,000.
 - W5 gains the families: cuts of the level classes, percentiles of the null, null type for the classes.
+## O28 - heat cuts amended to 10 / 30 / 60 (C45; supersedes the 10 / 30 / 90 proposal of C44)
+- Author decision: level classes of TX35 future, days/yr, exclusive bins: low < 10; medium 10 to < 30; high 30 to < 60; extreme >= 60. Anchors: 30 d about one month, 60 d about two months; 10, 30 and 60 are points of the O17 grid. Conventions with no physical basis (tier 3).
+- The cut 60 was chosen after the distribution was read. The text justifies it by the calendar anchor and the grid only, not by the outcome. Sensitivity of the cuts (10/30/90, 10/20/40): W5, family cuts of the level classes.
+- Diagnostic already pasted (read-only, median over GCMs, % of GW with TX35 >= 60 d; hydro with Itaipu a): thermal operating baseline 6.0, SSP126 / SSP370 / SSP585 23.8 / 30.6 / 32.4; hydro operating baseline 6.3, 56.3 / 57.9 / 71.4; thermal planned_all baseline 0.2, 14.3 / 24.1 / 30.0; hydro planned_all baseline 8.9, 64.0 / 67.8 / 81.7 (28 units, O25 applies).
+- The level x delta matrix pasted in C44 uses the cut 90 and is not valid for 10/30/60; W3g produces it with the new cuts.
+
+## O29 - thermal null pool (closed, C45)
+- Water-dependent thermal (cell-scale SPEI-12) uses its own pool: 1,710 series (342 cells x 5 GCMs), mean lag-1 phi 0.9323, baseline F_D mean 6.8%. Hydro keeps the catchment pool (1,110 series, phi 0.9343). W4g computes the percentiles with both pools and reports the difference.
+- 788 water-dependent thermal units (699 plants) in plant_units; 694 plants have f_d_spei12 in plant_hazards (15 rows each, no NaN); 6 units have none. Cause not verified (hypothesis: the 6 plants whose bucket in plants.parquet is wrong, D80); checked in the next read-only block.
