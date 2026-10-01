@@ -421,3 +421,9 @@ passed, 1 skipped (unchanged).
 - Known gap: gfdl-esm4 historical tasmin chunk 1981_1990 is absent from the global cache although the route is direct_download_crop_keep_cache. Crops are complete; re-download (~2 GB) only needed for a global thermal extension.
 - exposure_si.csv is written by the active 10_exposure.py (stays). compound.csv / compound_months.parquet stay in tables/ until C25; their generator 11_compound.py was restored (see git log) if it was the sole writer.
 - Single-disk risk: CRAEI_raw_data and CRAEI_backup live only on D:. External copy pending.
+
+## Addendum (C23-B closure)
+- gfdl-esm4 historical crops on C: = 6 files (tasmax and tasmin x BRA/IND/PRT), byte-identical to D:. The earlier "5 of 6" doubt came from a merged C:+D: listing.
+- Known gap: gfdl-esm4 historical tasmin chunk 1981_1990 absent from the global cache although route is direct_download_crop_keep_cache. Crops are complete; re-download (~2 GB) only for a global thermal extension.
+- exposure_si.csv is written by the active 10_exposure.py (stays). 11_compound.py stays archived: compound metric is outside the v2 article scope; its readers are removed in C25.
+- Single-disk risk: CRAEI_raw_data and CRAEI_backup live only on D:. External copy pending (tracked in work plan v2).
