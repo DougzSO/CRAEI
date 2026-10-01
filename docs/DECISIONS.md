@@ -460,3 +460,62 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 | D81 | Addendum to D78 (C28; source: scripts/05b_plant_units.py, GEM snapshot 2026-08-09). plant_units.parquet is written to data/processed by inventory/units.py: 14,280 rows (one per kept GEM unit; BRA, IND and PRT; all technologies), 12,459 distinct plant_uid, the same set as plants.parquet; capacity summed per plant_uid reproduces plants.parquet (max abs diff 0.00 MW). Columns: plant_uid, gem_row, unit_name, country, fleet, fuel_class, bio_subtype, tech_class, water_dependent, hydro_type, capacity_mw, gem_unit_id. fleet, fuel_class, bio_subtype and tech_class are assigned per unit (D79, D80). fuel_class values assigned by the code: coal, nuclear, bioenergy, gas, oil, multi_fuel, oil_gas_unclassified, hydro, solar, other. unit_name and gem_unit_id are stored as text because GEM mixes strings and numbers (the value '--' is kept as is; its meaning was not verified; uniqueness of gem_unit_id was not verified). gem_row is the row index of the 'Power facilities' sheet as read by pandas and identifies a unit only within this snapshot. The build is guarded by 16 checks (3 conservation, 3 fleet totals, 6 operating fuel totals, agricultural_waste, 3 mixed-plant counts) and writes the parquet only if all pass. plants.parquet is neither read for values nor written by the build beyond the conservation check. | proposed | assistant, C29; pending author review | 2026-10-01 |
 | O24 | data/validation is not versioned. The folder CRAEI/data/validation holds ren_iph_reference_apa.csv and ren_iph_reference_annual.csv (5,310 bytes together), read by scripts/22_validate_ren_iph.py (REPO_ROOT/data/validation). .gitignore ignores data/, so they are not in git. They are not duplicates of data/raw/validation (hash grouping found only one repeated hash, between data/raw/validation/ren_iph/2014.json and 2026.json; their content was not inspected). Options: (a) git add -f the two CSVs; (b) move them to docs/refs or config and update the script path; (c) back up only in D:. Portugal is OUT-OF-SCOPE-v2, so urgency is low, but the retained code depends on them. Not chosen. | open | author | 2026-10-01 |
 | D82 | Resolution of O22 (Itaipu, binational hydro). Headline: Brazilian share (version b_brazil_share of scripts/c29_fleet_table.py): Itaipu counted as 7,000 MW instead of 14,000 MW, hydro operating 102.67 GW. Sensitivity: version a_asset_whole (109.67 GW). Itaipu also appears in the leave-one-out table under both versions. Basis: GEM allocates 7,000 MW to Brazil and 7,000 MW to Paraguay, and the thermal fleet already follows the GEM per-unit allocation, so (b) applies the same criterion. Location is identical in both versions: hazards are unchanged, only the capacity weight of Itaipu changes. Verified in outputs/audit/c29/report.md: Itaipu is one operating unit of 14,000 MW in plant_units, the only Brazilian plant with that capacity, classed reservoir (73.42 GW reservoir in a, 66.42 GW in b; whether the class comes from the GEM Technology field or the D11 default was not verified). Consequences: (1) capacity-weighted results computed from plants.parquet capacities (c23d: hydro_reservoir 53.0/49.8/76.5%, Itaipu leave-one-out deltas) correspond to version a and must be recomputed in W5 with plant_units capacities scaled by inventory.fleet.apply_foreign_share; that the c23d shares are capacity-weighted was not verified. (2) Panambi (576 MW, 288 MW Brazilian share) is filed under Argentina and is not added (0.288 GW, 0.28% of 102.67 GW); it stays a limitation (L30). (3) plants.parquet is unchanged. The status index at the top of this file still lists O22 as open; this row prevails. | closed | author delegated to assistant, C29b | 2026-10-01 |
+
+## D83 - Null for the drought excess: bootstrap reference, block range (O23)
+
+- Status: accepted by the author (2026-10-01). Resolves O23.
+- Decision:
+  1. The reference null stays the block bootstrap of c23d (12-month blocks,
+     2,000 simulations, seed 23, pool of 1,110 series): R_D >= 2 by chance
+     in 18.88% of cases.
+  2. Sensitivity to block length: 12, 24, 36 and 60 months, same pool,
+     simulations and seed. The excess over the null is reported as a range.
+  3. Bounds: AR(1) of c23c (phi = 0.9291, 200 series, 26.12%) as the upper
+     reference; white noise (1.80%) as the lower reference.
+- Caveats:
+  - The rationale for replacing AR(1) by the bootstrap is not in the repo (D76).
+  - Hypothesis, not a finding: 12-month blocks break persistence beyond 12
+    months, which would understate the null and overstate the excess.
+    The block-size sensitivity is the test of this hypothesis.
+  - With n = 360 months, 60-month blocks give only 6 blocks per series.
+    Check in W4 that the resampling is still meaningful.
+- Results of the sensitivity: TO BE DEFINED (W4/W5).
+
+## D84 - Validation reference files for PRT under version control (O24)
+
+- Status: accepted in part, conditional (2026-10-01).
+- Decision: force-add only the two PRT reference files read by
+  scripts/22_validate_ren_iph.py:
+  - data/validation/ren_iph_reference_apa.csv
+  - data/validation/ren_iph_reference_annual.csv
+- Condition: first confirm that the source (ERSE/APA) allows redistribution.
+  Confirmation: TO BE DEFINED. Until then both files stay untracked.
+- `.gitignore` is not changed (data/ stays ignored); this is an explicit
+  exception through `git add -f`. No other file under data/ is touched.
+- Both files must be included in the CRAEI_backup copy.
+
+## D85 - Principle: always report ranges and test sensitivity
+
+- Status: accepted by the author (2026-10-01). Applies to every result.
+- Rules:
+  1. Report a range, not a single value, and state where the range comes from.
+  2. Across GCMs: minimum, median and maximum over the 5 GCMs, plus sign
+     agreement where it applies.
+  3. Null model: block-size sensitivity (D83) with AR(1) and white noise bounds.
+  4. Itaipu: version b (Brazilian share) as headline, version a (whole asset)
+     as sensitivity (D82).
+  5. Leave-one-out and SPI x SPEI are reported next to the headline.
+  6. Open analytical choices (e.g. O16, O17) get a sensitivity run, not a
+     silent default.
+- A headline value is one flagged choice, with its range beside it.
+- Code follows the same rule: a choice without a sensitivity check is listed
+  as an open item.
+
+## Status updates appended 2026-10-01
+
+- O22: closed by D82 (the index at the top may still list it as open; D82
+  prevails).
+- O23: accepted, registered as D83.
+- O24: accepted in part, registered as D84 (pending the licence check).
+- Principle of ranges and sensitivity: registered as D85.
+- D80 and D81 remain `proposed`.

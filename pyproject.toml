@@ -16,6 +16,7 @@ where = ["src"]
 
 [tool.ruff]
 line-length = 150
+extend-exclude = ["scripts/archive"]
 target-version = "py311"
 
 [tool.ruff.lint]
