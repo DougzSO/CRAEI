@@ -1,6 +1,6 @@
 # Design v2: Heat and drought exposure of the Brazilian power fleet
 
-Scope v2 (D71): Brazil only; Axis 1 heat exposure of the thermal fleet by fuel (operating vs planned); Axis 2 hydro drought against an internal-variability null. Replaces the three-country design archived at docs/archive/METHODS_SPEC_v1_pre_rework.md. Blocks marked "verbatim" are copied unchanged from v1. Anything not yet defined is written as TO BE DEFINED with its open item.
+Scope v2 (D71): Brazil only; Axis 1 heat exposure of the thermal fleet by fuel (operating vs planned); Axis 2 hydro drought against an internal-variability null. Replaces the three-country design archived at docs/archive/METHODS_SPEC_v1_pre_rework.md. Blocks marked "verbatim" are copied unchanged from v1. Anything not yet defined is marked "to be defined" with its open item (O-id).
 
 ---
 

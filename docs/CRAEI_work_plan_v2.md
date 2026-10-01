@@ -13,7 +13,7 @@ Replaces PROGRESS.json (frozen at docs/archive/PROGRESS_v1.json). Old command nu
 | P5 C19-C20 | 241a256 | exposure aggregation |
 | C21, C22 | see git log | validation, compound closure (compound now out of scope) |
 | C23-B | 18ca66e, tag pre-cleanup | raw-data reorganization, archives, gate 8/8 |
-| C24 | pending commit, tag pre-docs-v2 | docs v2 |
+| C24 | bd7184d | docs v2 (SCOPE, work plan, status indexes, METHODS_SPEC v2) |
 
 ## B. New phases
 Status: done, ready, sketch, blocked-by-O-xx.
