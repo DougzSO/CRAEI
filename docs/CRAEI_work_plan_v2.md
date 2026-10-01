@@ -93,3 +93,10 @@ Prototype outputs live in data/outputs/audit/c23/c23d/ (script scripts/c23d_chec
 
 Open items now tracked: O16-O22. Commands C27 (fuel x tech x fleet per unit) and C28 (plant_units) come first; C29-C37 start only after C28 passes pytest and the regression gate.
 
+## E. Prototype definitions verified in C27 prep (2026-09-30)
+
+- c23d tx35_gw_pct (c23d_checks.py lines 412-430): exposed = delta TX35 >= 30 days/yr per plant and model; GW share = exposed capacity / group capacity (fuel x fleet), plants without a hazard row count as not exposed and stay in the denominator; reported value = median over the 5 GCMs. Matches D07.
+- c23d fuel_group: per-plant mode over units on plants.parquet, gas and oil merged; fleet and capacity inherited from plants.parquet (D78/D79 errors). Provisional only.
+- Concentration: with few large plants per group (e.g. 84 gas/oil operating plants) GW shares are discrete and dominated by a handful of plants (gas_oil operating identical in SSP126 and SSP370; coal operating 0.24% of GW vs 10% of plants in SSP126). C31 and Table 1 must report plant-count share and top-plant concentration beside GW share.
+- C30 must include the null-sensitivity decision (O23) before Axis 2 numbers are quoted.
+
