@@ -112,3 +112,5 @@ Open items now tracked: O16-O22. Commands C27 (fuel x tech x fleet per unit) and
 - Test floor after C25-S3: 143 passed, 1 skipped (measured 2026-10-01).
 
 - Test floor after W3a: 151 passed, 1 skipped (measured 2026-10-01).
+
+- Test floor after W3b: 154 passed, 1 skipped (measured 2026-10-01).
