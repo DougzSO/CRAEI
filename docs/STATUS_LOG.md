@@ -16,3 +16,4 @@
 | 2026-10-01 | W3a | done | heat exposure of BRA thermal fleet by fuel per unit (exposure/heat_fuel.py, w3_heat_fuel.py, 8 tests); 21 capacity checks PASS; tables w3_heat_*.csv; pytest 151 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | W3b | done | GW exposed in >= k of 5 GCMs per plant (exposure/heat_agreement.py, w3_agreement.py, 3 tests); BRA thermal operating total 47.67 GW matches fleet table; pytest 154 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C32 | done | ruff: unused variable and empty f-string in 09_consolidate.py, unused imports in c23c/c23d_checks.py, import order in 07_water_balance.py; no logic change (py_compile OK); pytest 157 passed, 1 skipped (measured with W3c tests present); gate 8 PASS |
+| 2026-10-01 | W3c | done | leave-one-cell-out influence on heat shares (exposure/heat_influence.py, w3_influence.py, 3 tests); thresholds 20/30/40; one-cell groups give NaN; pytest 157 passed, 1 skipped; gate 8 PASS |
