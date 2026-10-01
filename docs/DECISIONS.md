@@ -908,3 +908,39 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 - Bioenergy > gas holds in 7 of 7 sets in each scenario (operating, 30 d), including the reference.
 - The premise that UKESM1-0-LL and IPSL-CM6A-LR are the highest climate-sensitivity models comes from the author's spec; not verified in the repository.
 - Ranges are structural, not confidence intervals.
+## D88 - Scope reopened: co-located exposure and two lenses (C44)
+- Reopens D71-D87 for a Boolean co-located exposure: a plant is in a class if it is in the extreme class of heat and of drought at its location. No index, no weights, no ranking. Individual hazards are reported first, then the cross-tabulation.
+- Two lenses. Change lens (headline, Axis 1 done): dTX35 >= 30 d/yr and R_D >= 2. Level lens (new): TX35 future (days/yr) and F_D future (% of months with SPEI-12 <= -1.5). Reason: a delta ignores the level (a cell with 100 d/yr that gains 5 d is low on the change lens).
+- Out: H4, solar. Air-only thermal stays inside all_thermal in the heat classes (removing it would change the Axis 1 totals), is not in the co-exposure (no drought hazard) and has no map category of its own.
+- Hydro heat: TX35 at the plant cell, from indices_daily with plant_cell, same code path as plant_hazards for thermal (check, thermal: 11,175 rows = 745 plants x 15, max |diff| 0.0 for baseline and future). Reading: climatic context, not a cooling hazard.
+- Generality: new modules take a country parameter; the country filters of older scripts were not audited.
+- The article does not claim: impact, generation loss, probabilities, ICs from the GCM range, harvest-window effects, simultaneity in time.
+
+## O28 - Heat level classes (proposal, C44)
+- Proposal: TX35 future, days/yr, exclusive bins: low < 10; medium 10 to < 30; high 30 to < 90; extreme >= 90. Anchors: 30 d about one month, 90 d about one quarter, 10 d is the lowest point of the O17 grid. Labels are conventions (tier 3). Cuts are fixed by anchors and baseline and never tuned on the future result. Sensitivity of the cuts: TO BE DEFINED (W5).
+- Diagnostic (read-only, median over GCMs of the share of GW with TX35 >= L, %), thermal operating baseline: L10 41.2, L20 23.6, L30 18.0, L60 6.0, L90 1.7, L120 0.2. Thermal operating SSP126 / SSP370 / SSP585 at L90: 15.3 / 20.4 / 26.6; at L30: 41.7 / 53.0 / 59.4. Hydro operating baseline: L30 41.7, L60 6.3; SSP370 L30 78.2, L90 56.6. Hydro planned_all has identical L20 and L30 values (61.5) in the baseline: few cells (28 units), O25 applies.
+- Matrix, thermal operating, SSP370, per-unit median over GCMs, GW by future level x delta (rows: <10, 10-30, 30-90, >=90; columns: d<10, d10-20, d20-30, d>=30): <10: 10.64 / 0 / 0 / 0; 10-30: 0.79 / 5.57 / 5.11 / 0; 30-90: 0 / 0 / 8.07 / 6.82; >=90: 0 / 0 / 0 / 10.67; total 47.67. No GW has level >= 30 d with delta < 10 d. Binned on the per-unit median, so it differs from the per-GCM median of shares used in the tables.
+- TX40: sensitivity on its own grid (O27), cuts TO BE DEFINED.
+
+## O29 - Drought level classes by the no-change null (open, C44)
+- Proposal: F_D future against the percentiles of the null F_D future (SPEI <= -1.5): low <= p50; medium p50-p90; high p90-p99; extreme > p99. Canonical null: block bootstrap, block 12. Sensitivity: AR(1) and percentiles p75/p90/p95 (W5). Percentiles recomputed with 20,000 simulations in their own stream default_rng([23, 99]) (author accepted); the W4a stream is not touched.
+- Diagnostic with 2,000 simulations (to be replaced): Phi(-1.5) = 6.68%; null F_D baseline mean 6.57% (block 12), 6.60% (AR(1)); hydro observed baseline F_D 6.65% (GW-weighted). F_D future percentiles p50/p75/p90/p95/p99: block 12 6.11 / 8.61 / 11.11 / 12.78 / 15.00; AR(1) 5.83 / 9.72 / 13.89 / 16.39 / 21.95. The p99 rests on about 20 simulations.
+- Hydro operating (Itaipu a, 109.67 GW, median over GCMs), % of GW with F_D future above the block-12 percentile, p50/p75/p90/p95/p99: SSP126 84.4 / 81.5 / 80.2 / 67.6 / 49.6; SSP370 86.0 / 80.0 / 64.6 / 63.1 / 46.8; SSP585 93.4 / 89.4 / 84.1 / 77.5 / 73.5. SSP126 above SSP370 at p99 is not interpreted before the GCM range (W4e). Preliminary: Itaipu a, no leave-one-out. Units are compared one by one with the marginal null and are spatially correlated, so the GW share is not binomial.
+- Change lens: R_D classes < 1.5, 1.5-2, 2-3, >= 3, shown with W4a null rates (block 12, SPEI <= -1.5): R_D >= 1.5 30.54%, >= 2 18.88%, >= 3 8.64%. R_D undefined (baseline F_D = 0) is its own category.
+- Open: the 1,110-series pool is catchment scale (hydro). For water-dependent thermal (cell-scale SPEI-12) a cell-scale pool is TO BE DEFINED; size is measured in the next read-only block.
+
+## O30 - Temporal coincidence of heat and drought (optional, open, C44)
+- The co-location is spatial. Monthly data (indices_daily, spei) would allow counting years or months with both at a cell. SPEI-12 has 12 months of memory, so "same year" is approximate. Whether ISIMIP3BASD preserves the heat-precipitation dependence of the GCM: NOT VERIFIED; check the ISIMIP documentation before any claim. Only after the co-location closes.
+
+## O31 - Agreement definition (open, C44)
+- METHODS_SPEC 1.5/1.7 say "at least 4 of 5 GCMs with the same sign". Tables report k = 1, 3, 5 of 5 GCMs exposed (pct_gw_k1/k3/k5). Proposal: the spec follows the implementation; sign agreement is used only in contrasts (n_gcm_pos). TO BE DEFINED by the author.
+
+## O32 - Cooling bound in the co-exposure of thermal (open, C44)
+- METHODS_SPEC 1.2 has an upper bound (all plants) and a lower bound (coastal within 5 km removed from freshwater hazards). Which one the water-dependent thermal drought and the co-exposure use: TO BE DEFINED. Linked to O20.
+
+## O33 - Claims to verify before the text (open, C44)
+- METHODS_SPEC 1.3 ("the five models were selected to cover a range of climate sensitivity") and Appendix 1.8 ("UKESM1-0-LL has the highest climate sensitivity"): not verified in the repository. Cite a source or remove.
+
+## Status updates appended (C44)
+- Pending, id TO BE DEFINED: re-run W3d and W3f-3 at n_boot = 5,000.
+- W5 gains the families: cuts of the level classes, percentiles of the null, null type for the classes.

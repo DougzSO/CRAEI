@@ -205,3 +205,18 @@ n_boot for reported bootstrap tables.
 - Test floor after W4a: 184 passed, 1 skipped (measured 2026-10-01).
 
 - Test floor after W3f-6: 188 passed, 1 skipped (measured 2026-10-01).
+
+## G addendum 3 - plan after C44 (D88)
+| Step | Content | Depends on | Status |
+|---|---|---|---|
+| W3g | Heat level classes (thermal and hydro; operating, planned), baseline and future classes, class shift, change classes (exclusive delta bins), per GCM, range, k of 5 | O28 | ready |
+| W4g | Drought level classes against the null (20,000 simulations, stream [23, 99]); R_D classes with null rates | O29 | ready after pool check |
+| W4h | Co-located exposure: 4 x 4 cross-tab, extreme in both, sensitivity high-or-extreme; thermal water-dependent and hydro | W3g, W4g, O32 | sketch |
+| W3h | State and macro-region summary (Natural Earth admin1, nearest polygon for points outside) | W3g, W4g | sketch |
+| W3f-7 | Planned minus operating under TX40 and plant-count weight | W3 tables | ready |
+| W4b-W4f | As before; Itaipu b headline | W4a | ready |
+| W3d/W3f-3 at 5,000 | Re-run, replace bootstrap limits | n_boot decision | pending |
+| W5 | Sensitivity register, with the new families | W3, W4 | sketch |
+| W6 | Figures: Fig 2 and Fig 4 become class maps; new co-exposure figure | W3g, W4g, W4h | after tables |
+
+- Test floor after C44: 188 passed, 1 skipped (measured 2026-10-01).

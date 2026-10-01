@@ -467,3 +467,109 @@ Implementation notes: submit jobs in small batches to respect server limits; rec
 - Lehner, B. & Grill, G. (2013). HydroSHEDS / HydroBASINS. *Hydrological Processes*.
 - IEC 61400-1 (Wind energy generation systems, design requirements).
 - IPCC AR6 WGI, Chapter 11 and Atlas.
+
+
+---
+
+## v2.1 addendum (C44, D88): level lens, classes, co-located exposure, result handlers
+
+This addendum is appended; the sections above are not edited. Where they conflict, v2.1 governs. Stale or superseded items above:
+- 1.4 H1 "tested at 15 and 60 days": the heat grid is 10/20/30/40/50/60/80/100 d (O17); 30 d stays the change-lens headline.
+- 1.5, 1.7 "agreement = at least 4 of 5 GCMs": tables report k = 1, 3, 5 of 5 GCMs exposed (O31).
+- 1.7, 1.8 "TO BE DEFINED, see O17/O18/O19/O21": O17 is closed (D87); the null script is delivered (W4a, DECISIONS C42); the others are in the plan (G addendum 3).
+- 1.8 "N_SIM=2000 ... script to be written (C30)": delivered as W4a (block 12, 24, 36, 60, AR(1), white noise).
+- 1.3 and Appendix 1.8 statements on the climate sensitivity of the GCMs: not verified in the repository (O33).
+- Section 4 (results map): replaced by the table at the end of this addendum.
+
+### A. Two lenses
+- Change lens (headline, Axis 1): dTX35 >= 30 d/yr; R_D >= 2. Question: how much does it worsen against the baseline?
+- Level lens (new): TX35 future (days/yr) and F_D future (% of months with SPEI-12 <= -1.5). Question: how severe is the climate at the plant in 2041-2070?
+- Reason: a delta ignores the level. Both lenses are reported; neither replaces the other.
+
+### B. Heat level classes (O28)
+- Exclusive bins of TX35 future, days/yr: low < 10; medium 10 to < 30; high 30 to < 90; extreme >= 90. Labels are conventions with no physical basis (tier 3). Cuts are fixed by calendar anchors (30 d about one month, 90 d about one quarter) and the O17 grid, never tuned on the future result.
+- Baseline classes use the same cuts and are reported next to the future classes (class shift).
+- Per (unit, GCM, scenario) the class comes from that GCM's value; GW per class is computed per GCM; then min, median, max across the 5 GCMs and k of 5. Map: class of the median over GCMs per cell, with the number of GCMs in that class.
+- Units: thermal (water-dependent and air-only; air-only only inside all_thermal) and hydro. Hydro uses TX35 at the plant cell; reading: climatic context, not a cooling hazard.
+- Change classes (secondary): exclusive bins of dTX35 (< 10, 10 to < 20, 20 to < 30, >= 30), derived per GCM from the existing grid.
+- TX40: sensitivity on its own grid (O27).
+
+### C. Drought level classes (O29)
+- F_D future against the null of no climate change: low <= p50; medium p50 to p90; high p90 to p99; extreme > p99 of the null distribution of F_D future (SPEI <= -1.5).
+- Null: block bootstrap, 12-month blocks (canonical); AR(1) as sensitivity; percentile sensitivity p75/p90/p95. Percentiles use 20,000 simulations in their own stream default_rng([23, 99]); the W4a stream is untouched.
+- "Extreme" means natural variability alone rarely produces that F_D. It is not a probability of impact. Units are compared one by one with the marginal null and are spatially correlated, so the GW share above a percentile is not binomial.
+- Hydro: pool of catchment series. Water-dependent thermal (cell-scale SPEI-12): pool TO BE DEFINED (O29).
+- Change lens: R_D classes < 1.5, 1.5 to < 2, 2 to < 3, >= 3, each shown with its null rate from W4a. R_D undefined (baseline F_D = 0) is its own category.
+
+### D. Co-located exposure (D88)
+- Spatial coincidence at the plant location, not simultaneity in time. Calling it "co-located exposure", never "compound event".
+- Units with both hazards: water-dependent thermal (cell scale) and hydro (catchment SPEI-12; TX35 at the plant cell). Air-only thermal and solar are not included. Cooling bound for thermal: O32.
+- Per GCM and scenario: 4 x 4 cross-tab (heat level class x drought level class) in GW; headline = extreme in both; sensitivity = high or extreme in both. The same GCM is used for both hazards. Reported with min, median, max and k of 5.
+- No index, no weights, no ranking. Individual hazards are presented first.
+- Temporal coincidence (years with both): optional, O30.
+
+### E. Aggregation rules
+- Capacity from plant_units. Hydro: Itaipu counted as 7,000 MW (b) in the headline, 14,000 MW (a) as sensitivity (D82). Leave-one-out beside every headline.
+- Ranges are structural, not confidence intervals. Bootstrap limits only with >= 10 cells and nan_frac = 0 (O25); otherwise descriptive.
+- State and macro-region: Natural Earth admin1 (fields name, postal, region); nearest polygon for points outside, with the count reported.
+- New modules take a country parameter; older scripts filter Brazil explicitly.
+
+### F. Not claimed
+Impact, vulnerability, generation loss, probabilities, ICs from the GCM range, harvest-window effects, a composite index, solar, wind, H4, results outside Brazil, simultaneity in time.
+
+### G. Open items
+O16 (harvest window, no source); O18 (SPI x SPEI scheme); O19 (leave-one-out of Axis 2); O20 (water x air in Fig 5); O21 (hydro cell bootstrap); O28 (heat cuts, proposal); O29 (null pool for thermal cells, percentiles); O30 (temporal coincidence); O31 (agreement definition); O32 (cooling bound in co-exposure); O33 (claims to verify). Pending without id: re-run W3d and W3f-3 at n_boot = 5,000.
+
+### H. Result handlers
+Every number in the text comes from one handler. A value is filled only from pasted output. Table names marked (planned) do not exist yet.
+
+| Id | Statement slot | Table | Filter | Column | Value |
+|---|---|---|---|---|---|
+| F1 | Operating thermal GW (BRA) | plant_units | country, fleet, tech_class | sum capacity_mw | TO BE DEFINED |
+| F2 | Planned thermal GW (adv, early, all) | plant_units | fleet | sum capacity_mw | TO BE DEFINED |
+| F3 | Hydro GW operating (b headline, a sensitivity), planned hydro GW | plant_units | tech_class = hydro | sum capacity_mw | TO BE DEFINED |
+| HC1 | Share of operating thermal GW with dTX35 >= 30 d, median [min-max], 3 scenarios | w3_table1 | group = all_thermal, fleet = operating, threshold = 30 | pct_median, pct_min, pct_max | TO BE DEFINED |
+| HC2 | Same, in GW | w3_table1 | same | gw_median | TO BE DEFINED |
+| HC3 | Agreement k = 3 and k = 5 | w3_table1 | same | pct_gw_k3, pct_gw_k5 | TO BE DEFINED |
+| HC4 | By fuel (bioenergy, gas) | w3_table1 | group = fuel | pct_median, pct_min, pct_max | TO BE DEFINED |
+| HC5 | Planned minus operating, paired, with cell bootstrap | w3_heat_bootstrap_paired | planned_fleet = planned_all, threshold = 30 | obs_median_diff, boot_p025, boot_p975 | TO BE DEFINED |
+| HC6 | Scenario contrast | w3_heat_scenario_contrast | pair, threshold = 30 | obs_median_diff, n_gcm_pos, boot_p025_pp, boot_p975_pp | TO BE DEFINED |
+| HC7 | Cell bootstrap of the share | w3_heat_bootstrap_shares | threshold = 30 | obs_median, boot_p025, boot_p975 | TO BE DEFINED |
+| HC8 | Leave-one-cell-out range | w3_table1 | threshold = 30 | loo_min, loo_max | TO BE DEFINED |
+| HL1 | GW and share per heat level class, thermal, by fleet and scenario | w3g_heat_level_classes (planned) | group, fleet, scenario, class | gw_median, pct_median, pct_min, pct_max | TO BE DEFINED |
+| HL2 | Same, hydro | w3g_heat_level_classes (planned) | group = hydro | same | TO BE DEFINED |
+| HL3 | Baseline to future class shift | w3g_heat_class_shift (planned) | fleet, scenario | gw_median | TO BE DEFINED |
+| HL4 | Change classes (exclusive delta bins) | w3g_heat_change_classes (planned) | group, fleet, scenario | pct_median | TO BE DEFINED |
+| HL5 | Map class per cell and GCM agreement | w3g_heat_cell_class (planned) | scenario | class_median, n_gcm_same | TO BE DEFINED |
+| DR1 | Null percentiles of F_D future (20,000 simulations) | w4g_null_percentiles (planned) | null, spei_threshold = -1.5 | p50, p90, p99 | TO BE DEFINED |
+| DR2 | Hydro GW per drought level class, by scenario | w4g_drought_classes (planned) | group = hydro, class | gw_median, pct_min, pct_max | TO BE DEFINED |
+| DR3 | Share above null p99 and share expected by chance | w4g_drought_classes (planned) | class = extreme | pct_median | TO BE DEFINED |
+| DR4 | Share with R_D >= 2 and null rate by block | w4a: w4_null_rates | is_production_point | pct_rd_ge | TO BE DEFINED |
+| DR5 | Excess over the null, Itaipu b headline, a sensitivity | W4b table (planned) | scenario | excess_pp | TO BE DEFINED |
+| DR6 | SPI x SPEI with the same fitting scheme | W4c table (planned) | scenario | pct_exposed | TO BE DEFINED |
+| DR7 | Leave-one-out of the 5 largest hydro plants | W4d table (planned) | plant, scenario | pct_exposed | TO BE DEFINED |
+| DR8 | GCM range and agreement of the hydro result | W4e table (planned) | scenario | pct_min, pct_median, pct_max, k | TO BE DEFINED |
+| CO1 | 4 x 4 cross-tab, GW | w4h_coexposure (planned) | group, scenario | gw_median | TO BE DEFINED |
+| CO2 | GW and share extreme in both, range | w4h_coexposure (planned) | heat = extreme, drought = extreme | gw_median, gw_min, gw_max | TO BE DEFINED |
+| CO3 | High or extreme in both (sensitivity) | w4h_coexposure (planned) | heat, drought >= high | gw_median | TO BE DEFINED |
+| ST1 | GW in extreme heat by state and macro-region | w3h_state_summary (planned) | class = extreme | gw_median | TO BE DEFINED |
+| ST2 | Co-exposure by state; units assigned by nearest polygon | w3h_state_summary (planned) | state | gw_median, n_nearest | TO BE DEFINED |
+| SE1 | GCM exclusion (drop one, drop UKESM+IPSL) | w3_gcm_exclusion, w3_gcm_exclusion_contrast, w3_gcm_exclusion_rank | exclusion | pct_median, diff_median, sign_changed, order | TO BE DEFINED |
+| SE2 | Threshold, weight, TX40 | w3_heat_sensitivity, w3_tx40_curves | choice | diff_median_pp, pct_median | TO BE DEFINED |
+| SE3 | Null type and block size | w4_null_rates | null, block_months | pct_rd_ge | TO BE DEFINED |
+| SE4 | Cuts of the classes, percentiles | w5_sensitivity (planned) | family | delta_pp | TO BE DEFINED |
+| VA1 | ONS national validation | validation | region = Brazil | rho, rho_ci_low, rho_ci_high, n_years | TO BE DEFINED |
+
+### I. Results map (v2.1)
+| Item | Content | Source | Blocking |
+|---|---|---|---|
+| Fig 1 | Fleet and capacity by technology and fuel | plant_units | none |
+| Fig 2 | Heat level class map (cells, plants sized by GW) | w3g_heat_cell_class | W3g |
+| Fig 3 | Threshold curves, operating vs planned | w3_curves_plot | none |
+| Fig 4 | Drought level class map, SPEI and SPI | w4g tables | W4g, O18 |
+| Fig 5 | Excess over the null by scenario, GCM range | W4b table | W4b, O20, O21 |
+| Fig 6 | Co-located exposure map and cross-tab | w4h_coexposure | W4h, O32 |
+| Table 1 | GW exposed by technology, fuel, scenario | w3_table1 | none |
+| Table 2 | Leave-one-out, 5 largest hydro | W4d table | W4d, O19 |
+| Table 3 | 4 x 4 cross-tab, GW | w4h_coexposure | W4h |
+| Supplementary | ONS validation | validation | none |
