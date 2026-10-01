@@ -30,3 +30,5 @@
 | 2026-10-01 | C37 | done | D80 and D81 accepted; geography details and Table 1 agreement checks appended to DECISIONS |
 | 2026-10-01 | W3f-4 | done | Axis 1 sensitivities (TX40, plant-count weight) vs W3a reference, long table plus headline table (exposure/heat_sensitivity.py, w3_sensitivity.py, 3 tests); reference reproduces w3_heat_summary; pytest 173 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C38 | done | GCM nesting in Brazil (18/18 nested in UKESM, GW-weighted) and work plan addendum appended |
+| 2026-10-01 | W3f-2 | done | plotting table of threshold curves on the 8-point grid (exposure/heat_curves.py, w3_curves.py, 3 tests); 648 rows, equals Table 1 at 20/30/40 d, monotone in threshold; pytest 176 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | C39 | done | W3f-4 results registered in DECISIONS, O27 (TX40 grid) opened, work plan addendum 2 |

@@ -192,3 +192,12 @@ n_boot for reported bootstrap tables.
   decisions: final n_boot, O20 (O16 only if a source is given).
 
 - Test floor after W3f-4: 173 passed, 1 skipped (measured 2026-10-01).
+
+## G addendum 2 - status after W3f-4 (2026-10-01, written by C39)
+
+- Done: W3f-4 (009b913), W3f-2 (this step). Axis 1 tables are complete except the
+  TX40 grid (O27) and the final n_boot (author decision).
+- Next: Axis 2, starting with W4a (null with blocks 12/24/36/60, AR(1) and white
+  noise as limits).
+
+- Test floor after W3f-2: 176 passed, 1 skipped (measured 2026-10-01).
