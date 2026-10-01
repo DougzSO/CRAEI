@@ -19,3 +19,5 @@
 | 2026-10-01 | W3c | done | leave-one-cell-out influence on heat shares (exposure/heat_influence.py, w3_influence.py, 3 tests); thresholds 20/30/40; one-cell groups give NaN; pytest 157 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C33 | done | D86 (LOCO + cell bootstrap as composition sensitivity), D87 (axis 1 metrics, proposed), O16 note appended to DECISIONS.md; numbers copied from W3a/W3b/W3c outputs |
 | 2026-10-01 | W3d | done | cell-cluster bootstrap (2000 draws, seed 86) of GCM-median heat shares and of the paired planned-minus-operating difference, with paired LOCO (exposure/heat_bootstrap.py, w3_bootstrap.py, 4 tests); observed statistics reproduce W3a tables; pytest 161 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | C25-S3 | done | git rm of 14 files (audit/*, exposure/compound.py, 6 one-shot scripts, 2 tests); pytest 143 passed, 1 skipped (measured before W3a files); gate 8 PASS; ruff outside archive 62 -> 18 |
+| 2026-10-01 | C25-S3 | done | git rm of 14 files (audit/*, exposure/compound.py, 6 one-shot scripts, 2 tests); pytest 143 passed, 1 skipped (measured before W3a files); gate 8 PASS; ruff outside archive 62 -> 18 |
