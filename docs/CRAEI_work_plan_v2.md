@@ -224,3 +224,5 @@ n_boot for reported bootstrap tables.
 - Test floor after C45: 188 passed, 1 skipped (measured 2026-10-01).
 
 - Test floor after W3g: 195 passed, 1 skipped (measured 2026-10-01).
+
+- Test floor after C47: 203 passed, 1 skipped (measured 2026-10-01).

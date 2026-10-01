@@ -43,3 +43,5 @@
 | 2026-10-01 | C45 | done | O28 cuts amended to 10/30/60; O29 thermal cell pool closed |
 | 2026-10-01 | W3g | done | TX35 level classes 10/30/60, shift, level x delta, cell map; checks 1-3 PASS |
 | 2026-10-01 | C46 | done | W3g results registered |
+| 2026-10-01 | W4g | done | Drought level classes vs null (20,000 draws, pools catchment and cell), R_D classes; checks 1-4 PASS |
+| 2026-10-01 | C47 | done | W4g results registered; D89 cooling upper bound (closes O32); O34 opened |
