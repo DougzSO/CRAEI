@@ -177,3 +177,5 @@ then figures, then reproducibility; figure modules only read tables):
 
 Author decisions pending: O17, O20, O26, D80, D81, D87 (proposed), final
 n_boot for reported bootstrap tables.
+
+- Test floor after W3f-1: 167 passed, 1 skipped (measured 2026-10-01).

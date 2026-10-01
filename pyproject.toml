@@ -15,7 +15,7 @@ dependencies = [
 where = ["src"]
 
 [tool.ruff]
-line-length = 150
+line-length = 250
 extend-exclude = ["scripts/archive"]
 target-version = "py311"
 

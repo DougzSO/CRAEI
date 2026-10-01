@@ -24,3 +24,5 @@
 | 2026-10-01 | C34 | done | D86 addendum (W3d bootstrap results) and O25 (reporting rule, open) appended to DECISIONS.md; numbers copied from the w3_bootstrap output |
 | 2026-10-01 | W3e | done | monthly delta N35 profile of operating thermal groups, capacity-weighted over cells (exposure/heat_season.py, w3_season.py, 3 tests); sum of 12 months reproduces annual plant_hazards delta; no harvest window used (O16 source unknown); pytest 164 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C35 | done | work plan section G (commit map from git log, floor 164, remaining steps); O25 closed; D84 option A restored; O26 opened (base geography) |
+| 2026-10-01 | W3f-1 | done | Table 1 of Axis 1 joined from W3 tables (exposure/heat_table1.py, w3_table1.py, 3 tests), O25 rule applied; geo_base.py wrote Natural Earth Brazil layers (O26); pytest 167 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | C36 | done | D87 accepted, O17 closed, O26 resolved, ruff config note appended to DECISIONS |
