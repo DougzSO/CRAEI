@@ -12,14 +12,14 @@ single source of truth for all numeric choices and definitions.
   `source`. No methodological number is hardcoded.
 - `docs/DECISIONS.md`: one line per decision.
 - `docs/LIMITATIONS.md`: one line per limitation.
-- `PROGRESS.json`: phase and command status.
+- `docs/CRAEI_work_plan_v2.md`: phase and command status.
 
 ## Rules
 
 1. `docs/METHODS_SPEC.md` is the only methodological source. Code that
    diverges from it is a bug or a new decision logged in `DECISIONS.md`.
 2. Only three support files: `DECISIONS.md`, `LIMITATIONS.md`,
-   `PROGRESS.json`. No phase reports, session memories, or parallel
+   `docs/CRAEI_work_plan_v2.md`. No phase reports, session memories, or parallel
    changelogs.
 3. Every numeric parameter lives in `config/params.yaml` with `value`,
    `tier` (1/2/3), and `source`. No hardcoded methodological numbers.
@@ -79,4 +79,4 @@ matplotlib, isimip-client, pytest, ruff.
 
 ## Command flow
 
-audit → implement → test → update `PROGRESS.json` → stop for review.
+audit → implement → test → update `docs/CRAEI_work_plan_v2.md` → stop for review.
