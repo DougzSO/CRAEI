@@ -766,3 +766,28 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 
 - D80 and D81 accepted. All D-items of the v2 scope are now accepted except
   D84 (option A, licence not confirmed).
+
+## C38 - GCM nesting in Brazil, GW-weighted (2026-10-01)
+
+- Test: scripts/w3_inspect7.py (archived). Brazil thermal fleet via plant_units and
+  heat_fuel, GW-weighted, fleets operating and planned_all, 3 scenarios, thresholds
+  20, 30, 40 d (18 combinations). Countries in the data: BRA only.
+- Result, as pasted: GW exposed in at least one GCM but outside the UKESM set is
+  0.000 GW (0 plants) in 18 of 18 combinations, and UKESM is the maximum GCM in 18
+  of 18. The union equals the UKESM set, so pct_gw_k1 = pct_max in Table 1 is
+  nesting, not coincidence.
+- The other GCMs are not a chain: GW exposed in the lowest GCM but not in all five
+  ranges from 0.000 to 2.903 GW (maximum: operating, SSP5-8.5, 30 d, 23 plants).
+  It is 0.000 only for planned_all SSP3-7.0 at 30 and 40 d.
+- w3_inspect6 (3 countries, no capacity weight) found non-nested sets (1 to 75
+  plants outside the UKESM set). It does not describe Brazil; inference: those
+  plants lie outside Brazil (665 + 85 - 5 mixed plants = 745, all covered here).
+- Reading rule: the upper bound of the GCM range is a single model (UKESM). The
+  column k >= 1 of 5 is redundant with the maximum GCM. Report k >= 3 and k = 5 and
+  the leave-one-GCM-out range (loo_min, loo_max of w3_heat_summary; values not read
+  in this step). Why UKESM is the warmest in Brazilian cells is not tested here.
+
+## Status updates appended 2026-10-01 (C38)
+
+- Nesting result registered. W3f-4 (sensitivities of Axis 1) delivered in the same
+  step; see STATUS_LOG for the floor.

@@ -181,3 +181,14 @@ n_boot for reported bootstrap tables.
 - Test floor after W3f-1: 167 passed, 1 skipped (measured 2026-10-01).
 
 - Test floor after W3f-3: 170 passed, 1 skipped (measured 2026-10-01).
+
+## G addendum - status after W3f-3 (2026-10-01, written by C38)
+
+- Done since the section G table: W3f-1 (Table 1, 4f83c3c), W3f-3 (scenario
+  contrast, df72c93), W3f-4 (Axis 1 sensitivities, this step; hash in git log).
+- Next: W3f-2 (Fig. 3 plotting table from w3_heat_summary and Table 1 bounds),
+  then Axis 2 (W4a to W4f).
+- O17, O25 and O26 are closed; D80, D81 and D87 are accepted. Pending author
+  decisions: final n_boot, O20 (O16 only if a source is given).
+
+- Test floor after W3f-4: 173 passed, 1 skipped (measured 2026-10-01).
