@@ -6,7 +6,6 @@ at the thresholds computed in W3d (20, 30, 40 d); elsewhere the label says so.
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 
 from craei.exposure.heat_fuel import THRESHOLDS
 from craei.exposure.heat_table1 import build_table1
