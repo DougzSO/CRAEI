@@ -100,3 +100,11 @@ Open items now tracked: O16-O22. Commands C27 (fuel x tech x fleet per unit) and
 - Concentration: with few large plants per group (e.g. 84 gas/oil operating plants) GW shares are discrete and dominated by a handful of plants (gas_oil operating identical in SSP126 and SSP370; coal operating 0.24% of GW vs 10% of plants in SSP126). C31 and Table 1 must report plant-count share and top-plant concentration beside GW share.
 - C30 must include the null-sensitivity decision (O23) before Axis 2 numbers are quoted.
 
+
+## F. Status update after C28/C29 (2026-10-01)
+
+- Done: C27 (unit-level fuel x technology x fleet), C28 (plant_units.parquet, 16 checks), C29 (Brazil fleet table, capacity side of Fig. 1; both O22 versions).
+- Test floor verified at this step: 153 passed, 1 skipped. Gate result: see the last STATUS_LOG entry.
+- plants.parquet is unchanged; article capacity-by-fleet numbers come from plant_units.parquet (D78-D81).
+- Waiting on the author: O24, O22, O23, and review of D80 and D81 (status proposed).
+- Next: C25 slices S1-S4 (report first), then W3-W5 (promotion of the c23d prototypes on plant_units).
