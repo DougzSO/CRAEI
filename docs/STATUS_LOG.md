@@ -33,3 +33,5 @@
 | 2026-10-01 | W3f-2 | done | plotting table of threshold curves on the 8-point grid (exposure/heat_curves.py, w3_curves.py, 3 tests); 648 rows, equals Table 1 at 20/30/40 d, monotone in threshold; pytest 176 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C39 | done | W3f-4 results registered in DECISIONS, O27 (TX40 grid) opened, work plan addendum 2 |
 | 2026-10-01 | C40 | done | ruff F401 fixed in heat_curves.py (committed with the error in 5ff7947); O27 TX40 distribution and grid proposal registered; lock now includes ruff; pytest 176 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | W3f-5 | done | TX40 exposure on its own grid 1,2,5,10,20,30 d (scripts/w3_tx40.py, w3_tx40_curves.csv); reproduces W3f-4 TX40 rows at 10/20/30 d; monotone; pytest 176 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | C41 | done | O27 closed (grid accepted); Axis 2 facts registered before W4a |
