@@ -401,3 +401,17 @@ passed, 1 skipped (unchanged).
 - C25: src/ cleanup (dead code, country/scope branches, lint).
 - Kept in doubt (review in C25): 22_audit.py, audit_tx_tn_and_pet_truncation.py, c21_2_fix_emdat.py, c22b_regional_assignment.py.
 - PROGRESS.json not edited here; superseded by CRAEI_work_plan_v2.
+
+## C23-B finish (2026-09-30 21:39)
+### Outputs moved to data/outputs/archive/ (sha256 verified)
+
+### Docs copied to docs/archive/ (originals kept until C24)
+- `docs/DECISIONS.md` -> `docs/archive/DECISIONS_v1_pre_rework.md` (sha256 OK)
+- `docs/LIMITATIONS.md` -> `docs/archive/LIMITATIONS_v1_pre_rework.md` (sha256 OK)
+- `docs/METHODS_SPEC.md` -> `docs/archive/METHODS_SPEC_v1_pre_rework.md` (sha256 OK)
+
+### Pending
+- C24: rewrite docs (SCOPE, METHODS_SPEC, DECISIONS, LIMITATIONS, work plan v2).
+- C25: src/ cleanup (dead code, country/scope branches, lint).
+- Kept in doubt (review in C25): 22_audit.py, audit_tx_tn_and_pet_truncation.py, c21_2_fix_emdat.py, c22b_regional_assignment.py.
+- PROGRESS.json not edited here; superseded by CRAEI_work_plan_v2.
