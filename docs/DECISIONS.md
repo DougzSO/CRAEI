@@ -655,3 +655,43 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 - D86 addendum: W3d done. O25 opened. D87 stays proposed. O17 stays open, but in
   these runs no definition of the planned fleet separates planned from
   operating at the all-thermal level.
+
+## O25 - closed (2026-10-01, C35)
+
+- Rule accepted by the author: report bootstrap percentiles only if the fleet
+  has at least 10 cells and nan_frac = 0; otherwise report the observed value
+  and the GCM count, labelled descriptive. The 10-cell cut-off is a convention;
+  the stability run did not test it.
+- Stability run (w3_bootstrap_stability, 51 rows compared with the reference
+  n_boot=2000, seed=86), as pasted: p2.5 and p97.5 differ by up to 2.07 and
+  2.87 pp (seed 1, 2000 draws); 1.85 pp (seed 2, 2000, p2.5 only in the paste);
+  1.12 and 1.23 pp (seed 86, 5000); 2.34 and 2.36 pp (seed 7, 5000). Median
+  absolute difference 0.22 to 0.60 pp.
+- Consequence: bounds are reported in whole pp and are indicative; seed-level
+  differences of 2 to 3 pp remain in the extremes. Final n_boot for reported
+  tables: TO BE DEFINED by the author (5000 is a candidate).
+- The paired scenario contrast (same draws) was approved for W3f-3.
+
+## D84 addendum 2 - option A restored (2026-10-01, C35)
+
+- Option B (version the two PRT CSVs) is reverted to A. The licence was not
+  confirmed. The files stay git-ignored (data/ in .gitignore; git check-ignore
+  confirmed for both). No git add -f.
+- Checked: tests/test_validation_ren_iph.py has no csv, read_, tmp_path or
+  Path( reference; tests call the functions on in-memory frames, so the suite
+  does not need the files. The article is Brazil only.
+- Source per file headers: APA (bulletin of 30/06/2018, Table 7) and ERSE/REN.
+  How to obtain the files: TO BE DEFINED by the author.
+
+## O26 - Base geography for maps (open)
+
+- matplotlib 3.10.8 and geopandas 1.1.2 import, but neither is declared in
+  pyproject.toml (requirements files not checked). No .shp, .geojson or .gpkg
+  was found under ..\data. Source of Brazil and state boundaries: TO BE DEFINED
+  by the author. Blocks W6a and the maps (Fig. 2, Fig. 4).
+
+## Status updates appended 2026-10-01 (C35)
+
+- Work plan section G added (commit map, floor 164, remaining steps).
+- O25 closed, D84 option A restored, O26 opened. D80, D81 and D87 remain
+  proposed; D80 and D81 text was not re-read in this step.

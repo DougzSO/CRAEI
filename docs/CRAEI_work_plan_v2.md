@@ -120,3 +120,60 @@ Open items now tracked: O16-O22. Commands C27 (fuel x tech x fleet per unit) and
 - Test floor after W3d: 161 passed, 1 skipped (measured 2026-10-01).
 
 - Test floor after W3e: 164 passed, 1 skipped (measured 2026-10-01).
+
+## G. Status update after W3e (2026-10-01, written by C35)
+
+- Sections A-F are history. Their Status columns and the header baseline
+  (141 passed) are superseded by this section. Current floor: 164 passed,
+  1 skipped (W3e, measured; also measured at HEAD with the uncommitted test
+  change stashed, same count).
+- Step IDs in practice differ from the old plan: C32 was lint of production
+  scripts, C33 a docs patch, C34 the D86 addendum. The old C31-C34 (exposure by
+  fuel, curves, harvest, operating vs planned) were delivered as W3a-W3e (curve
+  data in W3a); Fig. 3 and Table 1 close in W3f.
+- Step to commit map (from git log; floor only where the subject carries it,
+  the full floor series is in section F):
+
+| Step | Commit(s) | Floor in subject |
+|---|---|---|
+| C25-S1 | 007cf6b | - |
+| C25-S2 | 8e0bb96 | - |
+| C25-S3 | c85044b, d239982 | - |
+| C28 | not found | - |
+| C29 | 1aed746 | - |
+| C30 | 561df2e | - |
+| W3a | 8b4cbb8, 05419e7, b01dade | 151 passed, 1 skipped |
+| W3b | feab42b | 154 passed, 1 skipped |
+| W3c | 9224829 | 157 passed, 1 skipped |
+| W3d | 9755e5b, 26f2c53 | 161 passed, 1 skipped |
+| W3e | ee27e3d | 164 passed, 1 skipped |
+| C32 | f0c8ba6 | - |
+| C33 | aa3b4fa | - |
+| C34 | 26f2c53 | - |
+
+Remaining steps (order of work: close all tables, consolidate sensitivities,
+then figures, then reproducibility; figure modules only read tables):
+
+| Id | Deliverable | Depends on | Status |
+|---|---|---|---|
+| W3f-1 | Table 1: GW and % by technology, fuel, fleet, scenario; min, median, max, agreement k, n cells, top-plant share | O17 | ready after O17 proposal |
+| W3f-2 | Threshold curves with GCM range (grid per O17) | O17 | ready after O17 proposal |
+| W3f-3 | Paired scenario contrast SSP585 - SSP126 per GCM, cell bootstrap, O25 rule | W3d | approved by author |
+| W3f-4 | Axis 1 sensitivity table (long): threshold, TX40, planned fleet, GW vs plant count, water vs air | W3a-W3d | ready |
+| W4a | Null with blocks 12/24/36/60, AR(1) and white noise as limits | none | ready |
+| W4b | Excess over null on plant_units; Itaipu b headline, a sensitivity | W4a | ready |
+| W4c | SPI vs SPEI with the same fit scheme (O18) | none | blocked-by-O18 |
+| W4d | Leave-one-out of the 5 largest hydro overall, Itaipu a/b (O19) | W4b | ready |
+| W4e | GCM range, agreement, hydro cell bootstrap (O20, O21) | W4b | blocked-by-O20 |
+| W4f | Axis 2 sensitivities: SPEI threshold, R_D threshold, SPEI-3 vs SPEI-12 | W4b | ready |
+| W5 | Sensitivity register (choice, alternatives, effect on headline, range; D85) | W3f, W4 | sketch |
+| W6a | Figure I/O and style module; base geography; declare dependencies | O26 | blocked-by-O26 |
+| W6b | Fig. 1, Table 1, Table 2, Fig. 3 | W3f, W4d | sketch |
+| W6c | Fig. 2, Fig. 4, Fig. 5, ONS supplementary table | W6a | sketch |
+| C25-S4 | Dead code by transitive reachability; remaining ruff errors | none | sketch |
+| W7 | Reproducibility run, time per step, hashes, tag (D43) | W6 | sketch |
+| Ops | External copy, D:\found.000, PRT licence (author deferred) | author | open |
+| Text | Methods, results, discussion, as tables close | W3f, W4, W5 | not started |
+
+Author decisions pending: O17, O20, O26, D80, D81, D87 (proposed), final
+n_boot for reported bootstrap tables.

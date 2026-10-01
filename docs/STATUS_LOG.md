@@ -23,3 +23,4 @@
 | 2026-10-01 | C25-S3 | done | git rm of 14 files (audit/*, exposure/compound.py, 6 one-shot scripts, 2 tests); pytest 143 passed, 1 skipped (measured before W3a files); gate 8 PASS; ruff outside archive 62 -> 18 |
 | 2026-10-01 | C34 | done | D86 addendum (W3d bootstrap results) and O25 (reporting rule, open) appended to DECISIONS.md; numbers copied from the w3_bootstrap output |
 | 2026-10-01 | W3e | done | monthly delta N35 profile of operating thermal groups, capacity-weighted over cells (exposure/heat_season.py, w3_season.py, 3 tests); sum of 12 months reproduces annual plant_hazards delta; no harvest window used (O16 source unknown); pytest 164 passed, 1 skipped; gate 8 PASS |
+| 2026-10-01 | C35 | done | work plan section G (commit map from git log, floor 164, remaining steps); O25 closed; D84 option A restored; O26 opened (base geography) |
