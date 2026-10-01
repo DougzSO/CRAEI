@@ -171,7 +171,7 @@ def _summarize_hazard(
         on=["plant_uid", "model", "scenario"],
         how="left",
     )
-    merged["exposed"] = merged["exposed"].fillna(False).astype(bool)
+    merged["exposed"] = merged["exposed"].eq(True)
     merged["cooling_bound"] = "n/a"
 
     group_keys = _GROUP_KEYS + ["model"]
@@ -201,7 +201,7 @@ def _summarize_hazard(
     agree_with_cap = agree_with_cap.merge(
         agreement, on=["plant_uid", "bucket", "scenario"], how="left"
     )
-    agree_with_cap["agrees"] = agree_with_cap["agrees"].fillna(False).astype(bool)
+    agree_with_cap["agrees"] = agree_with_cap["agrees"].eq(True)
     agree_with_cap["agree_mw"] = np.where(
         agree_with_cap["agrees"], agree_with_cap["capacity_mw"], 0.0
     )
@@ -269,7 +269,8 @@ def build_exposure_summary(plants: pd.DataFrame, plant_hazards: pd.DataFrame) ->
         drought_threshold,
         agreement_fraction,
     )
-    out = pd.concat([heat, drought], ignore_index=True)
+    parts = [d for d in (heat, drought) if len(d)]
+    out = pd.concat(parts, ignore_index=True) if parts else heat.copy()
     return out.drop(columns=["cooling_bound"])
 
 
