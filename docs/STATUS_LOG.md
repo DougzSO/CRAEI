@@ -35,3 +35,5 @@
 | 2026-10-01 | C40 | done | ruff F401 fixed in heat_curves.py (committed with the error in 5ff7947); O27 TX40 distribution and grid proposal registered; lock now includes ruff; pytest 176 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | W3f-5 | done | TX40 exposure on its own grid 1,2,5,10,20,30 d (scripts/w3_tx40.py, w3_tx40_curves.csv); reproduces W3f-4 TX40 rows at 10/20/30 d; monotone; pytest 176 passed, 1 skipped; gate 8 PASS |
 | 2026-10-01 | C41 | done | O27 closed (grid accepted); Axis 2 facts registered before W4a |
+| 2026-10-01 | W4a | done | null rates: blocks 12/24/36/60, AR(1), white noise; c23d checks PASS; n_boot 5000 accepted |
+| 2026-10-01 | C42 | done | W4a docs and n_boot decision registered |

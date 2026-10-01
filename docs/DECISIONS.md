@@ -886,3 +886,15 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 
 - O27 closed. Axis 1 tables complete except the final n_boot (author decision).
   W4a is next, after reading the null code of c23d.
+
+## W4a - null false-positive rate of R_D >= 2, block sizes and AR(1) (C42)
+- Module craei.hazards.null_model (pure functions), tests/test_null_model.py (8 tests), scripts/w4_null.py. Output: w4_null_rates.csv (54 rows, long format; 6 nulls x 3 SPEI thresholds x 3 R_D thresholds; column is_production_point marks SPEI <= -1.5, R_D >= 2).
+- Checks before writing (abort otherwise): pool 1,110 series (222 BRA hydro ids in hazards, 5 GCMs); block 12 = 18.88% and white noise = 1.80%, both reproduce c23d with seed 23 and the same stream (baseline then future per simulation).
+- Denominator is explicit: n_rd_defined excludes simulations with baseline F_D = 0 (n_rd_undefined: block 12 = 9, block 24 = 11, block 36 = 29, block 60 = 29, AR(1) = 60, white noise = 0).
+- Production point (SPEI <= -1.5, R_D >= 2), % of simulations with R_D >= 2, n_sim = 2,000: block 12 = 18.88; block 24 = 19.36; block 36 = 21.87; block 60 = 20.75; AR(1) = 27.58; white noise = 1.80.
+- Block-size sensitivity at the production point: 18.88 to 21.87%. AR(1) is the upper limit and white noise the lower limit (D83).
+- AR(1) is a new implementation: phi = 0.9343 (mean lag-1 of the 1,110-series pool), unit stationary variance, own stream default_rng([23, 1]); blocks 24/36/60 use default_rng([23, block]). c23c reference (phi = 0.9291, 200 series, 26.12%) is informative only: the sample differs, the check does not abort.
+- Other cells of the grid (SPEI -1.0 / -2.0, R_D 1.5 / 3) are written for W4f and are not headline results.
+- The null rate is a structural reference, not a confidence interval.
+- Decision (author, at W4a): final n_boot for the cell bootstrap = 5,000 (candidate accepted). Consequence: W3d and W3f-3 must be re-run at 5,000 and the bootstrap limits in the tables replaced; step id TO BE DEFINED. Until then, W3d/W3f-3 numbers use 2,000 draws.
+- W5 (to be specified): one-at-a-time sensitivity table, one row per discrete choice and alternative, with delta against the headline and the planned-minus-operating contrast under the same choice. Whether that contrast already exists under each alternative is being checked.

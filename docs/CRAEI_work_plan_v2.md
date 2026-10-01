@@ -201,3 +201,5 @@ n_boot for reported bootstrap tables.
   noise as limits).
 
 - Test floor after W3f-2: 176 passed, 1 skipped (measured 2026-10-01).
+
+- Test floor after W4a: 184 passed, 1 skipped (measured 2026-10-01).
