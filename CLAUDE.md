@@ -105,3 +105,7 @@ audit → implement → test → update `docs/CRAEI_work_plan_v2.md` → stop fo
 - Pytest floor after W3f-4: 173 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
 
 - Pytest floor after W3f-2: 176 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
+
+- Pytest floor after W4a: 184 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
+
+- Pytest floor after W3f-6: 188 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).

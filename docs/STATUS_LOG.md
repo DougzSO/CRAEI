@@ -37,3 +37,5 @@
 | 2026-10-01 | C41 | done | O27 closed (grid accepted); Axis 2 facts registered before W4a |
 | 2026-10-01 | W4a | done | null rates: blocks 12/24/36/60, AR(1), white noise; c23d checks PASS; n_boot 5000 accepted |
 | 2026-10-01 | C42 | done | W4a docs and n_boot decision registered |
+| 2026-10-01 | W3f-6 | done | GCM exclusion: 7 sets, contrast and fuel order under exclusion; 5-GCM checks PASS |
+| 2026-10-01 | C43 | done | W3f-6 docs registered |
