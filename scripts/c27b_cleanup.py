@@ -6,7 +6,14 @@
 Git-tracked files are never touched. Dead-code / unmentioned-script lists are
 report-only. Report written to <data_root>/outputs/audit/c27b/report.md
 """
-import argparse, ast, datetime as dt, re, shutil, subprocess, sys, zipfile
+import argparse
+import ast
+import datetime as dt
+import re
+import shutil
+import subprocess
+import sys
+import zipfile
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")

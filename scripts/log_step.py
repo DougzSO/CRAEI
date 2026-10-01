@@ -1,7 +1,8 @@
 """scripts/log_step.py - append one line to docs/STATUS_LOG.md (append-only).
 Usage: python scripts\\log_step.py C27 done "note"
 """
-import datetime as dt, sys
+import datetime as dt
+import sys
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
