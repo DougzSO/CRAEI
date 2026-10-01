@@ -85,3 +85,5 @@ audit → implement → test → update `docs/CRAEI_work_plan_v2.md` → stop fo
 
 - Current pytest floor: 153 passed, 1 skipped (supersedes any earlier floor in this file).
 - Status log: docs/STATUS_LOG.md (append-only). Plan: docs/CRAEI_work_plan_v2.md.
+
+- Pytest floor after C25-S3: 143 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
