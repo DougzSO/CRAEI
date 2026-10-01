@@ -1,3 +1,94 @@
+## Scope v2 status index
+
+Added by C24 (2026-09-30). Statuses: ACTIVE, ACTIVE-method, SUPPLEMENTARY, OUT-OF-SCOPE-v2 (kept as record), SUPERSEDED, HISTORICAL, TO CONFIRM. No existing row below was edited.
+
+| ID | Scope v2 status | Note |
+|---|---|---|
+| D01 | ACTIVE |  |
+| D02 | ACTIVE |  |
+| D03 | ACTIVE | article uses H1 and H2 only; H3/H4/solar in appendix (D74) |
+| D04 | ACTIVE |  |
+| D05 | ACTIVE |  |
+| D06 | OUT-OF-SCOPE-v2 | coastal bound only matters for H3 freshwater |
+| D07 | ACTIVE | class thresholds kept for Table 1; v2 adds threshold curves and the null (D76) |
+| D08 | ACTIVE | class thresholds kept for Table 1; v2 adds threshold curves and the null (D76) |
+| D09 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| D10 | SUPPLEMENTARY | ONS/REN validation: national ONS supplementary (D73), REN out |
+| D11 | ACTIVE |  |
+| D12 | ACTIVE |  |
+| D13 | ACTIVE |  |
+| O01 | SUPERSEDED | see superseding decision in the row text |
+| D15 | ACTIVE |  |
+| D16 | ACTIVE | see D78: unit-level fleet capacity fixes mixed-status plants |
+| D17 | ACTIVE |  |
+| D14 | SUPERSEDED | see superseding decision in the row text |
+| D18 | OUT-OF-SCOPE-v2 | Portugal REN/DGEG validation |
+| D19 | ACTIVE | pipeline record |
+| D20 | ACTIVE | pipeline record |
+| D21 | ACTIVE | pipeline record |
+| D22 | ACTIVE | pipeline record |
+| D23 | ACTIVE | pipeline record |
+| D24 | ACTIVE | pipeline record |
+| D25 | ACTIVE | pipeline record |
+| D26 | ACTIVE | pipeline record |
+| D27 | SUPERSEDED | see superseding decision in the row text |
+| D27' | ACTIVE | pipeline record |
+| D28 | ACTIVE | pipeline record |
+| D29 | ACTIVE | pipeline record |
+| D30 | ACTIVE | pipeline record |
+| O02 | ACTIVE | pipeline record |
+| D31 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D32 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D33 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D34 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D35 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D36 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D37 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D38 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D39 | OUT-OF-SCOPE-v2 | Aqueduct (H3) outside article (D74) |
+| D41 | ACTIVE | pipeline record |
+| O06 | HISTORICAL | closed by D42 / D43 |
+| O07 | HISTORICAL | closed by D42 / D43 |
+| D42 | OUT-OF-SCOPE-v2 | H4 wet-day threshold; H4 outside article |
+| D43 | ACTIVE | pipeline record |
+| D44 | ACTIVE | pipeline record |
+| D51 | SUPERSEDED | see superseding decision in the row text |
+| D52 | SUPERSEDED | see superseding decision in the row text |
+| O09 | HISTORICAL | diagnostic chain leading to D54/D55 |
+| D45 | SUPERSEDED | see superseding decision in the row text |
+| D46 | ACTIVE | pipeline record |
+| D47 | ACTIVE | pipeline record |
+| D49 | HISTORICAL | diagnostic chain leading to D54/D55 |
+| O08 | HISTORICAL | diagnostic chain leading to D54/D55 |
+| D53 | HISTORICAL | diagnostic chain leading to D54/D55 |
+| D54 | ACTIVE-method | adopted SPEI fitting method |
+| D55 | ACTIVE-method | adopted SPEI fitting method |
+| D56 | TO CONFIRM | not classified by rule; review |
+| D57 | ACTIVE | pipeline record |
+| D50 | HISTORICAL | diagnostic chain leading to D54/D55 |
+| D48 | OUT-OF-SCOPE-v2 | solar PV metric not implemented |
+| D40 | ACTIVE | pipeline fact; Portugal outside article |
+| D58 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| D59 | OUT-OF-SCOPE-v2 | Portugal REN/DGEG validation |
+| D60 | OUT-OF-SCOPE-v2 | Portugal REN/DGEG validation |
+| O10 | OUT-OF-SCOPE-v2 | Portugal REN/DGEG validation |
+| O11 | OUT-OF-SCOPE-v2 | Portugal REN/DGEG validation |
+| D61 | OUT-OF-SCOPE-v2 | Portugal REN/DGEG validation |
+| D62 | OUT-OF-SCOPE-v2 | ONS subsystem / regional assignment |
+| D63 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| D65 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| O12 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| D66 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| O13 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| D67 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+| D68 | OUT-OF-SCOPE-v2 | ONS subsystem / regional assignment |
+| O14 | SUPPLEMENTARY | national ONS validation kept as supplementary (D73) |
+| D69 | OUT-OF-SCOPE-v2 | ONS subsystem / regional assignment |
+| D70 | SUPPLEMENTARY | national ONS validation kept as supplementary (D73) |
+| O15 | OUT-OF-SCOPE-v2 | EM-DAT descriptive |
+| D64 | OUT-OF-SCOPE-v2 | compound metric outside article (D72) |
+
+
 | ID  | Decision | Status | Tier/Source | Date |
 |---|---|---|---|---|
 | D01 | Climate data: ISIMIP3b bias-adjusted, 5 primary GCMs | closed | Spec §1.3 | 2026-09-16 |
@@ -331,3 +422,23 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 | D70 | COMANDO 22-D (2026-09-30, author-run, CLAUDE.md Rule 12): resolves O14 by implementing Spec Step 11's `validation.csv`, option (a). Two prerequisite contradictions in `reports/c21_validation.md` checked and resolved first: (1) no plant-subsystem mapping file exists anywhere on disk (full-project filename search) -- the report's "PASS... see mapping file" in Section/PARTE 2 was never backed by a real file, nothing to archive; D62's rejection stands, that body-text line is stricken. (2) The manifest has 296 real entries in `data/raw/manifest.json` (180 isimip3b, 72 local, 27 ons_ena, 9 w5e5v2.0, 3 hydrobasins, 2 natural_earth, 1 each dgeg_hydro_generation/ren_iph/datasets) -- the report's final-block "PASS" was correct, its body's "To be populated" line was stale and is corrected, not the other way round. Real blocker found during audit, not in the original command: METHODS_SPEC.md line 115/405 requires SPEI-12 "computed from W5E5 observations" -- a derivation distinct from the model-based SPEI-12 in `spei.parquet` (5 ISIMIP3b GCMs bias-adjusted *to* W5E5, never *from* raw W5E5). The raw W5E5 NetCDFs were acquired (D59) but never run through PET/water-balance/SPEI fitting; `spei.parquet` has no `w5e5` model entry. Author instructed running that derivation now (`scripts/24_w5e5_spei_validation.py`, reusing `craei.hazards.pet`/`craei.hazards.spei` unchanged): hydro-catchment-only cells (BRA 222 plants/1758 cells, PRT 41 plants/45 cells; India excluded per Spec line 115), Hargreaves-Samani PET, monthly water balance, single-fit-per-series SPEI-12 (`fit_baseline_single`, D54 pattern) on the 1985-2014 baseline window, standardized across the full 1984-2019 W5E5 record. TX<TN: 0/23,115,942 days (BRA), 0/591,705 (PRT); 0 PET-truncated days either country (no glacial cells in scope, unlike India's L16). 0/263 (id, model) series had any failed baseline-month fit; 5,786/113,616 rows are NaN SPEI (first-11-months-of-history rows with no prior full 12-month accumulation, by construction, same as `accumulate()`'s documented behavior elsewhere). New outputs: `data/processed/water_balance_catchment_w5e5.parquet`, `data/processed/spei_w5e5.parquet` (113,616 rows each) -- separate files, the production `water_balance_*.parquet`/`spei.parquet` are untouched. ENA units (Action 2): raw `ENA_Diario_por_Subsistema-*.csv` carries both `ena_bruta_regiao_mwmed` (absolute MWmed) and `_percentualmlt` (%MLT); MWmed used, so summing the 4 subsystems to a national daily total is valid (no %MLT-summing problem). National annual ENA = calendar-year mean of the daily national MWmed total (`scripts/25_validation_stats.py`). **Brazil** (national, annual, December SPEI-12 capacity-weighted over 222 hydro plants, n_years=20, the 2000-2019 W5E5(<=2019) x ONS-ENA(>=2000) intersection exactly as expected): Spearman rho=0.361, 95% CI [0.027, 0.811] (3-year block bootstrap, 10,000 resamples); odds ratio (December SPEI-12 <= -1 given bottom-tercile annual ENA) = 0.917, 95% CI [0.200, 19.286] (same bootstrap scheme, Haldane-Anscombe correction available for zero cells, not triggered). The OR's CI spans below and above 1 by a wide margin -- no detectable association between December SPEI-12 and bottom-tercile national ENA at this sample size, consistent with Action 6's instruction that a weak/null national correlation is a legitimate result (reservoir regulation and cascade operation decouple a purely climatic index from system-level inflow), not evidence of a code defect. **Portugal** (monthly, capacity-weighted over 41 hydro plants, REN IPH, n_obs=57 exactly matching D60's real overlap): Spearman rho=0.246, 95% CI [-0.065, 0.625] (12-month block bootstrap, not 3-month, since SPEI-12 is itself a 12-month accumulation and adjacent months are strongly autocorrelated); n_eff = n_obs/block_size = 4.75, reported alongside n_obs=57 so the two are never conflated -- the wide CI is the correct consequence of ~4-5 effective years of information, not a failure. `validation.csv` written to `outputs_tables_dir` with the exact schema Action 7 specified (region, resolution, n_obs, n_eff, rho, rho_ci_low, rho_ci_high, odds_ratio, or_ci_low, or_ci_high, bootstrap_block), two rows (BRA_national, PRT). EM-DAT (Action 5): recommended, not executed -- see O15. `figure_readiness.csv`'s Figure 5 row changes from BLOQUEADA to PRONTA (national Brazil + Portugal correlation now backed by real output); the subsystem-level panel Spec §1.7 also describes remains out of scope per D62/L20, unchanged. `reports/c21_validation.md`'s final status block: `ONS_ENA_INTEGRATION_CHECK` changes from `BLOCKED_BY_PLANT_SUBSYSTEM_LIMITATION` to `NATIONAL_DONE` with `SUBSYSTEM_DEFERRED` (D62 unchanged reason). | closed | author, COMANDO 22-D | 2026-09-30 |
 | O15 | Opened by COMANDO 22-D Action 5 (EM-DAT scope decision, not executed without authorization): `emdat_events.parquet` (899 rows: BRA 239, IND 622, PRT 38) has never been run through Spec's filtering rules or any statistical test against the SPEI/ENA/IPH validation series -- `reports/c21_validation.md`'s PARTE 6 already flagged this as "filtering pending". Recommendation (not executed): treat EM-DAT as out of scope for the quantitative validation in Spec §1.7 (no correlation/test claim), and, if a descriptive supplementary table is wanted, produce `emdat_descriptive.csv` as a purely descriptive table (counts/deaths/affected/economic_damage by country x event_type x year) with no statistical test and no validation language -- consistent with Action 6's instruction that EM-DAT reporting-bias and heterogeneous country coverage (India's 622 vs. Portugal's 38 rows reflects reporting practice and population, not physical risk) make it unsuitable as an independent statistical check on the climate-hazard results. Rationale for recommending descriptive-only over full exclusion: the data is already acquired and clean (9 files registered in the manifest, D59), costs nothing to report as a supplementary table, and gives readers qualitative context EM-DAT is actually suited for (event counts, not a rho/OR claim) without overstating what a heterogeneous-reporting event database can validate. **RESOLVED 2026-09-30 (author authorization, same session)**: descriptive-only recommendation adopted, matching METHODS_SPEC.md line 115/447 ("EM-DAT is used only descriptively in Supplementary Information" / Extended Data "EM-DAT descriptive overlay") -- not actually a free choice once the Spec text is read, both options above were offered before that line was re-checked here. `scripts/26_emdat_descriptive.py` groups `emdat_events.parquet` by country x event_type (n_events, first_year, last_year, total_deaths, total_affected, total_economic_damage, plus each metric's non-null count so a summed 0 is never confused with "no data"), no filtering beyond what the acquisition step already applied, no statistical test, no validation claim. Written to `outputs_tables_dir/emdat_descriptive.csv`, 12 rows (3 countries x 4 event types). | closed | author, COMANDO 22-D | 2026-09-30 |
 | D64 | COMANDO 22: discards Alternative A (fixed absolute compound-month threshold, tested diagnostically alongside D63) as a candidate replacement for the percentile-based compound definition. Measured directly (not assumed) on a 3x3 grid bracketing the production percentile thresholds (S_hydro in {0.10, 0.20, 0.30}; H_thermal in {2, 5, 10 days/month}): the discrimination rate (share of country x scenario x model rows where both marginals stay under 50% of future months) ranges from 28.9% at the loosest pair to 84.4% at the strictest, with no physical basis in Spec §1.6 or elsewhere for preferring any one pair in that range -- the choice of absolute level would itself become the result, which is a Tier-3 (author-assumption) parameter sitting directly on top of the article's central Result 2, not an auxiliary sensitivity test like the existing Tier-3 choices in §1.8. Not adopted; no `params.yaml` entry added for it. Alternative B (absolute compound frequency in percentage points, no ratio) is adopted instead as `diff_pp` (see D63) precisely because it needs no new arbitrary threshold. | closed | author, COMANDO 22 | 2026-09-30 |
+
+
+## Decisions and open items added by C24 (Scope v2, 2026-09-30)
+
+| ID | Decision | Status | Tier/Source | Date |
+|---|---|---|---|---|
+| D71 | Scope v2: one article, Brazil only, two axes. Axis 1 (main): heat exposure of the Brazilian thermal fleet broken down by fuel, operating vs planned. Axis 2 (secondary): hydro drought exposure reported against an internal-variability null, with GCM spread, SPI/SPEI comparison and leave-one-out. Out: India, Portugal, flooding, solar, wind, composite score. IND/PRT code and outputs stay in the pipeline for a second article or data descriptor (no code deleted; Brazil filter applied at table level). | closed | author, C24 | 2026-09-30 |
+| D72 | Compound hydro-drought/thermal-heat metric removed from the article. Artifacts (compound.csv, compound_months.parquet) stay in tables/ until C25; 11_compound.py stays archived; readers (c23_scope_audit.py, 22_audit.py, src/craei/audit) are removed in C25. | closed | author, C24 | 2026-09-30 |
+| D73 | ONS national validation (D70: rho=0.361, CI 0.027-0.811, n=20) kept as supplementary material and as a stated limitation, not a main figure. Moves to the main text only if a reviewer requests it. Subsystem validation stays suspended (D62/L20). | closed | author delegated to assistant, C24 | 2026-09-30 |
+| D74 | H3 (Aqueduct) and H4 (extreme precipitation) and solar rows are outside the article; kept as pipeline artifacts for article 2. Reason: Aqueduct is not consistent with the ISIMIP3b ensemble (L06/L13) and none of the three serves the two axes. | closed | author delegated to assistant, C24 | 2026-09-30 |
+| D75 | Target journals: Climate Risk Management, Renewable Energy, Applied Energy; Earth's Future if the planning component is strong. | closed | author, C24 | 2026-09-30 |
+| D76 | Internal-variability null: the canonical null is the block bootstrap of c23d (pool of real (id, model) baseline SPEI-12 series, 360-month windows, N_SIM=2000, seed 23): R_D>=2 occurs by chance in 18.88% of series at SPEI<=-1.5. The white-noise reference (1.80%) is reported only as a lower reference (SPEI-12 is serially correlated by construction). The c23c AR(1) null (26.12%) is superseded. Basis: c23d_report.md title and sections 2-3; the written rationale for the correction must be quoted from c23d section 1 in command C30. Excess over null is descriptive (observed minus null rate), not a significance test. | closed | author delegated to assistant, C24 | 2026-09-30 |
+| D77 | Fuel classes come from GEM unit-level fields, never from plants.parquet. Rule: Type first (coal, nuclear, bioenergy); for oil/gas use Fuel classification (oil/gas only): gas (Gas plus LNG only), oil, multi_fuel. Bioenergy subtype from Fuel (combustion only): agricultural_waste (solids only; proxy for bagasse, GEM does not name bagasse), paper_mill_waste, wood_biomass (wood and other biomass), other_bioenergy (everything else, incl. agricultural biogas, landfill gas, wastes, biodiesel, unknown). No GW splitting across fuels. Reference totals, Brazil operating, unit level: gas 19.32, bioenergy 17.43 (agricultural 12.08, paper mill 3.81, wood about 1.06, other about 0.48), oil 4.60, multi_fuel 1.33, coal 3.00, nuclear 1.99 = 47.67 GW. Command C27/C28 must reproduce these. | closed | author delegated to assistant, C24 | 2026-09-30 |
+| D78 | Fleet attribution fix without touching plants.parquet. inventory/plants.py (line about 141) assigns each plant one fleet = mode of its units' status counted by units. This mis-assigns 5 Brazilian thermal plants (22 units: 3.56 GW operating-status, 6.46 GW announced-status), giving operating +3.55 GW and planned_early -3.55 GW vs GEM unit-level totals (47.67/17.31/31.04 GW). Fix: auxiliary unit-level table plant_units.parquet (plant_uid, fleet, fuel_class, bio_subtype, capacity_mw); hazards stay joined on plant_uid (same location). plants.parquet and the regression-gate baseline stay unchanged. Article capacity-by-fleet numbers use plant_units. Old exposure_summary.csv carries the mode-based error and is not used in the article. | closed | author delegated to assistant, C24 | 2026-09-30 |
+| O16 | Heat metric for bioenergy: annual TX35 vs harvest-season TX35 (monthly n35 exists in indices_daily.parquet, no climate reprocessing). Options: (a) annual only; (b) annual plus season window by region (commonly cited: roughly April-November Center-South, September-March North-Northeast; source to be cited, not verified here); (c) all-months monthly profile per fuel. Not chosen. | open | author | 2026-09-30 |
+| O17 | Operating-vs-planned comparison metric and threshold-curve grid. Options: (a) difference in GW share above threshold (planned minus operating) with GCM range; (b) ratio; (c) GW-weighted median dTX35 per fleet; (d) bootstrap over plants. Curve grid for GW fraction vs dTX35: e.g. 0-60 days/yr in steps of 5. Not chosen. | open | author | 2026-09-30 |
+| O18 | SPI vs SPEI divergence metric. Confound to resolve first: SPI-12 is fitted per calendar month (n=30, gamma) while SPEI-12 is fitted once per series (n=360); c23d applies the SPEI bootstrap null (18.88%) to SPI. Options: (a) refit SPI with the SPEI scheme and its own null; (b) keep SPI as is and state the confound; (c) drop SPI. Not chosen. | open | author | 2026-09-30 |
+| O19 | Leave-one-out definition (Table 2): c23d item 7 already removes each of the 5 largest Brazilian hydro plants by GW. Confirm after reading c23d_7_leave_one_out.csv: metric reported (GW share R_D>=2, excess over null), and treatment of binational plants (see L30). Not chosen. | open | author | 2026-09-30 |
+| O20 | Whether the thermal_water_dependent drought bucket stays in Fig 5. Default: yes (already computed, links the axes). Option: restrict Axis 2 to hydro buckets only. | open | author | 2026-09-30 |
+| O21 | Uncertainty reporting for excess over null: plants in the same basin/cell and the 5 GCMs are not independent. Options: (a) GCM min-max range only (c23d); (b) add model-agreement (at least 4/5 same sign); (c) cluster bootstrap by basin. Not chosen. | open | author | 2026-09-30 |

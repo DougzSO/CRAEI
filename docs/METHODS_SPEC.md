@@ -1,38 +1,14 @@
-# Design: Water and Heat Hazards to Hydro and Thermal Power Fleets in Brazil, India and Portugal
+# Design v2: Heat and drought exposure of the Brazilian power fleet
 
-Working title: *Compounding drought and heat threaten the backup logic of hydro-thermal power systems*
-
-Target: Nature Climate Change (Article). Fallback venues if desk-rejected: Nature Communications, Environmental Research Letters.
-
----
-
-## 0. Design position and reviewer risks (read first)
-
-**Core position.** The study becomes an asset-level assessment of how climate change alters the frequency of drought and extreme heat at hydro and thermal power plants, with two system-level findings as the headline: (i) the change in the joint occurrence of hydro drought and thermal heat stress in the same month, which is when thermal backup is most needed and least reliable, and (ii) how much of the planned pipeline is being sited into worsening conditions. Per-hazard exposure maps support these findings; they are not the headline.
-
-**Main reviewer risks, in order of severity.**
-
-1. *Novelty against published NCC work.* van Vliet et al. (2016, NCC) already assessed hydro and thermal vulnerability globally with physically based hydrological and water temperature models. An index-based design is methodologically simpler than that precedent in the same journal. Novelty must come from asset resolution (thousands of plants, three contrasting systems), the compound hydro-drought/thermal-heat metric, the planned-pipeline lock-in analysis, and an out-of-sample check against observed hydro inflow. Without the compound and pipeline results, this is an ERL-level paper.
-2. *Weak causal link from index to operational impact.* Thresholds such as TX35 are climatological indices, not plant operating limits. The text must describe hazard exposure and its change, never "generation loss", unless validated.
-3. *Cooling technology unknown.* Handled with two explicit bounds (Section 1.2), declared as a limitation.
-4. *Small ensemble with two high-sensitivity models.* Handled with median, full range and a hot-model exclusion test.
-5. *Validation only possible for hydro in Brazil and Portugal.* India remains unvalidated; this is stated, not hidden.
-
-**Decisions that break with the previous framework.**
-
-- The existing 9.3 GB of processed rasters are not used. They carry the self-referential baseline and a 1 km resampling of ~100 km model output that implies resolution the data does not have.
-- The raw CMIP6 GFDL-ESM4/MIROC6 files are superseded by ISIMIP3b bias-adjusted data, which includes the historical period, tasmin for every model-scenario pair, and five GCMs in one consistent product. A new download was unavoidable in any case, because fixing the baseline requires historical simulations.
-- Wind power is excluded from the hazard assessment; solar PV moves to Supplementary Information (justification in Section 6, Q1).
-- No composite score, no weights, no normalization to 0-1.
-- ERA5 gusts and IBTrACS are not used. Note: 127,245 IBTrACS records attributed to Portugal is not physically plausible for a country with almost no tropical cyclone landfalls; the country filter probably used a bounding box capturing North Atlantic tracks.
+Scope v2 (D71): Brazil only; Axis 1 heat exposure of the thermal fleet by fuel (operating vs planned); Axis 2 hydro drought against an internal-variability null. Replaces the three-country design archived at docs/archive/METHODS_SPEC_v1_pre_rework.md. Blocks marked "verbatim" are copied unchanged from v1. Anything not yet defined is written as TO BE DEFINED with its open item.
 
 ---
 
 ## 1. Methods
 
-### 1.1 Study domain
+### 1.1 Study domain and scope (v2)
 
-Brazil, India and Portugal represent three power-system archetypes under contrasting climates: a hydro-dominated interconnected system with thermal backup (Brazil, tropical), a coal-dominated thermal system under monsoon variability (India), and a high renewable-share Mediterranean system balanced by hydro and gas (Portugal). This framing gives the country selection a mechanistic rationale beyond climatic contrast, since the compound metric (Section 1.6) tests the hydro-thermal complementarity each system relies on to a different degree.
+Brazil only (D71). The pipeline still produces India and Portugal results; they are not analysed here and the Brazil filter is applied at table level, not by deleting code. See Appendix A for components outside the article.
 
 ### 1.2 Infrastructure data
 
@@ -77,14 +53,6 @@ F_D = fraction of months with SPEI-12 ≤ −1.5,
 
 which is close to 6.7% in the baseline by construction (standard normal probability below −1.5). The change metric is the ratio R_D = F_D,future / F_D,baseline. The headline exposure class is R_D ≥ 2 (severe drought at least twice as frequent; tier 3, tested at 1.5 and 3). For run-of-river plants SPEI-3 is also reported. Hargreaves was chosen over Thornthwaite because Thornthwaite is known to overstate drying under warming, and over Penman-Monteith for simplicity; SPI-12 (precipitation only) is reported as the lower bound that ignores atmospheric demand.
 
-**H3. Chronic water stress (water-dependent thermal, freshwater bound only).** WRI Aqueduct 4.0, keyed by HydroBASINS `pfaf_id`, for the baseline and for 2050 under the optimistic, business-as-usual and pessimistic scenarios, mapped to SSP1-2.6, SSP3-7.0 and SSP5-8.5. Aqueduct 4.0 splits the indicator across two collections with different field names: the baseline collection (`baseline_annual`) exposes `bws` (baseline water stress); the 2050 projections (`future_annual`) expose `ws` (water stress) under each `{bau|opt|pes}{30|50|80}` scenario/horizon code. Both are the same underlying stress ratio (withdrawal over available supply) on the same 0-5 category scale; the field renaming between collections is WRI's own convention, not a methodological difference. Aqueduct categories are used as published: low (<10%), low-medium (10-20%), medium-high (20-40%), high (40-80%), extremely high (>80%). Exposure is capacity in high or extremely high stress. H3 is reported separately from H1 and H2 because Aqueduct uses its own climate and socioeconomic forcing and is not consistent with the ISIMIP3b ensemble. Aqueduct's future-annual values are themselves the median of an internal 5-GCM ensemble distinct from this project's ISIMIP3b ensemble, with no per-model breakdown available (L13).
-
-**H4. Extreme precipitation (Supplementary Information, all fleets).** Wet-day 95th percentile (days ≥1 mm) estimated on the baseline per cell and model; change metric is the ratio of exceedance frequency (baseline 5% of wet days by construction) and the percentage change in mean annual Rx5day. Reported as a change in flood-forcing precipitation, not as flood risk.
-
-**Solar PV (Supplementary Information).** Peak-hour temperature loss L = γ × max(0, TX + 31.25 − 25), with γ = 0.4% °C⁻¹ (typical crystalline silicon; verify against datasheet range) and 31.25 °C the cell-to-air difference from NOCT = 45 °C at 1000 W m⁻². Because L is linear in TX above the threshold, ΔL mainly reflects warming; it is included to document that heat-driven PV losses are small compared with thermal and hydro hazards, not as a finding in itself.
-
-**Excluded hazards.** Extreme wind is excluded for three reasons: 10 m gusts are not comparable with IEC 61400-1 design winds (50-year 10-minute reference speeds of 50, 42.5 and 37.5 m s⁻¹ at hub height for classes I-III), which are rarely approached outside tropical cyclone tracks; confidence in projected extreme wind change is low in IPCC AR6; and GCM resolution does not capture the relevant extremes. Riverine and coastal flooding, sea-level rise and wildfire are outside the scope.
-
 ### 1.5 Exposure assessment
 
 Hazards are never combined into a single score. For country c, technology t, hazard h, scenario s and model k, capacity exposure is
@@ -93,107 +61,37 @@ E_{c,t,h,s,k} = Σ_{i∈(c,t)} Cap_i × 1[Δ_{i,h,s,k} ≥ τ_h] / Σ_{i∈(c,t)
 
 reported both as a share and in GW. Model agreement is defined as at least four of five GCMs projecting a change of the same sign (ΔTX35 > 0; R_D > 1). Ensemble results are the median across models with the full model range.
 
-### 1.6 Compound hydro-drought and thermal-heat metric
+### 1.6 Fleet and fuel classification (v2; D77, D78)
 
-For each country, model and period, two monthly national series are built:
+Capacity by fleet and fuel is computed from GEM unit-level rows (table plant_units.parquet, command C28), not from plants.parquet, because plants.parquet assigns one fleet per plant by the mode of unit status (D78). Hazards are joined on plant_uid (location is shared by all units of a plant).
 
-S_hydro(m) = Σ_{i∈hydro} Cap_i × 1[SPEI-12_i(m) ≤ −1.5] / Σ Cap_i (share of hydro capacity in severe drought)
+Fuel classes (D77): Type first (coal, nuclear, bioenergy); oil/gas split by GEM Fuel classification into gas (Gas, LNG only), oil, multi_fuel; bioenergy subtypes agricultural_waste (bagasse proxy), paper_mill_waste, wood_biomass, other_bioenergy. Brazil operating reference totals (GW): gas 19.32, bioenergy 17.43, oil 4.60, coal 3.00, nuclear 1.99, multi_fuel 1.33; total 47.67.
 
-H_thermal(m) = Σ_{j∈thermal} Cap_j × N35_j(m) / Σ Cap_j (capacity-weighted number of TX35 days in the month)
+### 1.7 Heat axis (v2)
 
-A compound month occurs when both series exceed their own 90th percentile estimated on 1985-2014 of the same model (if the S_hydro percentile is zero, any value above zero qualifies). Under independence the baseline frequency is about 1%. The national aggregation is justified by interconnection in Brazil (SIN) and India (national grid) and by Iberian market coupling for Portugal.
+H1 and the exposure formula of 1.5 apply, with a fuel dimension added: E over (fuel, fleet, scenario, model). Outputs: share and GW above the headline class (dTX35 >= 30 days/yr), ensemble median, model range, agreement (at least 4 of 5 GCMs).
 
-**Metric closure (D63, COMANDO 22, current state, supersedes the LR_C design below this paragraph)**: the future-to-baseline likelihood ratio LR_C = F_C,future / F_C,baseline, as originally specified, is not used as the headline quantity. A direct diagnostic found that in 13 of 45 country x scenario x model cells, at least one of S_hydro or H_thermal exceeds its own baseline P90 in a majority of future months (worst case: Brazil x UKESM1-0-LL, 64-92% of future months across the two series and three scenarios). In those cells the ratio `f_compound_observed / (f_s_above * f_h_above)` -- the observed compound frequency divided by what independence of the two marginals would predict -- is close to 1.0, meaning LR_C's large values there come from each series' own baseline-relative drift (a mean shift), not from extra co-occurrence; the P90 threshold has stopped discriminating extremes in those cases. The metric is reported instead as two separate quantities, both computed directly from the already-aggregated monthly series, no new climate data processed:
+- Threshold curves (GW fraction vs dTX35): TO BE DEFINED, see O17 (curve grid).
+- Operating vs planned comparison: TO BE DEFINED, see O17 (metric and uncertainty).
+- Harvest-season variant for bioenergy: TO BE DEFINED, see O16.
 
-- `diff_pp` = 100 x (F_C,future - F_C,baseline): the change in compound-month frequency in percentage points. A difference, not a ratio, so it stays well-defined and interpretable even where a marginal's baseline P90 is exceeded most of the time in the future.
-- `dependence_ratio` = F_C,future / (f_s_above,future x f_h_above,future), where `f_s_above,future` and `f_h_above,future` are each series' own share of future months above its baseline P90: observed future co-occurrence over the co-occurrence independence would predict, from the future marginals only. Values near 1.0 mean the two series are behaving independently above their respective thresholds in the future period (no extra coupling to report); values further from 1.0 indicate measurable dependence.
+### 1.8 Drought axis (v2)
 
-Restricting to the 32 of 45 cells where the percentile threshold still discriminates (both marginals under 50% of future months), `dependence_ratio` is not uniformly 1.0: median 1.23, 5th/95th percentile 0.78/2.69, and 20/32 cells (62.5%) deviate from 1.0 by more than 20%, mostly upward and most pronounced for India. This is reported as a real, moderate finding of positive dependence in a majority of the cells where the question is answerable, not explained away as pure independence -- see §2.3.
+H2 and the fitting method of 1.4 apply unchanged (D54/D55).
 
-### 1.7 Validation
+- Internal-variability null (D76): block bootstrap, pool of 1,110 (id, model) series of 360 baseline months, N_SIM=2000, seed 23; preliminary reference values from c23d_report.md: 18.88% of series reach R_D>=2 at SPEI<=-1.5 (1,991 of 2,000 with R_D defined); white-noise lower reference 1.80%. Excess over null = observed capacity share minus the null rate, by bucket, scenario, GCM; descriptive, not a significance test (L26). Production script to be written (C30), acceptance = reproduce these numbers.
+- SPI vs SPEI comparison: TO BE DEFINED, see O18.
+- Uncertainty of the excess (GCM range, agreement, clustering): TO BE DEFINED, see O21.
+- Leave-one-out of the 5 largest hydro plants: TO BE DEFINED, see O19.
+- Thermal water-dependent bucket in Fig 5: TO BE DEFINED, see O20.
 
-Validation targets the one sector with open observed response data. SPEI-12 is computed from W5E5 observations (1985-2019) with the same procedure and aggregated to hydro-capacity-weighted series for the four Brazilian subsystems and for Portugal. These are compared with annual natural energy inflow (ENA) from the Brazilian system operator (ONS) and with the hydro productivity index (IPH) published by the Portuguese transmission operator (REN). Statistics: Spearman correlation with 3-year block bootstrap confidence intervals, and the odds ratio of a bottom-tercile inflow year given December SPEI-12 ≤ −1. Short records produce wide intervals, which are reported as such. W5E5 is derived from ERA5, so a comparison of hazard climatology against ERA5 would not be independent and is not used as validation. EM-DAT is used only descriptively in Supplementary Information. India is not validated, which is stated as a limitation.
+### 1.9 Validation (v2)
 
-**Subsystem validation status**: A desagregação por subsistema ONS (N/NE/S/SE) está suspensa para v0.1.0 por ausência de fonte oficial de mapeamento planta→subsistema (ver D62). A validação de Portugal (REN IPH × SPEI-12, n=57 meses) e a correlação nacional Brasil permanecem.
-
-**Portugal / REN IPH (D59-D61, O10-O11, COMANDO 21-23)**: primary validation variable is REN's monthly Hydro Productivity Index (IPH), acquired directly from REN DataHub's `RegimeYearly` endpoint (`craei.acquire.ren`).
-
-- REN data coverage: 2015-01 to 2026-09.
-- Climate-model overlap: 2015-01 to 2019-12.
-- Usable complete calendar years: 2016-2019 (4 years; 2015 is a partial year, missing jul/aug/sep, see D60).
-- Available overlap months: 57 (not the nominally assumed 60).
-- Monthly validation: implementation-level / observational cross-validation against APA 2018 Tabela 7 -- matches to within 2-decimal rounding for all 33 overlapping months (`reports/ren_iph_validation.md` §4). This confirms the acquisition and date semantics are correct, not that five years of overlap gives long-term climatological power.
-- Annual validation: **resolved as a methodological limitation, not a failure** (D61). Every raw REN response inspected directly exposes no annual/weighting field -- only the 12 monthly values -- and no public REN/ERSE/DGEG documentation of the exact annual aggregation formula was found. A derived calendar-year mean does not reproduce ERSE's published annual figure in general (2017 is the clearest case); this is recorded as a gap in what can be independently checked at the annual resolution, and is not used to support or undermine the monthly-resolution statistics the study actually reports.
-- Auxiliary validation: DGEG gross monthly hydroelectric generation (GWh), used only as a consistency check (O11, D61) -- never treated as equivalent to IPH. Annual correlation with IPH is strong (Pearson/Spearman ≈ 0.90 over 2015-2019); monthly correlation is weaker, as expected, since generation additionally depends on afluência timing, reservoir operation, dispatch, capacity and pumping.
-
-**Limitation**: the five-year overlap prevents robust long-term climatological inference from the Portugal correlation/odds-ratio statistics; report accordingly, parallel to L08/L09's existing short-record notes for Brazil/India.
-
-### 1.8 Uncertainty
-
-Uncertainty is reported through (i) scenario spread, (ii) inter-model range and agreement, and (iii) one-at-a-time tests of each discrete choice: heat class (15/30/60 days), drought class (R_D 1.5/2/3), SPEI threshold (−1.0/−1.5/−2.0), PET formulation (SPEI Hargreaves vs SPI), coastal cooling distance (2/5/10 km), and exclusion of UKESM1-0-LL (highest climate sensitivity in the ensemble). A global variance-based analysis (Sobol) is not used because the design has few discrete choices whose individual effects are more informative when shown directly.
+National ONS validation (D70, rho=0.361, CI 0.027-0.811, n=20) is supplementary (D73). Details in Appendix A (v1 section 1.7).
 
 ---
 
-## 2. Results
-
-Numbers in brackets are placeholders to be filled from the pipeline. No value below is a prediction. Where a baseline value follows from construction, it is stated.
-
-### 2.1 Overview
-
-The operating fleet comprises [N_hydro] hydro plants ([X] GW) and [N_thermal] thermal plants ([Y] GW) across Brazil, India and Portugal, of which [Z] GW are water-dependent thermal and [W]% of that capacity lies within 5 km of the coast. The planned fleet adds [P_adv] GW in advanced stages and [P_early] GW in early stages for hydro and thermal.
-
-Interpretation to write: the three systems differ in how much of their firm capacity depends on water (hydro plus freshwater-cooled thermal), which sets up the compound analysis.
-
-### 2.2 Result 1: Heat and drought exposure of the operating fleet
-
-`[FIGURE 1: Plant-level maps of ΔTX35 at thermal plants and R_D at hydro plants, SSP3-7.0, ensemble median; hollow markers where fewer than 4 of 5 GCMs agree; three country panels]`
-
-`[FIGURE 2: Share of capacity in the headline exposure classes by country, technology and SSP; bars = ensemble median, whiskers = model range]`
-
-Expected content: [A]% of thermal capacity ([A_GW] GW) crosses ΔTX35 ≥ 30 days yr⁻¹ under SSP3-7.0 (range [a1-a2]%), and [B]% of hydro capacity faces at least a doubling of severe drought frequency (R_D ≥ 2). Baseline severe drought frequency is ~6.7% of months by construction, so R_D = 2 means ~13% of months.
-
-Hypotheses to test, with what would falsify them:
-
-- Warming-driven heat exposure grows consistently across models for the Indian thermal fleet. Falsified if model agreement is below 4/5 over most Indian thermal capacity.
-- Drought signal at hydro catchments is less consistent across models than heat, especially where precipitation projections diverge (e.g. parts of Brazil). If agreement is low, the finding becomes "drought exposure is uncertain in sign" and is still reportable, since that uncertainty matters for hydro-dependent planning.
-- Portugal shows high drought ratios under all scenarios, consistent with Mediterranean drying. Falsified if R_D < 1.5 across most models.
-- SSP differences at mid-century are smaller than model spread. This is the likely outcome for 2041-2070 and should be reported directly rather than framed as a scenario result.
-
-For water stress (H3), report [C] GW of water-dependent thermal capacity in high or extremely high bws in 2050 under the upper bound and [C_low] GW under the coastal lower bound. The gap between the two bounds is itself a result: it quantifies how much the unknown cooling technology matters.
-
-### 2.3 Result 2: Compound hydro-drought/thermal-heat months, and whether the co-occurrence is real
-
-**Current state (D63, COMANDO 22)**: Result 2 is no longer reported as a single likelihood ratio LR_C. Two things are reported together instead: how much more often drought and heat now coincide (`diff_pp`, percentage points), and whether that increase reflects genuine co-occurrence beyond what each hazard's own marginal increase would produce on its own (`dependence_ratio`). This split exists because LR_C's ratio framing broke down in 13 of 45 country x scenario x model cells (see §1.6) -- those cells are not dropped, but their large historical-LR_C-style numbers are not quoted as evidence of coupling.
-
-`[FIGURE 3 (redefined, D63): two panels. Left: diff_pp (percentage-point change in compound-month frequency) by country and SSP, individual model points with median. Right: dependence_ratio by country and SSP, individual model points with median, reference line at 1.0.]`
-
-Expected content: `diff_pp` on the order of several to tens of percentage points depending on country/model/SSP (production range observed: -1.1pp to +74.4pp across the 45 cells; Brazil's UKESM1-0-LL cells are the largest, India's are mostly small and some are negative). `dependence_ratio` for the cells where the threshold still discriminates (32/45): median 1.23, most mass between 0.78 and 2.69, with 62.5% of those cells more than 20% away from 1.0, mostly above it -- reported as a real, moderate, country-dependent finding of positive dependence, most pronounced in India, not as "the series are independent everywhere."
-
-Interpretation to write: `diff_pp` states directly how much of the year moves into compound conditions; a large positive value is the headline regardless of whether `dependence_ratio` is near 1 or not. `dependence_ratio` answers a narrower, separate question -- whether the *increase itself* reflects genuine coupling between the two hazards (worth investigating mechanistically, e.g. shared circulation drivers) versus each hazard simply becoming more common on its own (each series' own marginal trend, already covered by Result 1/§2.2, restated jointly). Where `dependence_ratio` is not computable or not meaningful (a marginal above its baseline P90 in a majority of future months, 13/45 cells, mostly Brazil under UKESM1-0-LL and the higher SSPs), the figure and text report `diff_pp` alone for that cell and state explicitly that the co-occurrence question cannot be separated from the mean-shift there. The Brazil case can still be connected qualitatively to the 2021 water crisis via `diff_pp`, without claiming attribution or citing a compounding ratio that cell's own diagnostic does not support. See L21: because both series are aggregated nationally, part of any measured dependence could reflect drought and heat occurring in different regions of the same country in the same month, not a physically co-located event -- this cannot be resolved without the subsystem mapping D62 could not obtain.
-
-### 2.4 Result 3: The planned pipeline and future hazard
-
-`[FIGURE 4: For each country, share of operating vs planned (advanced, early) hydro and thermal capacity in the headline exposure classes, SSP3-7.0; model range as whiskers]`
-
-Expected content: [G]% of advanced-stage planned thermal capacity and [H]% of planned hydro capacity lie in locations meeting the headline classes, compared with [G0]% and [H0]% of the operating fleet.
-
-Interpretation to write: if the planned share exceeds the operating share, new investment is being directed toward worsening conditions, locking in exposure for plant lifetimes that extend well past 2050. If the shares are similar or lower, siting is neutral or favourable to adaptation. Either outcome answers a question relevant to planners.
-
-### 2.5 Validation
-
-`[FIGURE 5: Observed hydro-capacity-weighted SPEI-12 (W5E5) vs annual inflow indicators: Brazil subsystems (ONS ENA) and Portugal (REN hydro productivity index); time series and scatter with Spearman ρ and 95% CI]`
-
-Expected content: Spearman ρ of [ρ_BR_SE] (Southeast/Centre-West), [ρ_BR_S], [ρ_BR_NE], [ρ_BR_N], [ρ_PT], with odds ratios for low-inflow years. A moderate to strong positive correlation supports SPEI-12 as a proxy for hydro water availability. Weak correlation in regulated or cascade-dominated subsystems should be reported and discussed as a limit of a climate-only index.
-
-### 2.6 Sensitivity
-
-`[EXTENDED DATA FIGURE: Headline numbers (Results 1-3) under each one-at-a-time alternative]`
-
-Report whether the ranking of countries and technologies changes under any alternative. The key statement for the main text is whether the direction of the compound and pipeline findings survives all tests, including exclusion of UKESM1-0-LL and replacement of SPEI by SPI.
-
----
-
-## 3. Technical pipeline
+## 3. Technical pipeline (inherited; verbatim)
 
 Execution machine, measured (COMANDO 15 follow-up, O06/O07 audit): AMD Ryzen 3 PRO 2200G, 4 cores / 4 logical processors, 6.4 GB RAM total. Project data (`data_root`, country-cropped climate files, `plants.parquet`, etc.) lives on the internal SSD (Samsung MZNLN128HAHQ, 128 GB); the raw global ISIMIP cache lives on an external USB HDD (Seagate Basic, 4 TB, D27'/D28). This is well below the 8+ cores / 32 GB this section originally assumed — see D41 (memory-constrained, per-country/model/scenario processing) and the per-step times below, which are measured where a COMANDO on this machine recorded one, and explicitly marked "not measured" otherwise (most are still the original rough pre-implementation estimates).
 
@@ -232,6 +130,9 @@ Input: Step 5 outputs.
 Processing: 12-month and 3-month accumulation; SPEI-12 is fit once per (id, model) series on its own 360 baseline values (no calendar-month split); SPEI-3 is fit per calendar month with a +/-1 adjacent-month window (n=90); both via PWM log-logistic with a Pearson III MLE fallback where PWM does not converge (docs/DECISIONS.md D54/D55; see the Step 6 note below for the full comparison against alternatives, including a regional pooling approach that was tried and reverted); apply the same per-series parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution, per (id, model) per calendar month, n=30 (unaffected by the SPEI estimator choice). Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
 Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12, distribution).
 Time: measured (this machine, fit+standardize loop only, D54's per-series temporal method): **581.5s (~9.7 min)** -- faster than the earlier per-calendar-month hybrid's 3,649s (~61 min, D45/17-F) because SPEI-12's single per-series fit needs one fit attempt per series instead of twelve, cutting the number of (slower) Pearson III MLE calls by roughly the same factor.
+
+
+> Editorial note (C24): the next block documents the COMANDO 17-F per-calendar-month hybrid fit, superseded in production by D54/D55 (see 1.4 H2 and Step 6 above). Kept verbatim as the method-comparison record.
 
 **Step 6 note: PWM log-logistic fit failures and hybrid fallback (COMANDO 17-C/17-D/17-E/17-F; `docs/DECISIONS.md` D45, closed)**
 
@@ -395,6 +296,82 @@ Processing: capacity shares and GW above headline classes per country × technol
 Output: `exposure_summary.csv` (country, tech_class, fleet, hazard, scenario, cooling_bound, median_share, min_share, max_share, median_gw, agreement_share).
 Time: 0.5 h (not measured).
 
+Total compute: roughly 11-18 h (not measured as a single run; see O07 in docs/DECISIONS.md for the projection from Steps 1-4's actual measured/observed times and the open question this raises about the 24 h criterion).
+
+
+## 4. Results map (figure/table -> source -> producing script -> blocking item)
+
+| Item | Source table | Producing script | Blocking |
+|---|---|---|---|
+| Fig 1 fleet and capacity by technology and fuel | plant_units.parquet | to be written (C29) | D77, D78 (C28) |
+| Fig 2 TX35 exposure maps per thermal plant by fuel | plant_hazards.parquet (h1) + plants coords + plant_units | to be written (C31, C41) | C28 |
+| Fig 3 heat-threshold curves, operating vs planned | plant_hazards + plant_units | to be written (C32, C34) | O17 |
+| Fig 4 drought maps SPEI and SPI per hydro plant | plant_hazards (SPEI); SPI only in spei.parquet | to be written (C35) | O18 |
+| Fig 5 excess over null by bucket and scenario, GCM range | null table + plant_hazards | to be written (C30, C36) | O20, O21 |
+| Table 1 GW fraction exposed by technology, fuel, scenario | plant_units + plant_hazards | to be written (C38) | O16, O17 |
+| Table 2 leave-one-out, 5 largest hydro | c23d_7_leave_one_out.csv (audit) | to be promoted (C37) | O19, L30 |
+| Supplementary ONS validation | validation.csv | exists (scripts/25_validation_stats.py) | none |
+
+---
+
+
+---
+
+## Appendix A. Pipeline components outside v2 article scope (verbatim from v1; v1 numbering)
+
+
+> Editorial note (C24): ONS national validation is supplementary (D73); subsystem validation and Portugal REN/DGEG are outside v2.
+
+### 1.6 Compound hydro-drought and thermal-heat metric
+
+For each country, model and period, two monthly national series are built:
+
+S_hydro(m) = Σ_{i∈hydro} Cap_i × 1[SPEI-12_i(m) ≤ −1.5] / Σ Cap_i (share of hydro capacity in severe drought)
+
+H_thermal(m) = Σ_{j∈thermal} Cap_j × N35_j(m) / Σ Cap_j (capacity-weighted number of TX35 days in the month)
+
+A compound month occurs when both series exceed their own 90th percentile estimated on 1985-2014 of the same model (if the S_hydro percentile is zero, any value above zero qualifies). Under independence the baseline frequency is about 1%. The national aggregation is justified by interconnection in Brazil (SIN) and India (national grid) and by Iberian market coupling for Portugal.
+
+**Metric closure (D63, COMANDO 22, current state, supersedes the LR_C design below this paragraph)**: the future-to-baseline likelihood ratio LR_C = F_C,future / F_C,baseline, as originally specified, is not used as the headline quantity. A direct diagnostic found that in 13 of 45 country x scenario x model cells, at least one of S_hydro or H_thermal exceeds its own baseline P90 in a majority of future months (worst case: Brazil x UKESM1-0-LL, 64-92% of future months across the two series and three scenarios). In those cells the ratio `f_compound_observed / (f_s_above * f_h_above)` -- the observed compound frequency divided by what independence of the two marginals would predict -- is close to 1.0, meaning LR_C's large values there come from each series' own baseline-relative drift (a mean shift), not from extra co-occurrence; the P90 threshold has stopped discriminating extremes in those cases. The metric is reported instead as two separate quantities, both computed directly from the already-aggregated monthly series, no new climate data processed:
+
+- `diff_pp` = 100 x (F_C,future - F_C,baseline): the change in compound-month frequency in percentage points. A difference, not a ratio, so it stays well-defined and interpretable even where a marginal's baseline P90 is exceeded most of the time in the future.
+- `dependence_ratio` = F_C,future / (f_s_above,future x f_h_above,future), where `f_s_above,future` and `f_h_above,future` are each series' own share of future months above its baseline P90: observed future co-occurrence over the co-occurrence independence would predict, from the future marginals only. Values near 1.0 mean the two series are behaving independently above their respective thresholds in the future period (no extra coupling to report); values further from 1.0 indicate measurable dependence.
+
+Restricting to the 32 of 45 cells where the percentile threshold still discriminates (both marginals under 50% of future months), `dependence_ratio` is not uniformly 1.0: median 1.23, 5th/95th percentile 0.78/2.69, and 20/32 cells (62.5%) deviate from 1.0 by more than 20%, mostly upward and most pronounced for India. This is reported as a real, moderate finding of positive dependence in a majority of the cells where the question is answerable, not explained away as pure independence -- see §2.3.
+
+### 1.7 Validation
+
+Validation targets the one sector with open observed response data. SPEI-12 is computed from W5E5 observations (1985-2019) with the same procedure and aggregated to hydro-capacity-weighted series for the four Brazilian subsystems and for Portugal. These are compared with annual natural energy inflow (ENA) from the Brazilian system operator (ONS) and with the hydro productivity index (IPH) published by the Portuguese transmission operator (REN). Statistics: Spearman correlation with 3-year block bootstrap confidence intervals, and the odds ratio of a bottom-tercile inflow year given December SPEI-12 ≤ −1. Short records produce wide intervals, which are reported as such. W5E5 is derived from ERA5, so a comparison of hazard climatology against ERA5 would not be independent and is not used as validation. EM-DAT is used only descriptively in Supplementary Information. India is not validated, which is stated as a limitation.
+
+**Subsystem validation status**: A desagregação por subsistema ONS (N/NE/S/SE) está suspensa para v0.1.0 por ausência de fonte oficial de mapeamento planta→subsistema (ver D62). A validação de Portugal (REN IPH × SPEI-12, n=57 meses) e a correlação nacional Brasil permanecem.
+
+**Portugal / REN IPH (D59-D61, O10-O11, COMANDO 21-23)**: primary validation variable is REN's monthly Hydro Productivity Index (IPH), acquired directly from REN DataHub's `RegimeYearly` endpoint (`craei.acquire.ren`).
+
+- REN data coverage: 2015-01 to 2026-09.
+- Climate-model overlap: 2015-01 to 2019-12.
+- Usable complete calendar years: 2016-2019 (4 years; 2015 is a partial year, missing jul/aug/sep, see D60).
+- Available overlap months: 57 (not the nominally assumed 60).
+- Monthly validation: implementation-level / observational cross-validation against APA 2018 Tabela 7 -- matches to within 2-decimal rounding for all 33 overlapping months (`reports/ren_iph_validation.md` §4). This confirms the acquisition and date semantics are correct, not that five years of overlap gives long-term climatological power.
+- Annual validation: **resolved as a methodological limitation, not a failure** (D61). Every raw REN response inspected directly exposes no annual/weighting field -- only the 12 monthly values -- and no public REN/ERSE/DGEG documentation of the exact annual aggregation formula was found. A derived calendar-year mean does not reproduce ERSE's published annual figure in general (2017 is the clearest case); this is recorded as a gap in what can be independently checked at the annual resolution, and is not used to support or undermine the monthly-resolution statistics the study actually reports.
+- Auxiliary validation: DGEG gross monthly hydroelectric generation (GWh), used only as a consistency check (O11, D61) -- never treated as equivalent to IPH. Annual correlation with IPH is strong (Pearson/Spearman ≈ 0.90 over 2015-2019); monthly correlation is weaker, as expected, since generation additionally depends on afluência timing, reservoir operation, dispatch, capacity and pumping.
+
+**Limitation**: the five-year overlap prevents robust long-term climatological inference from the Portugal correlation/odds-ratio statistics; report accordingly, parallel to L08/L09's existing short-record notes for Brazil/India.
+
+### 1.8 Uncertainty
+
+Uncertainty is reported through (i) scenario spread, (ii) inter-model range and agreement, and (iii) one-at-a-time tests of each discrete choice: heat class (15/30/60 days), drought class (R_D 1.5/2/3), SPEI threshold (−1.0/−1.5/−2.0), PET formulation (SPEI Hargreaves vs SPI), coastal cooling distance (2/5/10 km), and exclusion of UKESM1-0-LL (highest climate sensitivity in the ensemble). A global variance-based analysis (Sobol) is not used because the design has few discrete choices whose individual effects are more informative when shown directly.
+
+**H3. Chronic water stress (water-dependent thermal, freshwater bound only).** WRI Aqueduct 4.0, keyed by HydroBASINS `pfaf_id`, for the baseline and for 2050 under the optimistic, business-as-usual and pessimistic scenarios, mapped to SSP1-2.6, SSP3-7.0 and SSP5-8.5. Aqueduct 4.0 splits the indicator across two collections with different field names: the baseline collection (`baseline_annual`) exposes `bws` (baseline water stress); the 2050 projections (`future_annual`) expose `ws` (water stress) under each `{bau|opt|pes}{30|50|80}` scenario/horizon code. Both are the same underlying stress ratio (withdrawal over available supply) on the same 0-5 category scale; the field renaming between collections is WRI's own convention, not a methodological difference. Aqueduct categories are used as published: low (<10%), low-medium (10-20%), medium-high (20-40%), high (40-80%), extremely high (>80%). Exposure is capacity in high or extremely high stress. H3 is reported separately from H1 and H2 because Aqueduct uses its own climate and socioeconomic forcing and is not consistent with the ISIMIP3b ensemble. Aqueduct's future-annual values are themselves the median of an internal 5-GCM ensemble distinct from this project's ISIMIP3b ensemble, with no per-model breakdown available (L13).
+
+**H4. Extreme precipitation (Supplementary Information, all fleets).** Wet-day 95th percentile (days ≥1 mm) estimated on the baseline per cell and model; change metric is the ratio of exceedance frequency (baseline 5% of wet days by construction) and the percentage change in mean annual Rx5day. Reported as a change in flood-forcing precipitation, not as flood risk.
+
+**Solar PV (Supplementary Information).** Peak-hour temperature loss L = γ × max(0, TX + 31.25 − 25), with γ = 0.4% °C⁻¹ (typical crystalline silicon; verify against datasheet range) and 31.25 °C the cell-to-air difference from NOCT = 45 °C at 1000 W m⁻². Because L is linear in TX above the threshold, ΔL mainly reflects warming; it is included to document that heat-driven PV losses are small compared with thermal and hydro hazards, not as a finding in itself.
+
+**Excluded hazards.** Extreme wind is excluded for three reasons: 10 m gusts are not comparable with IEC 61400-1 design winds (50-year 10-minute reference speeds of 50, 42.5 and 37.5 m s⁻¹ at hub height for classes I-III), which are rarely approached outside tropical cyclone tracks; confidence in projected extreme wind change is low in IPCC AR6; and GCM resolution does not capture the relevant extremes. Riverine and coastal flooding, sea-level rise and wildfire are outside the scope.
+
+
+> SUPERSEDED (D63/D72): the LR_C metric below was replaced by diff_pp and dependence_ratio, and the whole compound metric is outside v2 scope. 11_compound.py is archived.
+
 **Step 10. Compound metric**
 Input: `spei.parquet`, monthly N35, plants.
 Processing: national monthly S_hydro and H_thermal; baseline P90 per model; compound months; LR_C per country, scenario, model.
@@ -412,41 +389,6 @@ Input: all previous outputs.
 Processing: rerun Steps 9-10 under each alternative; generate figures.
 Output: `sensitivity.csv` (test, parameter_value, result_id, value); figure files.
 Time: 2-3 h (not measured).
-
-Total compute: roughly 11-18 h (not measured as a single run; see O07 in docs/DECISIONS.md for the projection from Steps 1-4's actual measured/observed times and the open question this raises about the 24 h criterion).
-
----
-
-## 4. Main figures
-
-**Figure 1. Where heat and drought exposure increases.**
-Type: plant-level maps, three country panels, two layers (thermal ΔTX35, hydro R_D), SSP3-7.0 median, hollow markers for low agreement.
-Data: Steps 7 and 9.
-Message: the spatial pattern of exposure change across the operating fleet and where models agree.
-
-**Figure 2. Which fleets carry the exposure.**
-Type: grouped bars with model-range whiskers, by country × technology × SSP; freshwater upper and coastal lower bound shown for thermal.
-Data: Step 9.
-Message: magnitude of capacity affected, differences between systems, and the size of cooling and model uncertainty relative to scenario differences.
-
-**Figure 3. Hydro drought and thermal heat increasingly coincide -- and whether that is real coupling.**
-Type: two panels, both dot plots per model with median, by country and SSP. Left: `diff_pp` (percentage-point change in compound-month frequency). Right: `dependence_ratio` (observed future compound frequency over its independence-implied value), reference line at 1.0.
-Data: Step 10 (`compound.csv`, D63 schema).
-Message: the left panel is the central system-level finding on the reliability of thermal backup (how much more often drought and heat now coincide); the right panel states whether that increase reflects genuine coupling between the two hazards or each hazard's own marginal trend, and is left unmarked (or flagged, per §2.3) in cells where a marginal exceeds its baseline P90 in most future months, since the ratio is not meaningful there.
-
-**Figure 4. New capacity is sited into [worsening/similar] conditions.**
-Type: paired bars, operating vs planned (advanced, early), by country and technology.
-Data: Step 9 (planned fleet).
-Message: lock-in of exposure through current investment decisions.
-
-**Figure 5. Observed drought index tracks hydro inflow.**
-Type: time series and scatter panels for Brazilian subsystems and Portugal.
-Data: Step 11.
-Message: SPEI-12 at catchment scale is a meaningful proxy for the hydro hazard.
-
-Extended Data (not main): sensitivity summary (Step 12), extreme precipitation (H4), solar PV temperature loss, EM-DAT descriptive overlay.
-
----
 
 ## 5. Additional downloads
 
@@ -509,33 +451,6 @@ for model in MODELS:
 Implementation notes: submit jobs in small batches to respect server limits; record each file checksum in the existing manifest; check each file's calendar attribute before computing annual counts.
 
 ---
-
-## 6. Design decisions
-
-**Q1. Which hazards?**
-Main text: extreme heat (H1), drought (H2), chronic water stress (H3). Supplementary: extreme precipitation (H4), solar PV temperature loss. Excluded: extreme wind, cyclones, flooding, sea-level rise, wildfire.
-Why: these three hazards have established physical mechanisms for hydro and thermal generation (water availability and cooling efficiency) and can be computed consistently from the same bias-adjusted ensemble (H1, H2). Wind power is removed because its main climate sensitivities (resource change and acute storms) cannot be assessed with standard indices from GCM output with acceptable confidence, and assigning it heat as a proxy mechanism would not survive review. Keeping wind in the headline with an inappropriate hazard would weaken the paper more than excluding it with a stated reason. Solar goes to SI because its heat sensitivity is small and would dilute the main message.
-
-**Q2. Baseline?**
-Model historical simulations (1985-2014) from ISIMIP3b, not ERA5. ERA5 alone cannot fix the problem: comparing a raw GCM future with a reanalysis baseline mixes model bias with climate signal. Using each model's own historical run removes the self-referential calibration; using the bias-adjusted product makes absolute thresholds comparable across models. W5E5 observations are used only for validation.
-
-**Q3. Ensemble?**
-Five GCMs (ISIMIP3b primary set). Two models are not enough for NCC, and the previous pair covered only the low end of climate sensitivity. There is no defensible way to project SSP-specific hazard change without GCM output. The rework problem came from processing raw CMIP6 files model by model; a pre-processed, bias-adjusted ensemble with a single access API removes most of that. Because two of the five models have high climate sensitivity, results are reported as median and full range, with a test excluding UKESM1-0-LL.
-
-**Q4. Risk index?**
-Option A (per-hazard exposure), with the compound metric as the only multi-hazard construct. A weighted composite score (B) requires weights with no empirical basis and invites the first reviewer objection; a multidimensional classification (C) adds complexity without a clear interpretation. The compound metric is a better multi-hazard result because it has a physical meaning at system level.
-
-**Q5. Validation?**
-Option B, limited to hydro in Brazil and Portugal, against observed inflow indicators. EM-DAT and IBTrACS correlations (A) do not validate plant-level hazard: EM-DAT records human impacts at coarse locations and has no power-sector outcome. A predictive model (C) is beyond scope and would need plant-level generation data unavailable for India.
-
-**Q6. Priority of analyses for the main text.**
-1. Technology analysis combined with geographic hotspots (Figures 1-2).
-2. Compound hydro-drought/thermal-heat metric (Figure 3), which is not in the original list but is the strongest candidate for NCC novelty.
-3. Planned pipeline exposure (Figure 4), also new.
-4. GCM spread and agreement, integrated into every figure rather than shown separately.
-5. SSP comparison, integrated into Figures 2-4; at 2041-2070 scenario differences are expected to be smaller than model spread, so it cannot be the headline.
-6. Parametric sensitivity as one-at-a-time tests in Extended Data; Sobol/Monte Carlo is not used.
-7. Additional horizons (2030, 2070): dropped. They multiply downloads and figures without changing the argument.
 
 ---
 

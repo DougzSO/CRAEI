@@ -1,3 +1,33 @@
+## Scope v2 status index (limitations)
+
+Added by C24 (2026-09-30). Statuses: ACTIVE, ACTIVE-method, SUPPLEMENTARY, OUT-OF-SCOPE-v2 (kept as record), SUPERSEDED, HISTORICAL, TO CONFIRM. No existing row below was edited.
+
+| ID | Scope v2 status | Note |
+|---|---|---|
+| L01 | ACTIVE | applies to water-dependent/air-only class and the thermal drought bucket |
+| L02 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L03 | ACTIVE |  |
+| L04 | ACTIVE |  |
+| L05 | ACTIVE |  |
+| L06 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L07 | ACTIVE |  |
+| L08 | SUPPLEMENTARY | supports the supplementary ONS validation |
+| L09 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L10 | ACTIVE |  |
+| L11 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L12 | ACTIVE |  |
+| L13 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L14 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L15 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L19 | ACTIVE |  |
+| L18 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L17 | SUPERSEDED | withdrawn 2026-09-30 |
+| L16 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L20 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L22 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+| L21 | OUT-OF-SCOPE-v2 | India/Portugal/H3/H4/compound/subsystem |
+
+
 | ID  | Limitation | Declared in | Mitigation |
 |---|---|---|---|
 | L01 | GEM has no cooling technology field | Methods §1.2 | Freshwater/coastal bounds -- implemented COMANDO 18 (docs/DECISIONS.md D47) as `hazards.aqueduct.plant_aqueduct_exposure`'s `cooling_bound` column: "upper" keeps every water-dependent thermal plant (assumes freshwater cooling), "lower" excludes plants within `coastal_buffer_km` (5 km) of the coast (assumes seawater cooling, Aqueduct-irrelevant); `plant_aqueduct.parquet` reports both, not a single chosen bound |
@@ -22,3 +52,17 @@
 | L20 | A validação regional da correlação SPEI-12 × afluência ONS por subsistema (Norte, Nordeste, Sul, Sudeste) não foi executada por ausência de tabela oficial ANEEL/EPE/ONS associando cada usina ao seu subsistema elétrico. O mapeamento por latitude foi avaliado e rejeitado como proxy não auditável. Esta limitação não afeta os resultados principais de exposição nem a métrica composta. AMENDED 2026-09-30 (COMANDO 22-D, D70): a validação NACIONAL (sem quebra por subsistema) foi implementada e concluída -- SPEI-12 derivado do W5E5 (não o modelo ISIMIP3b), ponderado por capacidade das 222 hidrelétricas brasileiras, correlacionado com a ENA nacional agregada (soma dos 4 subsistemas em MWmed, ano 2000-2019, n=20): Spearman rho=0.361 [0.027, 0.811], odds ratio=0.917 [0.200, 19.286] (bootstrap em blocos de 3 anos). Apenas a quebra POR SUBSISTEMA permanece suspensa. | D62, D70 | Nível nacional: RESOLVIDO (`validation.csv`, D70). Nível por subsistema: suspenso para v0.1.0 -- será retomado como tarefa pós-revisão se o editor ou revisor a exigir |
 | L22 | Point-in-polygon assignment of plants to GADM level-1 regions (COMANDO 22-B/22-C, `scripts/c22b_regional_assignment.py`) uses the `within` predicate, which misses a plant whose point sits essentially on an international boundary (the boundary is also the GADM polygon edge, so the point is not strictly interior to either adjacent polygon). Confirmed for 2 real cases (D68): Itaipu hydroelectric plant (Brazil/Paraguay, 14,000 MW, ~190 m from the nearest named polygon) and Bemposta II hydroelectric plant (Portugal/Spain, 203 MW, ~6 m from the nearest named polygon), both dams built directly on the border river forming the boundary. Two further Brazilian operating thermal plants (Monteverde, Santa Maria Açucareira, Madem, 25.6 MW combined) also fall outside any named region, at distances (1.2-42 km) too large to be purely a border-precision effect -- flagged as likely coordinate/geocoding anomalies in the underlying GEM plant inventory, needing a manual coordinate check not performed here. | D68 | Unassigned plants are grouped under a `{country}_nan` pseudo-region rather than silently dropped or force-assigned to the nearest polygon. `{country}_nan` is included in the regional compound metric only if it independently satisfies the same both-fleets criterion as any other region (true for `BRA_nan`, false for `PRT_nan`, since Bemposta II has no thermal counterpart). D68 confirmed by direct recomputation that excluding `BRA_nan` changes the collective results (D67) negligibly (detection rate 5.90x vs. 5.95x; Brazil's regional median ratio unchanged at 1.211-1.212) -- the finding does not depend on this region. Not corrected with a nearest-polygon fallback or a buffered `within`, since that would silently assign a border plant to one side of a border with no principled way to choose, and this project's convention is to flag rather than guess (CLAUDE.md Rule 9's spirit, extended to spatial joins). Any future command doing plant-to-boundary spatial joins should expect a small number of border/coastal plants to need the same treatment, not assume `within` is exhaustive |
 | L21 | The compound metric (Spec §1.6/§2.3, `compound.csv`) is built from two *national* monthly series (S_hydro, H_thermal). A compound month is flagged whenever both series exceed their baseline P90 nationally, which can happen because drought is severe in one region of a country while heat is severe in a different, physically unrelated region -- the national aggregation cannot distinguish that from a genuine co-located drought+heat event. This is the same subsystem-resolution gap D62/L20 already documents for Brazil (no official plant-to-ONS-subsystem mapping exists to re-run the compound series per subsystem instead of nationally); it was not separately flagged for the compound metric until this closure (COMANDO 22) because D58 did not originally split this metric by any sub-national unit. The metric's own `dependence_ratio` diagnostic (D63) shows this matters in practice: 20 of the 32 country x scenario x model rows where the percentile threshold still discriminates extremes (both marginals under 50% of future months) deviate from independence by more than 20%, mostly upward (median 1.23, India range 0.28-2.9 across scenarios) -- some of that apparent dependence could be regional co-location that a subsystem-level series would confirm or refute, and some could be genuine national-scale coupling; the national series alone cannot tell the two apart. | D58, D62, D63 | Not corrected -- would require the same official plant-to-subsystem source D62 could not find. Reported as an interpretive caveat on `dependence_ratio` wherever it is quoted as evidence of coupling, not as a defect in the frequencies themselves (`diff_pp` is unaffected, since it does not claim anything about co-occurrence mechanism) |
+
+
+## Limitations proposed by C24 (Scope v2, 2026-09-30) - PROPOSED, need author confirmation
+
+| ID | Limitation | Declared in | Mitigation |
+|---|---|---|---|
+| L23 | PROPOSED. Exposure is not vulnerability, and differences between fuels reflect where plants are sited, not the technology. | SCOPE.md | Claim language: exposure by location; never impact or loss (L03) |
+| L24 | PROPOSED. GEM does not name bagasse: agricultural_waste is a proxy. Bioenergy plants operate mostly in the harvest season, so annual TX35 may not represent the operating window; feedstock supply risk is not assessed. | D77, O16 | Declared proxy; seasonal variant if O16 chooses it |
+| L25 | PROPOSED. GEM fuel fields are multi-valued strings with unknown categories (e.g. bioenergy unknown 0.19 GW; technology unknown 3.21 GW operating). | D77 | Classification rule documented; unknowns kept as their own class |
+| L26 | PROPOSED. One realization per GCM: internal variability is not sampled. The null is synthetic (bootstrap from the model's own baseline series); excess over null is descriptive, not a significance test. | D76 | Null reported with the white-noise lower reference |
+| L27 | PROPOSED. Effective sample size: 5 GCMs share components and plants in the same basin or cell share climate, so GW shares and plant counts overstate independent information. | O21 | GCM range, agreement and (if chosen) cluster bootstrap |
+| L28 | PROPOSED. Hargreaves-Samani PET is temperature-based and omits humidity, wind and radiation changes; PET sensitivity is probed only through SPI (precipitation only). | METHODS_SPEC 1.4 H2 | SPI/SPEI comparison (O18) |
+| L29 | PROPOSED. Validation is weak and national: Brazil rho=0.361, CI 0.027-0.811, n=20 (D70), W5E5 rather than the GCMs; no subsystem validation (L20). | D73 | Supplementary only; stated limit of SPEI as proxy |
+| L30 | PROPOSED, TO VERIFY. Binational hydro (Itaipu, 14,000 MW, L22) may be counted in full as Brazilian; GEM has per-country capacity columns for hydropower. | C26 | Verify; use the Brazilian share if confirmed |
