@@ -78,3 +78,18 @@ Status: done, ready, sketch, blocked-by-O-xx.
 
 ## C. Open items tracked here
 O16 (harvest-season metric), O17 (operating vs planned metric, curve grid), O18 (SPI vs SPEI), O19 (leave-one-out), O20 (thermal bucket in Fig 5), O21 (excess uncertainty).
+
+## D. Revision after C26 (2026-09-30): W3-W5 are promotions of existing prototypes
+
+Prototype outputs live in data/outputs/audit/c23/c23d/ (script scripts/c23d_checks.py). They are provisional: fuel_group there is the per-plant mode over plants.parquet (gas and oil merged), so it inherits D78/D79 errors (e.g. bioenergy operating 20.57 GW vs 17.43 GW per unit; coal 5.14 vs 3.00).
+
+| Prototype (c23d item) | Provisional finding | Promoted by | Change vs prototype |
+|---|---|---|---|
+| 2-3 null and excess over null | null R_D>=2: 18.88% (block bootstrap), 1.80% (white noise) | C30 | rationale for null to be restated (D76) |
+| 4 SPI-12 vs SPEI-12 | hydro_reservoir SPEI 53.0/49.8/76.5%, SPI 41.4/22.1/50.8% (SSP126/370/585) | C35 | resolve fit-scheme confound (O18) |
+| 5 sign agreement | hydro 1-3 of 5 GCMs; thermal water-dependent 4-5 of 5 | C36 | add O21 uncertainty |
+| 6 fuel x fleet TX35 | planned >= operating (bioenergy 41 to 62% SSP126) | C31 | use plant_units, split gas/oil (D77), verify definition of tx35_gw_pct |
+| 7 leave-one-out | removing Itaipu: 53.0 to 62.1 / 49.8 to 61.6 / 76.5 to 71.0% | C37 | prototype removed the largest per bucket (3 reservoir + 2 run-of-river), not the 5 largest overall (O19); Itaipu treatment per O22 |
+
+Open items now tracked: O16-O22. Commands C27 (fuel x tech x fleet per unit) and C28 (plant_units) come first; C29-C37 start only after C28 passes pytest and the regression gate.
+

@@ -66,3 +66,5 @@ Added by C24 (2026-09-30). Statuses: ACTIVE, ACTIVE-method, SUPPLEMENTARY, OUT-O
 | L28 | PROPOSED. Hargreaves-Samani PET is temperature-based and omits humidity, wind and radiation changes; PET sensitivity is probed only through SPI (precipitation only). | METHODS_SPEC 1.4 H2 | SPI/SPEI comparison (O18) |
 | L29 | PROPOSED. Validation is weak and national: Brazil rho=0.361, CI 0.027-0.811, n=20 (D70), W5E5 rather than the GCMs; no subsystem validation (L20). | D73 | Supplementary only; stated limit of SPEI as proxy |
 | L30 | PROPOSED, TO VERIFY. Binational hydro (Itaipu, 14,000 MW, L22) may be counted in full as Brazilian; GEM has per-country capacity columns for hydropower. | C26 | Verify; use the Brazilian share if confirmed |
+| L31 | PROPOSED. Plants.parquet assigns one tech_class and one fleet per plant (mode over units) and sums all unit capacities, so plant-level capacity by fleet/technology is wrong for 5 to 6 mixed plants (D78/D79). Article capacity tables use plant_units. | D78, D79 | plant_units.parquet (C28) |
+
