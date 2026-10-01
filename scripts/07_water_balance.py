@@ -29,7 +29,7 @@ import pandas as pd
 from craei.acquire.isimip import STUDY_COUNTRIES
 from craei.config import load_datasets, load_paths
 from craei.hazards import pet
-from craei.hazards.loading import cells_with_catchments_by_country, download_years_span, tasmax_daily, tasmin_daily, pr_daily
+from craei.hazards.loading import cells_with_catchments_by_country, download_years_span, pr_daily, tasmax_daily, tasmin_daily
 
 TX_BELOW_TN_STOP_FRACTION = 0.001  # Spec-instructed COMANDO 16 stop threshold (0.1% of days)
 

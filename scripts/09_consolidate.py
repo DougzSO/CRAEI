@@ -91,10 +91,10 @@ def run_step8(processed_dir: Path, raw_dir: Path, aqueduct_dir: Path) -> pd.Data
 
     print("\n=== Step 8: plant_aqueduct.parquet ===")
     n_water_dep = len(water_dep)
-    expected = n_water_dep * 4 * 2  # baseline is folded into ws/bws columns, not extra rows here
+    # baseline is folded into ws/bws columns, not extra rows here
     print(f"Water-dependent thermal plants: {n_water_dep}")
     print(f"Rows: {len(out)} (expected water_dep x 3 scenarios x 2 cooling bounds = {n_water_dep * 3 * 2})")
-    print(f"(baseline bws is a column per row, not a 4th 'scenario' row -- see note below)")
+    print("(baseline bws is a column per row, not a 4th 'scenario' row -- see note below)")
 
     print("\nCategory -1 (arid_low_water_use) and no_data counts by country, per cooling bound:")
     with_country = out.merge(plants[["plant_uid", "country"]], on="plant_uid", how="left")

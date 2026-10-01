@@ -4,7 +4,6 @@ Does not alter production tables. Does not decide scope. Reads config/c23_audit.
 """
 
 import gc
-import re
 import sys
 from pathlib import Path
 
