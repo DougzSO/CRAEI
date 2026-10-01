@@ -13,3 +13,4 @@
 | 2026-10-01 | C30 | done | D83-D85 appended to DECISIONS.md; ruff extend-exclude scripts/archive; pytest 153 passed, 1 skipped, 4 warnings in 7.65s |
 | 2026-10-01 | C25-S1 | done | ruff extend-exclude scripts/archive; import order fixed in c27b_cleanup.py and log_step.py; pytest 153 passed, 1 skipped, 4 warnings in 7.31s |
 | 2026-10-01 | C25-S3 | done | git rm of 14 files (audit/*, exposure/compound.py, 6 one-shot scripts, 2 tests); pytest 143 passed, 1 skipped (measured before W3a files); gate 8 PASS; ruff outside archive 62 -> 18 |
+| 2026-10-01 | W3a | done | heat exposure of BRA thermal fleet by fuel per unit (exposure/heat_fuel.py, w3_heat_fuel.py, 8 tests); 21 capacity checks PASS; tables w3_heat_*.csv; pytest 151 passed, 1 skipped; gate 8 PASS |

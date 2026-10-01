@@ -110,3 +110,5 @@ Open items now tracked: O16-O22. Commands C27 (fuel x tech x fleet per unit) and
 - Next: C25 slices S1-S4 (report first), then W3-W5 (promotion of the c23d prototypes on plant_units).
 
 - Test floor after C25-S3: 143 passed, 1 skipped (measured 2026-10-01).
+
+- Test floor after W3a: 151 passed, 1 skipped (measured 2026-10-01).
