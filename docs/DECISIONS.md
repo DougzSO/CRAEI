@@ -519,3 +519,18 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 - O24: accepted in part, registered as D84 (pending the licence check).
 - Principle of ranges and sensitivity: registered as D85.
 - D80 and D81 remain `proposed`.
+
+## D84 addendum - option B chosen (O24)
+
+- Status: the author chose option B on 2026-10-01: version the two PRT
+  reference files after the licence check.
+- Condition unchanged: written confirmation that the source allows
+  redistribution. Record the URL, access date and terms in this entry.
+  Confirmation: TO BE DEFINED. `git add -f` has NOT been run.
+- Sources named in the CSV headers: APA, Monitorizacao Agrometeorologica e
+  Hidrologica, 30 June 2018, Table 7 (monthly series, from REN statistics);
+  ERSE/REN (annual series).
+- Fallback if redistribution is not allowed or not confirmed: keep both
+  files untracked and document the source and table for reconstruction.
+- Observed, not edited: the annual CSV source_note has the typo
+  'porprodutibilidade' (missing space).
