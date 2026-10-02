@@ -1172,3 +1172,65 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
   running (chat); does not change W4r's tolerance, cuts, FAIL handling, or D93's
   reading; never a headline result.
 - Tables: o39_trend_summary.csv, o39_forms.csv, o39_decomposition.csv.
+
+## D96 — fechado, C58
+
+W4g-rev: reclassificação de níveis de seca e de mudança (R_D) sob os 3 nulos
+(block12 reaproveitado do W4g sem recálculo; year/anystart emulados via draws do W4r,
+D92/D93). Script de uso único `scripts/archive/w4g_rev.py`.
+
+Checks antes de gravar, todos PASS: paridade de linhas entre tabela livre e emulada;
+soma de classes (gap) <1e-6 MW; percentis recomputados do array de sorteios batendo com
+`w4r_null_percentiles.csv` (tolerância 1e-6). 20.790 linhas de unidade, 921 plantas.
+
+Resultado (classe extreme, operating, future, cutset p50_p90_p99, pool = nulo do
+próprio grupo; mediana % de GW sobre 5 GCMs, block12/year/anystart):
+- hydro itaipu a: ssp126 48,1/3,2/32,3 — ssp370 46,4/10,9/38,3 — ssp585 73,1/40,3/64,1
+- hydro itaipu b: ssp126 51,4/3,5/34,5 — ssp370 49,6/11,7/41,0 — ssp585 71,3/43,1/61,6
+- thermal_water_dependent: ssp126 31,1/7,7/15,5 — ssp370 40,8/19,5/35,4 — ssp585 54,7/34,1/40,7
+
+year sistematicamente mais baixo que block12 em todas as combinações (nulo mais
+exigente, consistente com D93: reajuste de parâmetros no sorteio infla o nulo e eleva o
+corte). anystart fica entre os dois, mas carrega a ressalva D94/O37 — não é referência
+válida (baseline sorteado já viesado sob parâmetros reais). Nenhum nulo é canônico
+(D90 inalterado); a coluna `canonical` herdada do nulo livre nunca é `True` nas linhas
+emuladas e continua marcando só a combinação de exibição padrão pré-D90
+(pool==own, null==block12, cutset==p50_p90_p99), não uma afirmação de nulo correto.
+
+Discretização: fração de sorteios futuros exatamente no corte p50, catchment/cell ×
+year/anystart, entre 2,11% e 3,53% — confirma o lembrete do plano (distribuições
+emuladas construídas de um conjunto finito de 349 valores mensais válidos).
+
+Tabelas: `w4grev_null_percentiles.csv`, `w4grev_drought_level_classes.csv`,
+`w4grev_drought_change_classes.csv`. Plano item 1 (W4g-rev) concluído; próximo: W4h.
+
+## D96 — fechado, C58
+
+W4g-rev: reclassificação de níveis de seca e de mudança (R_D) sob os 3 nulos
+(block12 reaproveitado do W4g sem recálculo; year/anystart emulados via draws do W4r,
+D92/D93). Script de uso único `scripts/archive/w4g_rev.py`.
+
+Checks antes de gravar, todos PASS: paridade de linhas entre tabela livre e emulada;
+soma de classes (gap) <1e-6 MW; percentis recomputados do array de sorteios batendo com
+`w4r_null_percentiles.csv` (tolerância 1e-6). 20.790 linhas de unidade, 921 plantas.
+
+Resultado (classe extreme, operating, future, cutset p50_p90_p99, pool = nulo do
+próprio grupo; mediana % de GW sobre 5 GCMs, block12/year/anystart):
+- hydro itaipu a: ssp126 48,1/3,2/32,3 — ssp370 46,4/10,9/38,3 — ssp585 73,1/40,3/64,1
+- hydro itaipu b: ssp126 51,4/3,5/34,5 — ssp370 49,6/11,7/41,0 — ssp585 71,3/43,1/61,6
+- thermal_water_dependent: ssp126 31,1/7,7/15,5 — ssp370 40,8/19,5/35,4 — ssp585 54,7/34,1/40,7
+
+year sistematicamente mais baixo que block12 em todas as combinações (nulo mais
+exigente, consistente com D93: reajuste de parâmetros no sorteio infla o nulo e eleva o
+corte). anystart fica entre os dois, mas carrega a ressalva D94/O37 — não é referência
+válida (baseline sorteado já viesado sob parâmetros reais). Nenhum nulo é canônico
+(D90 inalterado); a coluna `canonical` herdada do nulo livre nunca é `True` nas linhas
+emuladas e continua marcando só a combinação de exibição padrão pré-D90
+(pool==own, null==block12, cutset==p50_p90_p99), não uma afirmação de nulo correto.
+
+Discretização: fração de sorteios futuros exatamente no corte p50, catchment/cell ×
+year/anystart, entre 2,11% e 3,53% — confirma o lembrete do plano (distribuições
+emuladas construídas de um conjunto finito de 349 valores mensais válidos).
+
+Tabelas: `w4grev_null_percentiles.csv`, `w4grev_drought_level_classes.csv`,
+`w4grev_drought_change_classes.csv`. Plano item 1 (W4g-rev) concluído; próximo: W4h.

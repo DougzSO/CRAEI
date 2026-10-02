@@ -56,3 +56,5 @@
 | 2026-10-02 | O37 | done | 12-month sum variance diagnostic (archive/o37_anystart_sums.py): anystart sd ratio ~1.15-1.16 vs real, year ~0.98; confirms O37 hypothesis (D94); closed |
 | 2026-10-02 | C56 | done | O37 closed (D94); PIPELINE_MAP O38 update, 5 of 6 items resolved (emdat writer, module reads, w3_table1/w3_curves NAMES, HydroBASINS, W5E5 36 .nc); O38 stays open pending constants/config linkage |
 | 2026-10-02 | C57 | done | D95: trend-removed sensitivity of emulated drought nulls (archive/o39_detrended_sensitivity.py); reading unchanged (year mostly, anystart not); linear trend negligible (r2~0.002); sensitivity only, never headline |
+
+- C58 / D96: W4g-rev concluído (3 nulos nas classes de nível de seca e R_D); year mais baixo que block12 em todas combinações (D93); anystart com ressalva D94/O37; nenhum canônico (D90); tabelas w4grev_*.csv; piso 215 passed, 1 skipped.
