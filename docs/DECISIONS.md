@@ -1094,3 +1094,52 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
   .nc under raw_dir/climate outside isimip3b not identified (candidate W5E5, not
   confirmed).
 - Full detail in docs/PIPELINE_MAP.md, section "Corrections (C55)".
+
+## D94 - O37 measurement: anystart inflates 12-month sum variance (closed, C56)
+- Script scripts/archive/o37_anystart_sums.py (read-only; archived): draws baselines under
+  year and anystart from the real water-balance pools (same w4r_null_production module,
+  same SEED), computes rolling 12-month sums of raw D (not F_D), compares sd/mean/quantiles
+  against the real series' own 12-month sums. n = 2000 draws per pool and variant.
+- Results (sd of 12-month sums, drawn/real ratio): catchment year 0.9844, catchment
+  anystart 1.1626; cell year 0.9830, cell anystart 1.1501. Year reproduces the real
+  variance within 2%; anystart inflates it by 15-16%.
+- Confirms the O37 hypothesis: random-start blocks mix seasonal phases, so 12-month sums
+  crossing block borders repeat or omit some calendar months, widening the sum's
+  distribution under seasonal D. NOT quantitatively linked to the O36 fit-term bias
+  (+7.3pp for anystart); the link is qualitative only.
+- O37 closed: anystart remains NOT described as a valid null of the real series without
+  this caveat; the caveat now rests on direct evidence (this diagnostic), not only on the
+  O36 excess.
+
+## O37 - closed (C56): see D94
+
+## O38 - update (C56): 5 of 6 items resolved; constants/config linkage remains open
+- emdat_events.parquet writer (resolved): file mtime 2026-09-30 11:40:13 matches the last
+  commit touching scripts/c21_2_fix_emdat.py (1f77ed6, same day); the two archived
+  candidates were only touched later, at archival time (707c010), not at generation time.
+  c21_2_fix_emdat.py:56 is the writer; the other two are superseded attempts.
+- Reads inside src modules (resolved): hazards.loading reads plants.parquet,
+  plant_cell.parquet, catchment_weights.parquet; hazards.consolidate reads
+  plants.parquet, indices_daily.parquet, spei.parquet, plant_cell.parquet;
+  exposure.aggregate reads plants.parquet, plant_hazards.parquet, plant_aqueduct.parquet.
+  hazards.heat and hazards.precip have no direct parquet-read literals in their own
+  bodies (grep empty); not confirmed further whether they operate on DataFrames passed
+  in by the calling script.
+- w3_table1/w3_curves NAMES (resolved): both equal ["w3_heat_summary",
+  "w3_heat_agreement", "w3_heat_influence", "w3_heat_bootstrap_shares"].
+- HydroBASINS location (resolved): downloaded by acquire.auxiliary.run_hydrobasins;
+  lives at raw_dir/boundaries/hydrobasins/hybas_{sa,as,eu}_lev06_v1c.zip (one per
+  HYDROBASINS_REGIONS continent code for BRA/IND/PRT); missed in the C55 top-level
+  folder listing because it is a subfolder of boundaries/, not a top-level raw_dir
+  folder.
+- 36 unidentified .nc under raw_dir/climate (resolved): raw_dir/climate/w5e5v2.0/
+  {pr,tasmax,tasmin}, W5E5v2.0 observational files in 4 time windows x 3 study bboxes,
+  read by scripts/24_w5e5_spei_validation.py and scripts/25_validation_stats.py (S12's
+  W5E5-native SPEI-12 validation branch); resolves the "W5E5 climate (location TBD)"
+  item in the S12 row.
+- Still open (unchanged; deferred to a separate constants/config task before W7):
+  decision constants outside config/params.yaml (heat cuts, grid, null percentiles,
+  n_boot/seeds, country filters); heat_fuel/heat_levels/drought_levels/null_emulator
+  not importing craei.config; null_emulator.THRESHOLD vs params.drought_spei_threshold
+  not linked; params.model_agreement_fraction vs k=1,3,5 (O31).
+- O38 stays open (C56) pending that one remaining category.

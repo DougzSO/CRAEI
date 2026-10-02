@@ -209,3 +209,33 @@ S4/S7/S8 reads that live inside src/craei modules rather than the orchestrating
 script (module bodies not read); S9's w3_table1/w3_curves NAMES list. NEW, found in
 C55: HydroBASINS raw location not found under raw_dir; 36 .nc under raw_dir/climate
 not identified (candidate W5E5, not confirmed).
+
+## Corrections (C56)
+
+O38 follow-up (closes 5 of 6 items; full detail in docs/DECISIONS.md, O38 update, C56):
+- emdat_events.parquet (Observation 9): scripts/c21_2_fix_emdat.py:56 identified as the
+  writer that produced the file on disk (mtime matches its last-touch commit 1f77ed6; the
+  two archived alternatives were only touched later, at archival time).
+- S4/S7/S8 reads inside src/craei modules (TBD in Corrections (C54)): hazards/loading.py
+  reads plants.parquet, plant_cell.parquet, catchment_weights.parquet; hazards/
+  consolidate.py reads plants.parquet, indices_daily.parquet, spei.parquet,
+  plant_cell.parquet; exposure/aggregate.py reads plants.parquet, plant_hazards.parquet,
+  plant_aqueduct.parquet. hazards/heat.py and hazards/precip.py have no parquet-read
+  literals in their own bodies.
+- S9's w3_table1.py and w3_curves.py NAMES list: both equal ["w3_heat_summary",
+  "w3_heat_agreement", "w3_heat_influence", "w3_heat_bootstrap_shares"].
+- HydroBASINS (used by S3's catchment delineation; "not found under raw_dir" in
+  Corrections (C55)): downloaded by acquire.auxiliary.run_hydrobasins to
+  raw_dir/boundaries/hydrobasins/hybas_{sa,as,eu}_lev06_v1c.zip, one zip per
+  HydroBASINS continent region for BRA/IND/PRT (HYDROBASINS_REGIONS).
+- The 36 .nc under raw_dir/climate outside isimip3b (unidentified in Corrections
+  (C55)): raw_dir/climate/w5e5v2.0/{pr,tasmax,tasmin}, W5E5v2.0 observational files
+  (4 time windows x 3 bboxes), read by scripts/24_w5e5_spei_validation.py and
+  scripts/25_validation_stats.py. Resolves the S12 row's "W5E5 climate (location TBD)".
+
+S11e O36/O37 diagnostic addendum: archive/o37_anystart_sums.py (read-only; no table
+output) draws 12-month sums of raw D under year/anystart and compares sd against the
+real series' own sums (D94); diagnostic only, not part of the production pipeline.
+
+Still open after C56: decision constants outside config/params.yaml and the
+country-filter/config linkage (O38's one remaining item, deferred to its own task).
