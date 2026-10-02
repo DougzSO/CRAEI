@@ -66,3 +66,146 @@ Checked against file-name literals and path lines in the code (static; bodies no
 - Bootstrap and seeds in scripts: `w3_bootstrap.py` and `w3_scenario.py` N_BOOT 2000, SEED 86 (the accepted 5,000 is pending); `w4_null.py` SEED 23, N_SIM 2000, N_MONTHS 360, CANON_BLOCK 12; `25_validation_stats.py` N_BOOT 10_000 (RNG_SEED value not seen). W4r: SEED [23, 99, 20], 20,000 draws (archived script).
 - Heat cuts 10/30/60, the 10..100 d grid and the null percentiles p50/p90/p99 are not in params.yaml; where they sit in the code was not read.
 - Fixed "BRA" (script constant or function default): `05b_plant_units`, `24_w5e5_spei_validation` (["BRA", "PRT"]), `25_validation_stats`, `c29_fleet_table`, `geo_base`, `w3_heat_fuel`, `w3_season`, `w4_null`, `w4r_emulator_check`, `heat_fuel` (default), `fleet.scope_units` (default). Country lists in `02_acquire`, `acquire/isimip.py`, `acquire/auxiliary.py`, `inventory/plants.py` are expected there.
+
+## Corrections (C55)
+
+Order of S2/S3 (supersedes Observation 8, C54): `05_plants.py` runs twice around S3, not
+once. Real order and stage ids used from here on:
+- S2a inventory, pass 1 (05_plants.py): reads GEM workbook (raw_dir/gem/*.xlsx, glob; one
+  file on disk, gem_global_integrated_power_tracker_{20260809}.xlsx -- the braces are a
+  literal fragment of the real filename, not a format placeholder) and
+  raw_dir/boundaries/ne_10m_coastline.shp (D24); catchment_validation.csv does not exist
+  yet. Writes plants.parquet with basin_id null, plants_discarded.csv.
+- S3 spatial (06_spatial.py): reads plants.parquet (from S2a); writes plant_cell.parquet,
+  catchment_weights.parquet, catchment_validation.csv.
+- S2b inventory, pass 2 (05_plants.py, same script rerun): reads plants.parquet (from S2a)
+  and catchment_validation.csv (from S3); rewrites plants.parquet, now with basin_id
+  attached.
+- S2c plant units (05b_plant_units.py): reads plants.parquet (post S2b). Writes
+  plant_units.parquet.
+- S2d fleet table (c29_fleet_table.py, was "S2b fleet table" in C53): reads
+  plant_units.parquet, plants.parquet. Writes fleet_brazil.csv.
+
+A runner needs five steps where the table had two (S2, S2b).
+
+S1, real raw-data location and counts (supersedes the "..\data\raw\climate shows 54
+files" note and Observation 7): raw_dir (paths.local.yaml) now resolves to
+D:/Douglas/OUTROS/CRAEI_raw_data/raw, with 367 files under 7 top-level subfolders
+(aqueduct, boundaries, climate, emdat, gadm, gem, validation). Two distinct climate
+caches exist and must not be confused:
+  (a) isimip_global_cache_dir (D:/Douglas/OUTROS/CRAEI_isimip_raw_cache): permanent,
+      shared, global-domain ISIMIP files, not country-cropped; 190 .nc.
+  (b) raw_dir/climate: study-area crops; 216 .nc + 9 .zip + 3 .txt. Of the 216,
+      raw_dir/climate/isimip3b holds 180 .nc matching the
+      {model}/{scenario}/{variable}/{model}_{scenario}_{variable}_{country}.nc template
+      read by S4, S5 and the truncation audit. The remaining 36 .nc under
+      raw_dir/climate (outside isimip3b) are NOT identified; candidate: W5E5 raw files
+      for S12's w5e5 validation (not confirmed -- new gap, see O38 status below).
+GEM: raw_dir/gem has exactly 1 file, matching the `*.xlsx` glob in 05_plants.py; the
+"0 files" in the C53 table came from checking the pre-move location.
+Aqueduct: raw_dir/aqueduct/baseline_annual/aqueduct_baseline_annual_3countries.csv
+exists on disk (465 KB), matching the literal read at 09_consolidate.py:85 (resolves
+part of Observation 7); the folder also holds the full Aqueduct 4.0 file geodatabase
+and two flat CSV exports not read by any script found so far.
+EM-DAT: raw_dir/emdat has emdat_Brazil.csv, emdat_India.csv, emdat_Portugal.csv plus
+an _emdat_archive_raw.xlsx and ibtracs_*.csv / _ibtracs_*_raw.csv (storm tracks, out
+of v2 scope). Which of the three candidate scripts (Observation 9) turned these into
+emdat_events.parquet is still NOT determined; reading the three script bodies was out
+of scope for this static check.
+GADM: raw_dir/gadm has exactly gadm41_BRA.gpkg, gadm41_IND.gpkg, gadm41_PRT.gpkg --
+confirms the `{iso}` in `gadm41_{iso}.gpkg` (06_spatial.py:32) is a per-country
+template resolved to the 3 study countries, not a literal placeholder left unresolved;
+standardized to `{country}` below for consistency with S4/S5's naming.
+Validation raw inputs, previously "location TBD" in the S12 row:
+raw_dir/validation/dgeg (5 .xls, 2015-2019), raw_dir/validation/ons_ena (27 .csv,
+ENA_Diario_por_Subsistema-2000..2026), raw_dir/validation/ren_iph (13 .json,
+2014-2026). Resolves the "ENA_Diario...csv (location TBD)" and part of the "W5E5
+climate (location TBD)" items in S12 -- W5E5 itself is still not located (see above).
+HydroBASINS (used by S3's catchment delineation): NOT found as a raw_dir subfolder
+among the 7 listed above. acquire/auxiliary.py:60-62 fetches it through the manifest
+(`key = f"hydrobasins/{iso}"`), so it may live under a manifest-tracked cache path not
+checked here. New gap, not in the original O38 list.
+
+`{iso}` vs `{country}` naming: the table used `{iso}` only in S3's description of the
+ISIMIP grid crop; every other stage (S4, S5, S7, S11c) already used `{country}`.
+Standardized to `{country}` everywhere; S3's Reads now read "ISIMIP crop
+{model}_historical_tasmax_{country}.nc (gfdl-esm4 only, used for the land-cell grid),
+gadm41_{country}.gpkg -- both per-country templates, resolved to BRA/IND/PRT".
+
+Reads completed for S4, S5, S7-S11 (static literals; module-internal reads not visible
+in the orchestrating script are flagged):
+- S4 (04_daily_indices.py): climate_dir/{model}/historical/pr/{model}_historical_pr_
+  {country}.nc; climate_dir/{model}/{scenario}/tasmax/{model}_{scenario}_tasmax_
+  {country}.nc; climate_dir/{model}/{scenario}/pr/{model}_{scenario}_pr_{country}.nc.
+  Writes indices_daily.parquet. The docstring names plant_cell.parquet as an input but
+  no literal read of it was found in this script; either the full grid is processed
+  without a plant_cell filter, or the filter happens inside hazards.heat/precip/loading
+  (not grepped) -- NOT resolved.
+- S5 (07_water_balance.py): climate_dir/{model}/{scenario}/{tasmax,tasmin,pr}/
+  {model}_{scenario}_{var}_{country}.nc; processed_dir/plants.parquet (columns
+  plant_uid, country); processed_dir/catchment_weights.parquet. Writes
+  water_balance_cell.parquet, water_balance_catchment.parquet. Diagnostic
+  audit_tx_tn_and_pet_truncation.py reads the same climate paths plus
+  catchment_weights.parquet and plants.parquet; writes truncated_pet_cells.parquet.
+- S6 (08_spei.py): reads water_balance_catchment.parquet, water_balance_cell.parquet,
+  plants.parquet, catchment_weights.parquet (Action 3/4 setup); truncated_pet_cells.
+  parquet is read ONLY in Action 4, an optional per-basin weight report (prints and
+  exits gracefully with a rerun hint if the file is absent) -- NOT a dependency of
+  spei.parquet itself. Writes spei.parquet.
+- S7 (09_consolidate.py): reads plants.parquet (twice, Step 7 and Step 8),
+  raw_dir/aqueduct/baseline_annual/aqueduct_baseline_annual_3countries.csv (Step 8,
+  H3). indices_daily.parquet, spei.parquet and plant_cell.parquet are named in the
+  docstring but have no literal read in this script -- they are read inside
+  hazards.consolidate (module body not read). Writes plant_hazards.parquet,
+  plant_hazards_r_d_baseline_zero.csv, plant_aqueduct.parquet.
+- S8 (10_exposure.py): no literal read of any table found in the script itself (only
+  to_csv writes and a print referencing "plants.parquet" in a message string); the
+  actual reads are inside exposure.aggregate (module body not read). Writes
+  exposure_summary.csv, exposure_aqueduct.csv, exposure_si.csv. Reads remain TBD at
+  the script level.
+- S9 (W3a-W3f-6, 13 scripts): internal dependency chain, useful for a future runner --
+  w3_heat_fuel (reads plant_units, plant_hazards; writes w3_heat_curves_by_gcm.csv,
+  w3_heat_summary.csv, w3_heat_by_gcm_wide.csv, w3_heat_planned_vs_operating.csv) runs
+  first. w3_agreement, w3_influence, w3_season only need plant_units/plant_hazards/
+  plant_cell(/indices_daily for w3_season). w3_bootstrap reads w3_heat_summary.csv +
+  w3_heat_planned_vs_operating.csv (w3_heat_fuel) plus plant_units/plant_hazards/
+  plant_cell; writes w3_heat_bootstrap_shares.csv, w3_heat_bootstrap_paired.csv.
+  w3_scenario reads w3_heat_curves_by_gcm.csv (w3_heat_fuel) + w3_heat_bootstrap_
+  shares.csv (w3_bootstrap) plus plant_units/plant_hazards/plant_cell. w3_sensitivity
+  reads w3_heat_summary.csv (w3_heat_fuel) plus plant_units/plant_hazards; writes
+  w3_heat_sensitivity.csv, w3_heat_sensitivity_headline.csv. w3_tx40 reads
+  w3_heat_sensitivity.csv (w3_sensitivity) plus plant_units/plant_hazards.
+  w3_gcm_exclusion reads w3_heat_curves_by_gcm.csv, w3_heat_summary.csv,
+  w3_heat_planned_vs_operating.csv (all w3_heat_fuel). w3_table1 and w3_curves read a
+  dict of CSVs keyed by a NAMES list not resolved by this static check (TBD which
+  tables); w3_curves also reads w3_table1.csv.
+- S10 (archive/w3_heat_levels.py): reads plant_hazards.parquet, plant_units.parquet,
+  plants.parquet (Itaipu identification), plant_cell.parquet, indices_daily.parquet,
+  AND w3_heat_curves_by_gcm.csv (cross-stage read of an S9 output, missing from the
+  C53 row). Writes w3g_*.csv, w3g_heat_cell_class.csv.
+- S11a (w4_null.py): reads plants.parquet, plant_hazards.parquet (columns plant_uid,
+  bucket), spei.parquet. Writes w4_null_rates.csv.
+- S11b (archive/w4_drought_levels.py): reads plant_units.parquet, spei.parquet (two
+  different filters), plants.parquet, plant_cell.parquet, plant_hazards.parquet.
+  Writes w4g_*.csv.
+- S11c (w4r_emulator_check.py + archive/w4r_null_production.py): reads plants.parquet,
+  plant_hazards.parquet, spei.parquet, water_balance_catchment.parquet (check
+  script); plant_units.parquet, plant_cell.parquet, spei.parquet,
+  water_balance_catchment.parquet, water_balance_cell.parquet (production script).
+  Writes audit\w4r\draws_{name}_{variant}.npz, w4r_emulator_validation.csv,
+  w4r_null_percentiles.csv, w4r_null_rd.csv.
+- S11d (archive/o36_param_uncertainty.py): reads audit\w4r\draws_{name}_{variant}.npz
+  directly, AND loads archive/w4r_null_production.py via importlib for the reference
+  fits -- so it transitively inherits all of S11c's reads too (not a normal import; a
+  runner must treat S11d as depending on S11c's script, not just its output files).
+  Writes audit\w4r\o36_{name}_{variant}.npy, o36_forms.csv, o36_decomposition.csv.
+
+O38 status after C55: RESOLVED -- S2/S3 order (now documented as S2a/S3/S2b/S2c/S2d);
+raw locations of GEM, Aqueduct, EM-DAT, GADM, and the validation raw inputs
+(dgeg/ons_ena/ren_iph); truncated_pet_cells read-vs-write (read, Action 4 only,
+optional). STILL OPEN: emdat_events.parquet's actual writer among 3 candidates;
+decision constants outside params.yaml and the country-filter/config linkage;
+S4/S7/S8 reads that live inside src/craei modules rather than the orchestrating
+script (module bodies not read); S9's w3_table1/w3_curves NAMES list. NEW, found in
+C55: HydroBASINS raw location not found under raw_dir; 36 .nc under raw_dir/climate
+not identified (candidate W5E5, not confirmed).

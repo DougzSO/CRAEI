@@ -52,3 +52,4 @@
 | 2026-10-02 | C52 | done | O36 results registered; D93, O36 closed, O37 opened |
 | 2026-10-02 | C53 | done | docs/PIPELINE_MAP.md created from the repository inventory (stages, scripts, modules, tables; items not seen marked TBD) |
 | 2026-10-02 | C54 | done | PIPELINE_MAP checked against code literals and corrected (S1/S2/S3/S6/S12, support scripts, constants section); O38 opened |
+| 2026-10-02 | C55 | done | PIPELINE_MAP corrected: S2/S3 split into S2a/S3/S2b/S2c/S2d; raw_dir locations resolved for GEM/Aqueduct/EM-DAT/GADM/validation; S4/S5/S7-S11 reads completed; {iso} standardized to {country}; O38 updated, not closed |

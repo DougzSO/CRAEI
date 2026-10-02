@@ -1068,3 +1068,29 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 - Decision constants outside config/params.yaml: heat cuts 10/30/60, grid 10..100 d, null percentiles, n_boot and seeds (W3d and W3f-3 still 2000 and 86), country filters. heat_fuel, heat_levels, drought_levels and null_emulator do not import craei.config; null_emulator.THRESHOLD (-1.5) and params drought_spei_threshold (-1.5) are not linked. params model_agreement_fraction 0.8 differs from the k = 1, 3, 5 used in the tables (O31).
 - craei.rolling and craei.hazards.loading are imported by no test.
 - To do: before W7, resolve each item (or declare it out of scope) and consolidate constants into a per-country config linked to the D-ids.
+
+## O38 - update (C55): PIPELINE_MAP corrected, item still open
+- S2/S3 real order was S2, S3, S2 (Observation 8); now split into five stages
+  S2a/S3/S2b/S2c/S2d in PIPELINE_MAP.md (05_plants.py runs twice around 06_spatial.py).
+- raw_dir (now D:/Douglas/OUTROS/CRAEI_raw_data/raw, 367 files) locations resolved for
+  GEM, Aqueduct, EM-DAT, GADM and the S12 validation inputs (dgeg, ons_ena, ren_iph);
+  resolves the "location TBD" / "0 files" items from Observations 7 and the S12 row.
+  Two climate caches distinguished: isimip_global_cache_dir (global, 190 .nc) vs
+  raw_dir/climate (study-area crops, 216 .nc, of which 180 under isimip3b match the
+  per-country template read by S4/S5).
+- `{iso}` in S3 was a resolved per-country template (BRA/IND/PRT), not a literal
+  placeholder; standardized to `{country}` across the map.
+- truncated_pet_cells.parquet confirmed read-only in 08_spei.py Action 4 (optional
+  per-basin weight report), not a dependency of spei.parquet itself.
+- Reads completed for S4, S5, S7-S11 (file-name literals only); S10 gets a
+  cross-stage read of w3_heat_curves_by_gcm.csv (S9 output) added.
+- Still open: emdat_events.parquet's writer among 3 candidate scripts; decision
+  constants outside params.yaml and the country-filter/config link; reads that live
+  inside src/craei modules rather than the orchestrating script (S4 plant_cell filter,
+  S7's indices_daily/spei/plant_cell, S8's reads overall); S9's w3_table1/w3_curves
+  NAMES list.
+- New, found in C55: HydroBASINS raw location not found under raw_dir (fetched via
+  manifest key hydrobasins/{iso} in acquire/auxiliary.py, cache path not checked); 36
+  .nc under raw_dir/climate outside isimip3b not identified (candidate W5E5, not
+  confirmed).
+- Full detail in docs/PIPELINE_MAP.md, section "Corrections (C55)".
