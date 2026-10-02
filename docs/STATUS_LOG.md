@@ -50,3 +50,4 @@
 | 2026-10-02 | C51 | done | W4r results registered; D92 (FAIL cases kept, tolerance unchanged), O36 opened |
 | 2026-10-02 | O36 | done | Param-uncertainty decomposition of the emulated future F_D, 20,000 draws per pool and variant; replay reproduces W4r draws; year mostly, anystart not interpretable |
 | 2026-10-02 | C52 | done | O36 results registered; D93, O36 closed, O37 opened |
+| 2026-10-02 | C53 | done | docs/PIPELINE_MAP.md created from the repository inventory (stages, scripts, modules, tables; items not seen marked TBD) |
