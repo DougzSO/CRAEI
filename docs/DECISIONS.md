@@ -1058,3 +1058,13 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
 - Measured: sums of 12 months from anystart draws scored with the real-series parameters give a baseline F_D of 14.289 (catchment) and 13.334 (cell) versus about 6.7 nominal.
 - Hypothesis, NOT measured: blocks of 12 months starting at a random month mix seasonal phases, so 12-month sums crossing block borders repeat some calendar months and omit others; with strongly seasonal D this widens the distribution of the sums. The refit (A) absorbs this.
 - To do: read-only diagnostic comparing variance and quantiles of the 12-month sums of drawn series with the real ones, for year and anystart. Until then, anystart is not described as the null of the real series without this caveat.
+
+## O38 - Reproducibility gaps found by checking PIPELINE_MAP against the code (open, C54)
+- Method: static read of file-name literals and path lines in scripts/ and src/ (bodies not read; scripts/archive not scanned for constants). Corrections applied in docs/PIPELINE_MAP.md (section Corrections (C54)).
+- S2 and S3 depend on each other: 05_plants.py:34-40 attaches basin_id from catchment_validation.csv if it exists; 06_spatial.py:52 writes it and reads plants.parquet. Real order S2, S3, S2. A runner has to split S2.
+- emdat_events.parquet has three writers (scripts/c21_2_fix_emdat.py:56; archive c21_2_fix_blockers.py:169; archive c21_2_fix_final.py:86); the one that produced the file on disk was NOT determined. Raw locations of GEM, Aqueduct, EM-DAT and GADM were not seen (..\data\raw subfolders show 0 files).
+- compound.csv has no generator in the repository (compound is out of scope).
+- truncated_pet_cells.parquet is written by audit_tx_tn_and_pet_truncation.py:144; 08_spei.py:222 builds the path; read vs write NOT confirmed. If it is read, S6 depends on a diagnostic script.
+- Decision constants outside config/params.yaml: heat cuts 10/30/60, grid 10..100 d, null percentiles, n_boot and seeds (W3d and W3f-3 still 2000 and 86), country filters. heat_fuel, heat_levels, drought_levels and null_emulator do not import craei.config; null_emulator.THRESHOLD (-1.5) and params drought_spei_threshold (-1.5) are not linked. params model_agreement_fraction 0.8 differs from the k = 1, 3, 5 used in the tables (O31).
+- craei.rolling and craei.hazards.loading are imported by no test.
+- To do: before W7, resolve each item (or declare it out of scope) and consolidate constants into a per-country config linked to the D-ids.
