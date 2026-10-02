@@ -48,3 +48,5 @@
 | 2026-10-02 | C48 | done | Emulated drought null module, check and per-GCM validation; D90 three nulls no canonical, D91 TH1 definition, O35 opened, O34 closed; METHODS_SPEC v2.2 + M6 update |
 | 2026-10-02 | W4r | done | Emulated drought nulls, production run 20,000 draws per pool (catchment 1,110; cell 1,710), year and anystart; refit check PASS; validity 12 of 24 rows PASS, FAIL rows kept |
 | 2026-10-02 | C51 | done | W4r results registered; D92 (FAIL cases kept, tolerance unchanged), O36 opened |
+| 2026-10-02 | O36 | done | Param-uncertainty decomposition of the emulated future F_D, 20,000 draws per pool and variant; replay reproduces W4r draws; year mostly, anystart not interpretable |
+| 2026-10-02 | C52 | done | O36 results registered; D93, O36 closed, O37 opened |
