@@ -61,3 +61,43 @@ def test_rd_rates_known_case():
 def test_passes_validation_rule():
     assert ne.passes_validation(1.42, -0.723, 1.23, -0.797)
     assert not ne.passes_validation(1.59, -0.687, 1.23, -0.797)
+
+def test_percentile_row_keys_and_values():
+    row = ne.percentile_row(np.arange(101.0))
+    assert list(row) == ["p50", "p75", "p90", "p95", "p99"]
+    assert row["p90"] == pytest.approx(90.0)
+
+
+def test_rd_bins_known_case():
+    out = ne.rd_bins([5, 5, 0, 10], [10, 5, 3, 40])
+    assert out["n_defined"] == 3
+    assert out["undefined_pct"] == 25.0
+    assert out["rd_lt_1p5"] == pytest.approx(33.33)
+    assert out["rd_1p5_2"] == 0.0
+    assert out["rd_2_3"] == pytest.approx(33.33)
+    assert out["rd_ge_3"] == pytest.approx(33.33)
+    assert out["rd_ge_2"] == pytest.approx(66.67)
+
+
+def test_real_baseline_stats_halves():
+    z = np.random.default_rng(3).normal(size=(3, 372))
+    z[:, :11] = np.nan
+    tot, h1, h2 = ne.real_baseline_stats(z)
+    assert tot == pytest.approx((z[:, 12:] <= -1.5).mean(axis=1) * 100)
+    assert h1 == pytest.approx((z[:, 12:192] <= -1.5).mean(axis=1) * 100)
+    assert h2 == pytest.approx((z[:, 192:] <= -1.5).mean(axis=1) * 100)
+
+
+def test_fidelity_stats_self_consistent():
+    d_all = np.random.default_rng(7).normal(20.0, 60.0, size=(3, 372))
+    stored, labels = [], []
+    for d in d_all:
+        acc = ne.accumulate(d)
+        params, dist, _ = ne.fit_quiet(acc[1:])
+        stored.append(np.concatenate([np.full(11, np.nan),
+                                      ne.standardize_acc(acc, dist, params)]))
+        labels.append(dist)
+    n_fail, n_label, max_z, max_fd = ne.fidelity_stats(d_all, stored, labels)
+    assert (n_fail, n_label) == (0, 0)
+    assert max_z < 1e-9
+    assert max_fd < 1e-9

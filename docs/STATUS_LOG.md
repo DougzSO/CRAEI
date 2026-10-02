@@ -46,3 +46,5 @@
 | 2026-10-01 | W4g | done | Drought level classes vs null (20,000 draws, pools catchment and cell), R_D classes; checks 1-4 PASS |
 | 2026-10-01 | C47 | done | W4g results registered; D89 cooling upper bound (closes O32); O34 opened |
 | 2026-10-02 | C48 | done | Emulated drought null module, check and per-GCM validation; D90 three nulls no canonical, D91 TH1 definition, O35 opened, O34 closed; METHODS_SPEC v2.2 + M6 update |
+| 2026-10-02 | W4r | done | Emulated drought nulls, production run 20,000 draws per pool (catchment 1,110; cell 1,710), year and anystart; refit check PASS; validity 12 of 24 rows PASS, FAIL rows kept |
+| 2026-10-02 | C51 | done | W4r results registered; D92 (FAIL cases kept, tolerance unchanged), O36 opened |

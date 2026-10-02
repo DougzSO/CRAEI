@@ -114,3 +114,58 @@ def rd_rates(fd_base, fd_fut, ks=(1.5, 2.0, 3.0)):
     ratio = fd_fut[ok] / fd_base[ok]
     rates = [round(float((ratio >= k).mean() * 100), 2) for k in ks]
     return rates, round(float((~ok).mean() * 100), 2)
+
+def fidelity_stats(d_all, stored, labels):
+    """Refit each real D series and compare with the stored SPEI-12 (372 rows each).
+
+    Returns (fit failures, label mismatches, max |z - stored| where |stored| < 3,
+    max |dF_D| in pp).
+    """
+    n_fail = n_label = 0
+    max_z = max_fd = 0.0
+    for d, s, lab in zip(d_all, stored, labels):
+        acc = accumulate(d)
+        params, dist, _ = fit_quiet(acc[1:])
+        if params is None:
+            n_fail += 1
+            continue
+        z = standardize_acc(acc, dist, params)
+        sv = np.asarray(s, dtype=float)[WINDOW - 1:]
+        n_label += int(dist != lab)
+        m = np.abs(sv) < 3.0
+        max_z = max(max_z, float(np.abs(z[m] - sv[m]).max()))
+        max_fd = max(max_fd, abs(fd_pct(z[1:]) - fd_pct(sv[1:])))
+    return n_fail, n_label, max_z, max_fd
+
+
+def real_baseline_stats(stored):
+    """Real baseline F_D per series (360 months after the first valid window).
+
+    Returns arrays (total, first half, second half), in percent.
+    """
+    sv = np.asarray(stored, dtype=float)[:, WINDOW:]
+    half = sv.shape[1] // 2
+    return (np.array([fd_pct(r) for r in sv]),
+            np.array([fd_pct(r[:half]) for r in sv]),
+            np.array([fd_pct(r[half:]) for r in sv]))
+
+
+def percentile_row(x, pcts=(50, 75, 90, 95, 99)):
+    """Percentiles of x as {'p50': ..., ...} (numpy linear interpolation)."""
+    return {f"p{p}": float(np.percentile(x, p)) for p in pcts}
+
+
+def rd_bins(fd_base, fd_fut):
+    """Null R_D classes in % of defined draws (baseline F_D > 0); undefined in % of all."""
+    fb, ff = np.asarray(fd_base, float), np.asarray(fd_fut, float)
+    ok = fb > 0
+    r = ff[ok] / fb[ok]
+
+    def pct(mask):
+        return round(float(mask.mean() * 100), 2)
+
+    return {"n_defined": int(ok.sum()),
+            "undefined_pct": round(float((~ok).mean() * 100), 2),
+            "rd_lt_1p5": pct(r < 1.5), "rd_1p5_2": pct((r >= 1.5) & (r < 2)),
+            "rd_2_3": pct((r >= 2) & (r < 3)), "rd_ge_3": pct(r >= 3),
+            "rd_ge_1p5": pct(r >= 1.5), "rd_ge_2": pct(r >= 2)}
