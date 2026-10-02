@@ -1143,3 +1143,32 @@ Values listed only, not mapped to classes. Per-country row counts match file/sub
   not importing craei.config; null_emulator.THRESHOLD vs params.drought_spei_threshold
   not linked; params.model_agreement_fraction vs k=1,3,5 (O31).
 - O38 stays open (C56) pending that one remaining category.
+
+## D95 - trend-removed sensitivity of the emulated drought nulls (closed, C57; own id, not a headline)
+- Script scripts/archive/o39_detrended_sensitivity.py (archived): repeats the O36/D93
+  design (replay year/anystart block draws; same SeedSequence(w4r.SEED).spawn(4), so the
+  draw stream is identical to D93) on a copy of monthly D with each series' own OLS
+  linear trend (over month index, full 372 months) subtracted, keeping its own mean.
+  Per-series detrending (1,110 catchment + 1,710 cell series), not per-GCM. n = 20,000
+  draws per pool and variant, 0 fit failures.
+- Trend magnitude (catchment / cell): slope mean -0.0322 / -0.0301 D-units/month, sd
+  0.0415 / 0.0410, range [-0.136, 0.141] / [-0.175, 0.127]; r2 median 0.0017 / 0.0016 --
+  the linear trend explains almost none of each series' own variance. 187/1,110
+  (catchment) and 186/1,710 (cell) series land on a different distribution family after
+  detrending than their stored (undetrended) label; not treated as an error, only
+  counted (detrending can plausibly change the fit).
+- Results (excess fut_A-base_A / param term (SE) / sample term / fit term / share /
+  reading), detrended vs D93 original in parentheses: catchment year 1.021 (1.055) /
+  1.422 (1.488) / 0.020 (0.015) / -0.421 (-0.448) / 1.393 (1.41) / mostly (mostly);
+  cell year 1.004 (1.029) / 1.230 (1.252) / 0.009 (0.021) / -0.235 (-0.244) / 1.225
+  (1.22) / mostly (mostly); catchment anystart 0.485 (0.510) / -7.022 (-6.749) / -0.047
+  (-0.043) / 7.553 (7.301) / -14.476 (-13.24) / not (not); cell anystart 0.488 (0.503) /
+  -6.060 (-5.841) / -0.043 (-0.058) / 6.591 (6.403) / -12.405 (-11.60) / not (not).
+- Reading unchanged in all 4 cases (year mostly, anystart not), magnitudes close to the
+  undetrended D93 run. The GCM-baseline trend heterogeneity noted as a limitation in
+  4.1 (not measured, until now) is NOT the explanation for either the year excess or
+  anystart's invalidity as a null reference: per-series linear trend is too small
+  (r2 ~0.002) to move the reading. Sensitivity only, per the design fixed before
+  running (chat); does not change W4r's tolerance, cuts, FAIL handling, or D93's
+  reading; never a headline result.
+- Tables: o39_trend_summary.csv, o39_forms.csv, o39_decomposition.csv.
