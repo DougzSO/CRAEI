@@ -45,3 +45,4 @@
 | 2026-10-01 | C46 | done | W3g results registered |
 | 2026-10-01 | W4g | done | Drought level classes vs null (20,000 draws, pools catchment and cell), R_D classes; checks 1-4 PASS |
 | 2026-10-01 | C47 | done | W4g results registered; D89 cooling upper bound (closes O32); O34 opened |
+| 2026-10-02 | C48 | done | Emulated drought null module, check and per-GCM validation; D90 three nulls no canonical, D91 TH1 definition, O35 opened, O34 closed; METHODS_SPEC v2.2 + M6 update |

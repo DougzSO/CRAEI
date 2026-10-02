@@ -117,3 +117,5 @@ audit → implement → test → update `docs/CRAEI_work_plan_v2.md` → stop fo
 - Pytest floor after W3g: 195 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
 
 - Pytest floor after C47: 203 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
+
+- Pytest floor after C48: 211 passed, 1 skipped (measured 2026-10-02; supersedes the floor above).
