@@ -1,4 +1,4 @@
-# CRAEI work plan v2
+﻿# CRAEI work plan v2
 
 Replaces PROGRESS.json (frozen at docs/archive/PROGRESS_v1.json). Old command numbers are frozen; new commands start at C26 (C25 keeps its old definition). Rules: no calculation in figure modules; after any change touching plants or hazards run pytest (baseline 141 passed, 1 skipped) and scripts/c23b_regression_gate.py (8/8 PASS); never commit without author authorization; Brazil filter at table level; documents in English.
 
@@ -212,7 +212,7 @@ n_boot for reported bootstrap tables.
 | W3g | Heat level classes (thermal and hydro; operating, planned), baseline and future classes, class shift, change classes (exclusive delta bins), per GCM, range, k of 5 | O28 | ready |
 | W4g | Drought level classes against the null (20,000 simulations, stream [23, 99]); R_D classes with null rates | O29 | ready after pool check |
 | W4g-rev | Reclassify drought level and R_D change classes under all three nulls (free block12 reused, year/anystart emulated via W4r draws); D92-D95 | W4g, O36, O37, D92, D93, D94, D95 | done (C58, D96) |
-| W4h | Co-located exposure: 4 x 4 cross-tab, extreme in both, sensitivity high-or-extreme; thermal water-dependent and hydro | W3g, W4g, O32 | sketch |
+| W4h | Co-located exposure: 4 x 4 cross-tab, extreme in both, sensitivity high-or-extreme; thermal water-dependent and hydro | W3g, W4g, O32 | done (C59, D97) |
 | W3h | State and macro-region summary (Natural Earth admin1, nearest polygon for points outside) | W3g, W4g | sketch |
 | W3f-7 | Planned minus operating under TX40 and plant-count weight | W3 tables | ready |
 | W4b-W4f | As before; Itaipu b headline | W4a | ready |

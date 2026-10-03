@@ -58,3 +58,5 @@
 | 2026-10-02 | C57 | done | D95: trend-removed sensitivity of emulated drought nulls (archive/o39_detrended_sensitivity.py); reading unchanged (year mostly, anystart not); linear trend negligible (r2~0.002); sensitivity only, never headline |
 
 - C58 / D96: W4g-rev concluído (3 nulos nas classes de nível de seca e R_D); year mais baixo que block12 em todas combinações (D93); anystart com ressalva D94/O37; nenhum canônico (D90); tabelas w4grev_*.csv; piso 215 passed, 1 skipped.
+
+- C59 / D97: W4h concluído (co-exposição calor x seca, 4x4, sob os 3 nulos); year mais restritivo, anystart com ressalva D94/O37, block12 mais permissivo; marginais checados contra W3g/W4g/W4g-rev antes da mediana (D80); w4h_coexposure.csv (3456 linhas); piso 215 passed, 1 skipped.
