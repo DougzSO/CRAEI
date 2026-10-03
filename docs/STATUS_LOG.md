@@ -60,3 +60,5 @@
 - C58 / D96: W4g-rev concluído (3 nulos nas classes de nível de seca e R_D); year mais baixo que block12 em todas combinações (D93); anystart com ressalva D94/O37; nenhum canônico (D90); tabelas w4grev_*.csv; piso 215 passed, 1 skipped.
 
 - C59 / D97: W4h concluído (co-exposição calor x seca, 4x4, sob os 3 nulos); year mais restritivo, anystart com ressalva D94/O37, block12 mais permissivo; marginais checados contra W3g/W4g/W4g-rev antes da mediana (D80); w4h_coexposure.csv (3456 linhas); piso 215 passed, 1 skipped.
+
+[C60] D98 fechado. TH1 (D91) rodado com sucesso: checks (a) e (b) PASS. Piso 220 passed/1 skipped mantido após mover script para archive. O39 aberto: agregação TH1 por frota/GW (join plant_units/plant_cell, estilo W3g) — extensão futura, fora do escopo literal do D91, critérios de validade a fixar antes de rodar.
