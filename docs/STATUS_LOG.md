@@ -113,3 +113,14 @@
   disclosed in METHODS_SPEC's own pending list, not new findings; the
   plants item is stale text (body already resolves it), noted for future
   cleanup. No code changed. Floor unchanged: 225 passed, 1 skipped.
+- C69 (2026-10-05): W5 sensitivity table seeded (D107). New module
+  scripts/w5_sensitivity.py reads w3f7_planned_vs_operating.csv and
+  w4b_excess_over_null.csv, writes w5_sensitivity.csv (12 rows, 4
+  families: W3f7_weight, W3f7_metric, W4b_block_12_36, W4b_block_36_60).
+  All 18 reference values drift-checked by assert before write. Caught and
+  fixed one error before commit: an initial single family-level flag for
+  W3f7_metric ("smaller_magnitude_same_sign") was wrong for ssp585, which
+  actually sign-flips with larger magnitude -- corrected to a per-row flag
+  for that family only. No code changed outside the new script. Floor
+  unchanged: 225 passed, 1 skipped (w5_sensitivity.py has no pytest unit
+  yet -- script-level asserts only, consistent with w3f7/w4b precedent).

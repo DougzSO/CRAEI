@@ -1488,3 +1488,58 @@ possibly a stale cache, not investigated further). No production action
 required. W4h remains DONE; O32 remains CLOSED; Pearson III reconciliation
 remains open pre-existing (no new id); stale "6 plants" cleanup noted
 non-blocking.
+## D107 - closed, C69
+
+W5: sensitivity table seed. Schema: family, choice_headline,
+choice_alternative, metric, scenario, headline_value, alternative_value,
+delta, delta_unit, sign_changed, flag, source_table, decision_id. No
+separate planned_minus_operating_* columns (author decision: removed,
+would duplicate headline/alternative when the metric itself is already a
+planned-operating difference). delta = alternative_value - headline_value.
+sign_changed is a per-row fact (True/False/NA; NA when either side is
+numerically zero -- not a clean crossing). flag is qualitative, can be
+per-family (uniform) or per-row (when the family-level reading does not
+hold cell by cell, see W3f7_metric below).
+
+Script: scripts/w5_sensitivity.py. Reads w3f7_planned_vs_operating.csv
+(1,296 rows, D101/C63) and w4b_excess_over_null.csv (108 rows, D102/C64)
+directly, filters by fixed criteria, asserts output against 18
+independently-verified reference values (not the source, a drift guard).
+Writes w5_sensitivity.csv, 12 rows, 4 families.
+
+W3f7_weight (all_thermal, planned_all, threshold=30, reference=GW-implicit
+weight vs weight_plant_count), diff_median pp, by scenario ssp126/370/585:
+headline -7.158109/-0.118493/1.354263, alternative 12.065458/7.978770/
+9.871738. sign_changed True/True/False. flag=conditional_on_weight
+(uniform, matches D101's qualitative finding: the "no consistent
+difference" reading from M9 is conditional on GW weighting, does not
+generalize to plant-count weighting).
+
+W3f7_metric (same filter, reference=TX35 vs metric_TX40), diff_median pp:
+headline same as above, alternative 0.000000/-0.010909/-2.128538.
+sign_changed NA/False/True. flag is per-row here (correction made before
+commit, caught by re-checking the printed table against its own
+sign_changed column): ssp126/ssp370 = smaller_magnitude_same_sign (TX40 is
+rare, differences shrink toward zero, same qualitative reading as D101);
+ssp585 = sign_flip_larger_magnitude (+1.35 -> -2.13, NOT just "smaller
+magnitude" as D101's prose summary suggested when read at the family
+level -- an initial version of this script used a single uniform flag for
+this family and was wrong for ssp585; caught before being written to
+DECISIONS.md).
+
+W4b_block_12_36 and W4b_block_36_60 (operating, itaipu=b, excess_pp_median
+by scenario), confirming D102's non-monotonic block finding with exact
+values for all 3 scenarios (D102's prose only gave ssp585 as an example):
+block12 40.748590/43.204102/53.944651, block36 37.766500/40.222012/
+50.962561, block60 38.882685/41.338196/52.078746 (ssp126/370/585). delta
+block12->36 approx -2.982 pp and block36->60 approx +1.116 pp, nearly
+identical across scenarios because the null rate (null_pct_rd_ge2) is
+SSP-invariant by construction (D102) -- the block-length effect comes
+almost entirely from the null side, not the observed side. sign_changed=NA
+(not a sign-crossing fact, the finding is non-monotonicity). flag=
+non_monotonic (uniform, both pairs).
+
+Design intent: w5_sensitivity.csv grows incrementally as W4c-f close, one
+family per closed item, same script pattern (read source CSV, fixed
+filter, drift-guard assert, append rows). Not a new analysis -- pure
+aggregation of already-closed, already-checked results.
