@@ -73,3 +73,10 @@
   from "no consistent difference" to "consistently higher under planned" (see
   D101). Fixed duplicate D96/D99 blocks in DECISIONS.md (1294 -> 1261 lines).
   CLAUDE.md pytest floor line updated to C62 (225 passed, 1 skipped).
+
+- C64 (2026-10-05): W4b excess over the null, hydro BRA, Itaipu a/b, checks
+  (1)-(2) PASS (D102). AR(1) treated as informative-only (not abort), per
+  w4a_null_rates.py's own docstring. Block-length sensitivity (D83) confirmed
+  in direction (18.88% -> 21.87%, block12->36), not monotonic (block60
+  20.75% < block36). Closes METHODS_SPEC DR5 handler. Floor unchanged: 225
+  passed, 1 skipped.

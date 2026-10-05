@@ -161,7 +161,7 @@ then figures, then reproducibility; figure modules only read tables):
 | W3f-3 | Paired scenario contrast SSP585 - SSP126 per GCM, cell bootstrap, O25 rule | W3d | approved by author |
 | W3f-4 | Axis 1 sensitivity table (long): threshold, TX40, planned fleet, GW vs plant count, water vs air | W3a-W3d | ready |
 | W4a | Null with blocks 12/24/36/60, AR(1) and white noise as limits | none | ready |
-| W4b | Excess over null on plant_units; Itaipu b headline, a sensitivity | W4a | ready |
+| W4b | Excess over null on plant_units; Itaipu b headline, a sensitivity | W4a | done (C64, D102) |
 | W4c | SPI vs SPEI with the same fit scheme (O18) | none | blocked-by-O18 |
 | W4d | Leave-one-out of the 5 largest hydro overall, Itaipu a/b (O19) | W4b | ready |
 | W4e | GCM range, agreement, hydro cell bootstrap (O20, O21) | W4b | blocked-by-O20 |
@@ -216,7 +216,7 @@ n_boot for reported bootstrap tables.
 | TH1 | Baseline-relative heat threshold (p95 of baseline tasmax per cell/GCM), robustness check vs fixed 35degC threshold; cell/GCM scope only (BRA, 967 cells) | D91 | done (C60, D98) |
 | W3h | State and macro-region summary (Natural Earth admin1, nearest polygon for points outside) | W3g, W4g | ST1+ST2 done (C62/C63, D99/D100) |
 | W3f-7 | Planned minus operating under TX40 and plant-count weight | W3 tables | done (C63, D101) |
-| W4b-W4f | As before; Itaipu b headline | W4a | ready |
+| W4c-W4f | SPI x SPEI (O18), leave-one-out (O19), GCM range (O20/O21), threshold sensitivities | W4b | ready |
 | W3d/W3f-3 at 5,000 | Re-run, replace bootstrap limits | n_boot decision | pending |
 | W5 | Sensitivity register, with the new families | W3, W4 | sketch |
 | W6 | Figures: Fig 2 and Fig 4 become class maps; new co-exposure figure | W3g, W4g, W4h | after tables |

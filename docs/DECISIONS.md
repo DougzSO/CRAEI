@@ -1318,3 +1318,54 @@ nota explícita no texto do artigo, não só tabela de sensibilidade (W5).
 
 Tabela: w3f7_planned_vs_operating.csv, 1.296 linhas (3 choices x 432). Script:
 scripts/w3f7_sensitivity.py.
+
+## D102 - closed, C64
+
+W4b: excess over the null (D83/O23), hydro BRA, Itaipu b (Brazilian share,
+headline) and Itaipu a (whole asset, sensitivity). Reuses w4_null_rates.csv
+(W4a, no resimulation) for the null side and plant_hazards.parquet (hazard
+f_d_spei12, hydro_reservoir/hydro_run_of_river buckets) for the observed side,
+via craei.hazards.drought_levels.unit_drought_frame (D96/D97) and
+craei.exposure.heat_levels.with_itaipu_versions (D82). Production point only
+(SPEI<=-1.5, R_D>=2.0); other thresholds remain W4f's scope. Script:
+scripts/w4b_excess_over_null.py. No add_pooled_planned call: the table carries
+every raw GEM fleet category present in plant_units (not pooled into
+planned_all) x itaipu {a,b} x 3 scenarios x 6 null variants = 108 rows.
+
+Checks before writing, fixed by D83/O23 and D82: (1) hydro operating capacity
+a=109.667 GW, b=102.667 GW, diff <0.001 GW, PASS; (2) null reference
+block12=18.885% (ref 18.88) and white_noise=1.800% (ref 1.80), tol 0.01 pp,
+PASS. AR(1) is a soft check, not abort-on-fail: the value recomputed here
+(phi estimated from the full 1,110-series pool) is 27.577%, different from
+the c23c reference (26.12%, phi=0.9291 fixed, 200-series sample) -- two
+different phi estimations, not the same quantity (w4a_null_rates.py's own
+docstring already labels this check "informative only"); reported side by
+side, not used to abort. R_D undefined (baseline F_D=0): 0 of 6,660 unit rows
+(194 hydro plants per fleet x itaipu group).
+
+Table: w4b_excess_over_null.csv, 108 rows. Headline (hydro operating, Itaipu
+b, block12, excess_pp median over 5 GCMs), SSP126/370/585: +40.75 / +43.20 /
++53.94 pp (null 18.88%; observed median 59.63/62.09/72.83%).
+
+Block-length sensitivity (D83's test of the "12-month blocks break
+persistence" hypothesis), null pct_rd_ge2 by block (12/24/36/60): SSP-invariant
+by construction (same pool/seed): 18.88 / 19.36 / 21.87 / 20.75%. NOT
+monotonic -- block60 (20.75%) is below block36 (21.87%), consistent with D83's
+own caveat that 60-month blocks give only 6 blocks per 360-month series and
+may not resample meaningfully. Excess_pp median falls from block12 to block36
+(e.g. SSP585: 53.94 -> 50.96) and partially recovers at block60 (52.08);
+hypothesis confirmed in direction, not confirmed as monotonic.
+
+Bounds (D83): AR(1) (phi from pool, soft reference) gives LOWER excess than
+block12 (SSP585 median +45.25 pp, since its null rate 27.58% is higher);
+white noise gives the widest excess (SSP585 +71.03 pp, null rate only 1.80%).
+Both bounds behave as expected qualitatively (AR1 as upper null-rate bound,
+white noise as lower null-rate bound, per D83), translating into the opposite
+ordering of excess_pp.
+
+Itaipu a (whole asset, sensitivity), block12 only: median excess SSP126/370/
+585 +36.94 / +39.24 / +55.68 pp -- close to Itaipu b, as expected (same
+hazard, only capacity weight differs, D82).
+
+Closes DR5's TO BE DEFINED in METHODS_SPEC. Plan item W4b done; next: W4c
+(O18), W4d (O19), W4e (O20/O21), W4f.
