@@ -1389,3 +1389,25 @@ D83-D95 and D102. This does not retroactively fix D100/D101 or any other
 already-corrupted entry, and does not identify why C63's output was
 affected. If a future session finds a cheap way to isolate the actual cause,
 reopen under a new O-id; do not reuse O40 for a different claim.
+## D104 - closed, C66
+
+METHODS_SPEC.md rewritten from the v2.2 consolidated draft (C48, edits
+through C65) into an article-oriented v3.0. No new analysis and no
+recalculated result. The prior file is archived byte-for-byte at
+docs/archive/METHODS_SPEC_v2.2_pre_C66.md. Live text is now Sections 1-11
+(scope through what is not claimed). Pipeline, SPEI fitting note, results
+map, result handlers and open items are Appendices A-E. Limitations are
+Appendix F. Archive pointers are Appendix G.
+
+Removed from the live document, not deleted from the record: the pre-C48
+Section 1 narrative, the v2.1 addendum prose, and the abandoned LR_C
+compound metric as a current method (Step 10 of Appendix A keeps a short
+superseded note; full text remains in docs/archive/METHODS_SPEC_v1_pre_rework.md
+and in git history). W3f-7 (D101, weighting reverses the planned-operating
+sign) and W4b (D102, block length not monotonic) are in the main text
+(Sections 8 and 9), not only in a pre-W5 note.
+
+One figure computed during drafting (423/1,110 as 38.1%) was removed before
+this commit so the file contains only numbers already recorded in
+DECISIONS.md or in a pasted script output. If this document and
+DECISIONS.md ever disagree, DECISIONS.md wins.

@@ -88,3 +88,7 @@
   M14 status table corrected: W4h/W3h/W3f-7/W4b rows moved from PLANNED to
   DONE with their C/D ids, emulator module row moved from IN PROGRESS to
   DONE. No code changed, no test run. Floor unchanged: 225 passed, 1 skipped.
+- C66 (2026-10-05): METHODS_SPEC.md rewritten to article form (D104). No
+  code, no new number, floor unchanged (225 passed, 1 skipped). Prior text
+  archived at docs/archive/METHODS_SPEC_v2.2_pre_C66.md. Derived 38.1%
+  (423/1,110) removed before commit.

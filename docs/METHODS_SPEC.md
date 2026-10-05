@@ -1,527 +1,910 @@
-# Design v2: Heat and drought exposure of the Brazilian power fleet
+# Methods: Heat and Drought Exposure of the Brazilian Power Generation Fleet
 
-Scope v2 (D71): Brazil only; Axis 1 heat exposure of the thermal fleet by fuel (operating vs planned); Axis 2 hydro drought against an internal-variability null. Replaces the three-country design archived at docs/archive/METHODS_SPEC_v1_pre_rework.md. Blocks marked "verbatim" are copied unchanged from v1. Anything not yet defined is marked "to be defined" with its open item (O-id).
+Document status: consolidated, article-oriented (v3.0, C66/D104). Supersedes
+the v2.2 consolidated Methods (C48) and all earlier section numbering; no
+numeric result is new or changed by this restructuring. Decision ids (Dxx)
+and open-item ids (Oxx) are preserved so every number stays traceable to
+docs/DECISIONS.md. Fully superseded narrative (the pre-C48 "Section 1" v2
+design, the v2.1 addendum prose, and the abandoned LR_C compound metric) is
+not reproduced here; see Appendix G for archive pointers. The live tracking
+apparatus (results map, result handlers, open items) is kept in Appendices
+C-E, unchanged in content, only relocated.
 
----
-
-## 1. Methods
-
-### 1.1 Study domain and scope (v2)
-
-Brazil only (D71). The pipeline still produces India and Portugal results; they are not analysed here and the Brazil filter is applied at table level, not by deleting code. See Appendix A for components outside the article.
-
-### 1.2 Infrastructure data
-
-Plant locations, capacities, technologies and statuses come from the Global Energy Monitor (GEM) Global Integrated Power Tracker (snapshot 9 August 2026). Units are aggregated to plants using a stable identifier (hash of name, latitude and longitude). Two fleets are analysed: the operating fleet (status "operating") and the planned fleet, split into advanced (construction, pre-construction) and early stage (announced). Shelved, cancelled, mothballed and retired units are excluded.
-
-Technology classes:
-
-- **Hydro**: conventional reservoir, run-of-river and pumped storage, as recorded by GEM. Where the type field is missing, the plant is treated as reservoir.
-- **Thermal, water-dependent**: coal, oil and gas steam cycles, combined-cycle gas, nuclear, and bioenergy steam plants.
-- **Thermal, air-only**: open-cycle gas turbines and reciprocating engines, where identifiable. These receive heat hazards only.
-- **Solar PV**: Supplementary Information only.
-
-GEM contains no cooling-technology field. Freshwater hazards for water-dependent thermal plants are therefore computed under two bounds. The upper bound assumes all plants withdraw freshwater. The lower bound treats plants within 5 km of the coastline (Natural Earth 1:10m) as seawater-cooled and removes them from freshwater hazards while keeping them for heat. The 5 km distance is an author assumption (evidence tier 3) and is tested at 2 and 10 km.
-
-### 1.3 Climate data and baseline
-
-Daily maximum temperature (tasmax), minimum temperature (tasmin) and precipitation (pr) are taken from the ISIMIP3b bias-adjusted atmospheric climate input data (0.5°), for the five ISIMIP3b primary GCMs: GFDL-ESM4, IPSL-CM6A-LR, MPI-ESM1-2-HR, MRI-ESM2-0 and UKESM1-0-LL. The baseline is the historical simulation of each model for 1985-2014; projections cover 2041-2070 under SSP1-2.6, SSP3-7.0 and SSP5-8.5. Data were bias-adjusted by the ISIMIP team against W5E5 v2.0 with ISIMIP3BASD v2.5.0 (Lange, 2019; Frieler et al., 2021).
-
-Justification: (i) every model has a historical baseline, which removes the self-referential calibration of the previous framework; (ii) bias adjustment to a common observational reference makes absolute thresholds (e.g. 35 °C) meaningful across models without in-house downscaling; (iii) all three variables are available for every model and scenario, which allows a temperature-range PET formulation; (iv) the five models were selected by ISIMIP to cover a range of climate sensitivity, unlike the previous pair, which sat at the low end of CMIP6 sensitivity.
-
-All indices are computed in two stages: baseline statistics (thresholds, distribution parameters) are estimated on 1985-2014 of each model, then applied unchanged to 2041-2070 of the same model. No percentile or distribution is ever fitted on the series being classified.
-
-Tasmax/tasmin consistency (TX >= TN) has been verified across the full ensemble: 707,545,940 cell-days tested (all 5 models x 4 scenarios x 3 countries, every plant-catchment cell), 0 inversions (TX < TN) and 0 exact or near-equal (tolerance 1e-6) coincidences found.
-
-Plants are assigned to the nearest 0.5° land cell. For hydro plants, the upstream catchment is built from HydroBASINS level 6 by recursively following the `NEXT_DOWN` topology from the sub-basin containing the plant; climate variables are area-weighted over all grid cells intersecting the catchment before computing indices.
-
-### 1.4 Hazard definitions
-
-**H1. Extreme heat (thermal plants; solar in SI).** Annual count of days with daily maximum temperature at or above 35 °C and 40 °C:
-
-TX35 = (1/30) Σ_y Σ_d 1[TX_{y,d} ≥ 35 °C], and analogously TX40.
-
-The change metric is ΔTX35 = TX35_future − TX35_baseline (days yr⁻¹). A difference is used instead of a ratio because baselines are zero in many cells. TX35 and TX40 are indices published in the IPCC AR6 Interactive Atlas; they are used as indicators of cooling-relevant heat, not as operating limits. The headline exposure class is ΔTX35 ≥ 30 days yr⁻¹ (about one additional month of such days; tier 3, tested at 15 and 60).
-
-**H2. Drought (hydro at catchment scale; water-dependent thermal at cell scale).** Standardized Precipitation Evapotranspiration Index at 12-month accumulation (SPEI-12), with potential evapotranspiration from Hargreaves-Samani:
-
-PET_d = 0.0023 × 0.408 × Ra_d × (T̄_d + 17.8) × (TX_d − TN_d)^0.5,  T̄_d = (TX_d + TN_d)/2
-
-where Ra is extraterrestrial radiation (MJ m⁻² d⁻¹; FAO-56, Eq. 21) and 0.408 converts to mm d⁻¹. The monthly water balance D_m = P_m − PET_m is accumulated over 12 months for SPEI-12 (3 months for SPEI-3). The three-parameter log-logistic distribution (probability-weighted moments, Vicente-Serrano et al. 2010) is fit per plant or cell and per GCM on that series' own 1985-2014 baseline, never mixed with other plants/cells/models, so standardization always measures a deviation from that series' own local climatology. SPEI-12 is fit once per series on all 360 baseline months together, without separating by calendar month: a 12-month accumulation already removes essentially all seasonal signal from the accumulated series (verified directly: mean standardized SPEI-12 by calendar month is within ±0.01 of zero in every month). SPEI-3 retains a calendar-month fit but widens each month's sample with its two immediate neighboring calendar months across all 30 years (a 3-month moving window in calendar-month space, not in the accumulation window itself), since a 3-month accumulation keeps more seasonal structure than SPEI-12 does. Where the closed-form estimator does not converge, a Pearson Type III maximum-likelihood fit is used instead (Bobee and Robitaille 1977, about 26% of series for SPEI-12); the two estimators' baseline severe-drought frequency differs by a median at or near zero for two of the three study countries and up to about 0.8 percentage points for the third at this sample size, so the choice between them does not materially affect results. Values are clipped to [−3, 3]. Severe drought frequency is
-
-F_D = fraction of months with SPEI-12 ≤ −1.5,
-
-which is close to 6.7% in the baseline by construction (standard normal probability below −1.5). The change metric is the ratio R_D = F_D,future / F_D,baseline. The headline exposure class is R_D ≥ 2 (severe drought at least twice as frequent; tier 3, tested at 1.5 and 3). For run-of-river plants SPEI-3 is also reported. Hargreaves was chosen over Thornthwaite because Thornthwaite is known to overstate drying under warming, and over Penman-Monteith for simplicity; SPI-12 (precipitation only) is reported as the lower bound that ignores atmospheric demand.
-
-### 1.5 Exposure assessment
-
-Hazards are never combined into a single score. For country c, technology t, hazard h, scenario s and model k, capacity exposure is
-
-E_{c,t,h,s,k} = Σ_{i∈(c,t)} Cap_i × 1[Δ_{i,h,s,k} ≥ τ_h] / Σ_{i∈(c,t)} Cap_i,
-
-reported both as a share and in GW. Model agreement is defined as at least four of five GCMs projecting a change of the same sign (ΔTX35 > 0; R_D > 1). Ensemble results are the median across models with the full model range.
-
-### 1.6 Fleet and fuel classification (v2; D77, D78)
-
-Capacity by fleet and fuel is computed from GEM unit-level rows (table plant_units.parquet, command C28), not from plants.parquet, because plants.parquet assigns one fleet per plant by the mode of unit status (D78). Hazards are joined on plant_uid (location is shared by all units of a plant).
-
-Fuel classes (D77): Type first (coal, nuclear, bioenergy); oil/gas split by GEM Fuel classification into gas (Gas, LNG only), oil, multi_fuel; bioenergy subtypes agricultural_waste (bagasse proxy), paper_mill_waste, wood_biomass, other_bioenergy. Brazil operating reference totals (GW): gas 19.32, bioenergy 17.43, oil 4.60, coal 3.00, nuclear 1.99, multi_fuel 1.33; total 47.67.
-
-### 1.7 Heat axis (v2)
-
-H1 and the exposure formula of 1.5 apply, with a fuel dimension added: E over (fuel, fleet, scenario, model). Outputs: share and GW above the headline class (dTX35 >= 30 days/yr), ensemble median, model range, agreement (at least 4 of 5 GCMs).
-
-- Threshold curves (GW fraction vs dTX35): TO BE DEFINED, see O17 (curve grid).
-- Operating vs planned comparison: TO BE DEFINED, see O17 (metric and uncertainty).
-- Harvest-season variant for bioenergy: TO BE DEFINED, see O16.
-
-### 1.8 Drought axis (v2)
-
-H2 and the fitting method of 1.4 apply unchanged (D54/D55).
-
-- Internal-variability null (D76): block bootstrap, pool of 1,110 (id, model) series of 360 baseline months, N_SIM=2000, seed 23; preliminary reference values from c23d_report.md: 18.88% of series reach R_D>=2 at SPEI<=-1.5 (1,991 of 2,000 with R_D defined); white-noise lower reference 1.80%. Excess over null = observed capacity share minus the null rate, by bucket, scenario, GCM; descriptive, not a significance test (L26). Production script to be written (C30), acceptance = reproduce these numbers.
-- SPI vs SPEI comparison: TO BE DEFINED, see O18.
-- Uncertainty of the excess (GCM range, agreement, clustering): TO BE DEFINED, see O21.
-- Leave-one-out of the 5 largest hydro plants: TO BE DEFINED, see O19.
-- Thermal water-dependent bucket in Fig 5: TO BE DEFINED, see O20.
-
-### 1.9 Validation (v2)
-
-National ONS validation (D70, rho=0.361, CI 0.027-0.811, n=20) is supplementary (D73). Details in Appendix A (v1 section 1.7).
+Status labels used below: DONE (result pasted into this document or into a
+result handler), PLANNED (next in the work plan, no new data needed),
+DEFERRED (after the Brazil pipeline closes; needs data not yet verified),
+TO BE DEFINED (placeholder, no value exists yet).
 
 ---
 
-## 3. Technical pipeline (inherited; verbatim)
+## 1. Scope and claims
 
-Execution machine, measured (COMANDO 15 follow-up, O06/O07 audit): AMD Ryzen 3 PRO 2200G, 4 cores / 4 logical processors, 6.4 GB RAM total. Project data (`data_root`, country-cropped climate files, `plants.parquet`, etc.) lives on the internal SSD (Samsung MZNLN128HAHQ, 128 GB); the raw global ISIMIP cache lives on an external USB HDD (Seagate Basic, 4 TB, D27'/D28). This is well below the 8+ cores / 32 GB this section originally assumed — see D41 (memory-constrained, per-country/model/scenario processing) and the per-step times below, which are measured where a COMANDO on this machine recorded one, and explicitly marked "not measured" otherwise (most are still the original rough pre-implementation estimates).
+The article measures the EXPOSURE of Brazilian power-generation assets --
+thermal and hydroelectric plants -- to heat and drought hazards under
+climate change, at plant level (D71). It does not measure impact,
+vulnerability, generation loss, probabilities, or confidence intervals in
+the formal statistical sense. Drought is PROJECTED by the climate models,
+not observed; exposure to the projected hazard is compared against what
+internal climate variability alone would be expected to produce (the null
+model, Section 6), never against a significance threshold.
 
-**Step 1. Plant inventory**
-Input: GEM tracker CSV; Natural Earth 10m coastline.
-Processing: filter countries and statuses; aggregate units to plants; assign technology class and water dependence; compute distance to coast (projected CRS per country); flag coastal plants at 2/5/10 km.
-Output: `plants.parquet` (plant_uid, country, fleet [operating/planned_adv/planned_early], tech_class, water_dependent [bool], hydro_type, capacity_mw, lat, lon, dist_coast_km).
-Time: not measured with wall-clock precision (COMANDO 13 ran in an earlier session with no stopwatch log). The 2026-09-20 D40 rerun's output timestamp (`plants.parquet` 18:05) is a few minutes before Step 3's outputs (below), consistent with well under the original 0.5 h estimate, but the run's start time was not logged, so this is not a measurement.
+Scope is Brazil only. Pipeline modules take a country parameter and were run
+for Brazil, India and Portugal under an earlier three-country design; India
+and Portugal are not analysed in this article and are deferred until the
+Brazil analysis is closed. Older, Brazil-only scripts filter the country
+explicitly and were not audited for other countries.
 
-**Step 2. Climate data acquisition**
-Input: ISIMIP repository.
-Processing: download bounding-box cutouts for 5 GCMs × {historical, ssp126, ssp370, ssp585} × {tasmax, tasmin, pr}, keeping files overlapping 1984-2014 and 2041-2070; W5E5 observations 1984-2019 for the same variables.
-Output: `data/isimip/{model}/{scenario}/{var}_{country}_{decade}.nc`; `data/w5e5/{var}_{country}_{decade}.nc`; checksum manifest.
-Time: not a single measured duration by design (server-queue-dependent, D23); observed throughput and elapsed time for the actual COMANDO 11/12 run are in `docs/DECISIONS.md`.
+Two axes of exposure are reported, plus their intersection:
+- Axis 1 (heat): the thermal fleet, by fuel, operating versus planned.
+- Axis 2 (drought): hydro plants, and water-dependent thermal plants,
+  against the internal-variability null.
+- Co-located exposure: spatial coincidence of both hazards at the same
+  plant (Section 7), never called a "compound event".
 
-**Step 3. Spatial mapping**
-Input: `plants.parquet`; HydroBASINS level 6; one ISIMIP grid template.
-Processing: nearest land cell per plant; for hydro, sub-basin containing the plant and upstream set via `NEXT_DOWN` traversal; area weights of grid cells intersecting each catchment.
-Output: `plant_cell.parquet` (plant_uid, cell_lat, cell_lon, dist_to_cell_km); `catchment_weights.parquet` (plant_uid, cell_lat, cell_lon, weight).
-Time: not measured with wall-clock precision, same caveat as Step 1. The 2026-09-20 D40 rerun's output timestamps (`plant_cell.parquet` 18:09, `catchment_weights.parquet` 18:10) span about 5 minutes together with Step 1's `plants.parquet` (18:05), well under the original 1-2 h estimate, but again not a logged measurement.
+---
 
-**Step 4. Daily temperature and precipitation indices**
-Input: ISIMIP cutouts; unique cells from Step 3.
-Processing: for each model and period, per cell: annual TX35, TX40; monthly N35; wet-day P95 (baseline) and exceedance counts in both periods; annual Rx5day.
-Output: `indices_daily.parquet` (cell_lat, cell_lon, model, scenario, period, index, year, month [nullable], value).
-Time: measured, COMANDO 15, this machine: **72 min** end to end for all 60 model/scenario/country jobs (`indices_daily.parquet` written 18:57, script launched ~17:45), under the machine's real memory constraints (D41) and with the system near its RAM ceiling (~89% used) for part of the run. Faster than the original 2-4 h estimate despite the weaker hardware (D41): Step 4 only ever touches the cells a plant actually uses (a few hundred to ~1,000 per country, not the full country grid), which apparently dominates over the RAM constraint's cost.
+## 2. Infrastructure data
 
-**Step 5. PET and water balance**
-Input: ISIMIP tasmax, tasmin, pr; W5E5 for validation.
-Processing: daily Ra from latitude and day of year; Hargreaves PET; monthly P, PET, D; catchment-averaged D for hydro plants using weights from Step 3.
-Output: `water_balance_cell.parquet`, `water_balance_catchment.parquet` (id, model, scenario, month, P, PET, D).
-Time: completed successfully (COMANDO 16, this machine) but without a logged start timestamp this run, so no reliable elapsed time — the original 1-2 h estimate is neither confirmed nor measured. Input cell count is larger than Step 4's (union of nearest-cell and hydro-catchment cells, e.g. 1,993 for Brazil vs. Step 4's 967), so Step 4's 72 min measurement is not a safe proxy either.
+Plant locations, capacities, technologies and statuses come from the Global
+Energy Monitor (GEM) Global Integrated Power Tracker, snapshot 9 August
+2026. Units are aggregated to plants using a stable identifier (hash of
+name, latitude and longitude); capacity by fleet and fuel is computed from
+the unit-level table (plant_units, 14,280 units), not from plants.parquet,
+because the latter assigns a single fleet per plant by the mode of unit
+status (D77, D78).
 
-**Step 6. SPEI and SPI**
-Input: Step 5 outputs.
-Processing: 12-month and 3-month accumulation; SPEI-12 is fit once per (id, model) series on its own 360 baseline values (no calendar-month split); SPEI-3 is fit per calendar month with a +/-1 adjacent-month window (n=90); both via PWM log-logistic with a Pearson III MLE fallback where PWM does not converge (docs/DECISIONS.md D54/D55; see the Step 6 note below for the full comparison against alternatives, including a regional pooling approach that was tried and reverted); apply the same per-series parameters to 2041-2070; clip to [−3, 3]; SPI with gamma distribution, per (id, model) per calendar month, n=30 (unaffected by the SPEI estimator choice). Future series start in December 2041 because 2031-2040 is not downloaded; state this in Methods.
-Output: `spei.parquet` (id, model, scenario, month, spei12, spei3, spi12, distribution).
-Time: measured (this machine, fit+standardize loop only, D54's per-series temporal method): **581.5s (~9.7 min)** -- faster than the earlier per-calendar-month hybrid's 3,649s (~61 min, D45/17-F) because SPEI-12's single per-series fit needs one fit attempt per series instead of twelve, cutting the number of (slower) Pearson III MLE calls by roughly the same factor.
+Four fleets are analysed: operating; planned advanced (construction,
+pre-construction); planned early (announced); and planned_all, the union of
+the two planned fleets. Shelved, cancelled, mothballed and retired units are
+excluded.
 
+Technology classes. Hydro plants are split into conventional reservoir,
+run-of-river and pumped storage as recorded by GEM; where the type field is
+missing, the plant is treated as reservoir. Thermal, water-dependent plants
+are coal, oil and gas steam cycles, combined-cycle gas, nuclear, and
+bioenergy steam plants. Thermal, air-only plants are open-cycle gas turbines
+and reciprocating engines, where identifiable, and receive heat hazards
+only. Solar PV is reported in Supplementary Information only. Technology
+class and water dependence are taken from tech_class in plant_units (D80),
+not from the hazard table's own bucket field, which was found to
+misclassify 6 units (5 plants, 3,100.4 MW) as air-only; for these plants the
+drought index was computed directly from spei.parquet rather than from the
+mislabelled bucket.
 
-> Editorial note (C24): the next block documents the COMANDO 17-F per-calendar-month hybrid fit, superseded in production by D54/D55 (see 1.4 H2 and Step 6 above). Kept verbatim as the method-comparison record.
+Fuel classes (D77). Thermal plants are classified by Type first (coal,
+nuclear, bioenergy); the remaining oil/gas plants are split by GEM's own
+Fuel field into gas (Gas, LNG only), oil, and multi_fuel; bioenergy is
+further split into agricultural_waste (a bagasse proxy), paper_mill_waste,
+wood_biomass and other_bioenergy. Brazil's operating-fleet reference totals
+are: gas 19.32 GW, bioenergy 17.43 GW, oil 4.60 GW, coal 3.00 GW, nuclear
+1.99 GW, multi_fuel 1.33 GW (total 47.67 GW).
 
-**Step 6 note: PWM log-logistic fit failures and hybrid fallback (COMANDO 17-C/17-D/17-E/17-F; `docs/DECISIONS.md` D45, closed)**
+Hydro capacity convention. Itaipu is counted at its Brazilian share, 7,000
+MW (version b), in every headline result, and at the whole binational
+asset, 14,000 MW (version a), as a sensitivity check (D82, D85). Planned
+hydro capacity is 28 units: 5,605 MW advanced, 2,019 MW early-stage.
+
+Cooling water. GEM has no cooling-technology field. Two bounds are used
+depending on the analysis. For the WRI Aqueduct water-stress indicator (H3,
+Section 4), both an upper bound (all water-dependent thermal plants treated
+as freshwater-cooled) and a lower bound (plants within 5 km of the
+coastline, Natural Earth 1:10 m, treated as seawater-cooled and excluded)
+are computed, with the 5 km cut tested at 2 and 10 km (author assumption,
+evidence tier 3). For the drought (SPEI) and co-located-exposure analyses of
+water-dependent thermal plants, only the upper bound is computed at present
+-- all 788 water-dependent thermal units (699 plants, 342 cells, D89); the
+coastal lower bound for these two analyses is not yet computed (TO BE
+DEFINED, no blocking dependency beyond scheduling).
+
+---
+
+## 3. Climate data and baseline
+
+Daily maximum temperature (tasmax), minimum temperature (tasmin) and
+precipitation (pr) are taken from the ISIMIP3b bias-adjusted atmospheric
+climate input data at 0.5 degrees, for the five ISIMIP3b primary GCMs:
+GFDL-ESM4, IPSL-CM6A-LR, MPI-ESM1-2-HR, MRI-ESM2-0 and UKESM1-0-LL. The
+baseline is each model's own historical simulation, 1985-2014; projections
+cover 2041-2070 under SSP1-2.6, SSP3-7.0 and SSP5-8.5. Data were
+bias-adjusted by the ISIMIP team against W5E5 v2.0 with ISIMIP3BASD v2.5.0
+(Lange, 2019; Frieler et al., 2021). The claim that the five models span the
+CMIP6 range of climate sensitivity, and that UKESM1-0-LL sits at the high
+end, is NOT independently verified in this project and should be cited or
+removed before submission (O33).
+
+All indices are computed in two stages: baseline statistics (thresholds,
+distribution parameters) are estimated once on 1985-2014 of a given model
+and then applied unchanged to 2041-2070 of the same model. No percentile or
+distribution is ever fitted on the series being classified. Tasmax/tasmin
+consistency (TX >= TN) was checked on the full three-country ensemble:
+707,545,940 cell-days, 0 inversions and 0 exact-or-near-equal (tolerance
+1e-6) coincidences.
+
+Plants are assigned to the nearest 0.5-degree land cell. For hydro plants,
+the upstream catchment is built from HydroBASINS level 6 by recursively
+following the NEXT_DOWN topology from the sub-basin containing the plant;
+climate variables are area-weighted over every grid cell intersecting the
+catchment before computing indices. Hydro plants also receive TX35 at their
+own plant cell, read as climatic context rather than a cooling hazard
+(hydro plants are not thermally cooled).
+
+The baseline monthly accumulation used for SPEI has 372 rows (1984-01 to
+2014-12); the first valid SPEI-12 value is 1984-12 (361 valid months), but
+the distribution fit itself uses only the 1985-2014 window (360 values) --
+December 1984 enters the baseline F_D denominator but not the fit, an effect
+measured as negligible (mean -0.003 percentage points). Future series have
+360 rows starting 2041-01, with the first valid SPEI-12 value in 2041-12
+(349 valid months), because the 12-month accumulation restarts at the
+beginning of each block.
+
+---
+
+## 4. Hazard definitions
+
+Hazards are never combined into a single score; each is reported, classified
+and aggregated independently (Section 5).
+
+### 4.1 H1 -- Extreme heat (thermal plants; hydro context; solar in SI)
+
+Annual count of days with daily maximum temperature at or above 35 degC and
+40 degC:
+
+TX35 = (1/30) sum_y sum_d 1[TX_{y,d} >= 35 degC], and analogously TX40.
+
+The change metric is a difference, dTX35 = TX35_future - TX35_baseline
+(days/yr), rather than a ratio, because baselines are zero in many cells.
+TX35/TX40 are indices published in the IPCC AR6 Interactive Atlas and are
+used here as indicators of cooling-relevant heat, not as operating limits
+(tier 3). The headline change class is dTX35 >= 30 days/yr (about one
+additional month of such days), tested on a grid of 10/20/30/40/50/60/80/100
+days (O17, closed, D87). TX40 is tested on its own grid (O27, closed). A
+baseline-relative heat threshold -- days above each cell's own baseline 95th
+percentile of tasmax, as a robustness check that results do not depend on
+the absolute 35/40 degC cuts -- is DONE at cell/GCM scope: 967 cells, 5
+GCMs, baseline mean identical across GCMs (18.27 days/yr, mechanical by
+construction), future diverges more under the relative cut (SSP5-8.5:
+91.68-189.50 days/yr across GCMs, median threshold 34.4-34.7 degC, as low as
+~25 degC in some cells) (TH1, C60, D98). This result is not GW-weighted and
+not directly comparable to the H1 change-lens headline; fleet-level
+aggregation of TH1 remains open (O39).
+
+### 4.2 H2 -- Drought (hydro at catchment scale; water-dependent thermal at cell scale)
+
+Standardized Precipitation Evapotranspiration Index at 12-month accumulation
+(SPEI-12), with potential evapotranspiration from Hargreaves-Samani:
+
+PET_d = 0.0023 x 0.408 x Ra_d x (Tbar_d + 17.8) x (TX_d - TN_d)^0.5,
+Tbar_d = (TX_d + TN_d)/2
+
+where Ra is extraterrestrial radiation (MJ m^-2 d^-1; FAO-56, Eq. 21) and
+0.408 converts to mm/d. Monthly water balance D_m = P_m - PET_m is
+accumulated over 12 months (3 months for SPEI-3, additional for
+run-of-river plants). The three-parameter log-logistic distribution is fit
+by unbiased probability-weighted moments (PWM; Vicente-Serrano et al. 2010)
+on each series' own 1985-2014 baseline, never mixed across plants, cells or
+models; where PWM does not converge, a Pearson Type III maximum-likelihood
+fit is used instead (Bobee and Robitaille 1977; full fitting-method note in
+Appendix B). SPEI-12 is fit once per (plant/cell, model) series on all 360
+baseline months together, without a calendar-month split, because a
+12-month accumulation already removes essentially all seasonal signal
+(verified: mean standardized SPEI-12 by calendar month within +/-0.01 of
+zero in every month). SPEI-3 keeps a calendar-month fit, widened with a
++/-1 adjacent-month window across the 30 baseline years (n=90), since a
+3-month accumulation retains more seasonal structure. Values are clipped to
+[-3, 3].
+
+Severe drought frequency is F_D = fraction of months with SPEI-12 <= -1.5,
+close to 6.7% in the baseline by construction. Because the distribution is
+calibrated on each series' own baseline, the baseline F_D is nearly fixed by
+design rather than a free draw of natural variability: across the
+hydro-BRA catchment pool (1,110 series = 222 plants x 5 GCMs), baseline F_D
+has mean 6.75%, sd 1.23, min 2.50, max 11.11 (nominal 6.68%), and the two
+halves of the baseline series are strongly anti-correlated (r = -0.797).
+The log-logistic fit is used for 687 of the 1,110 series (mean 6.48%, sd
+1.12); the Pearson III fallback for the remaining 423 (mean 7.21%, sd 1.26).
+This self-calibration property motivates the emulated null described in
+Section 6.
+
+The change metric is R_D = F_D,future / F_D,baseline; the headline change
+class is R_D >= 2 (severe drought at least twice as frequent in the future
+as in the baseline), tested at 1.5 and 3. R_D is left undefined, and
+reported as its own category, whenever the baseline F_D is exactly zero
+(rare by construction: 0 of 6,660 unit-level rows in the W4b run, Section
+6).
+
+Hydro plants are evaluated at catchment scale; water-dependent thermal
+plants at cell scale (a 1,710-series cell pool feeds the thermal null).
+Run-of-river plants additionally receive SPEI-3 at catchment scale. A
+SPI-12 (precipitation only, ignoring atmospheric demand) comparison against
+SPEI-12 under the same classes is planned (W4c, O18) to isolate the
+contribution of the Hargreaves PET formulation; SPI-12 is already available
+in spei.parquet. A Penman-Monteith PET formulation is deferred: it needs
+wind, radiation and humidity at daily scale, and availability of these
+variables in the ISIMIP3b input has not been verified.
+
+### 4.3 H3 -- Chronic water stress (water-dependent thermal, freshwater bound only; Supplementary Information)
+
+WRI Aqueduct 4.0, keyed by HydroBASINS pfaf_id, for the baseline and for
+2050 under the optimistic, business-as-usual and pessimistic scenarios,
+mapped to SSP1-2.6, SSP3-7.0 and SSP5-8.5. Aqueduct's baseline collection
+exposes bws (baseline water stress) and its 2050 projections expose ws under
+each {bau|opt|pes}{30|50|80} code; both are the same withdrawal-over-supply
+ratio on the same 0-5 category scale, with the field renaming a WRI
+convention rather than a methodological difference. Categories are used as
+published: low (<10%), low-medium (10-20%), medium-high (20-40%), high
+(40-80%), extremely high (>80%); exposure is capacity in high or extremely
+high stress. H3 is reported separately from H1/H2 because Aqueduct uses its
+own climate and socioeconomic forcing, inconsistent with the ISIMIP3b
+ensemble used elsewhere, and its future values are themselves the median of
+an internal 5-GCM ensemble distinct from this project's, with no per-model
+breakdown available (L13). Water-dependent thermal plants are joined to
+their containing HydroBASINS polygon's pfaf_id via a distance-guarded
+nearest match (D37); both cooling bounds (Section 2) are reported.
+
+### 4.4 H4 -- Extreme precipitation (Supplementary Information, all fleets)
+
+Wet-day 95th percentile (days >= 1 mm) estimated on the baseline per cell
+and model; the change metric is the ratio of exceedance frequency (baseline
+5% of wet days by construction) and the percentage change in mean annual
+Rx5day. Reported as a change in flood-forcing precipitation, not as flood
+risk.
+
+### 4.5 Solar PV (Supplementary Information)
+
+Peak-hour temperature loss L = gamma x max(0, TX + 31.25 - 25), with
+gamma = 0.4%/degC (typical crystalline silicon) and 31.25 degC the
+cell-to-air difference implied by NOCT = 45 degC at 1000 W/m^2. Because L is
+linear in TX above the threshold, delta-L mainly reflects warming; it is
+included only to document that heat-driven PV losses are small relative to
+thermal and hydro hazards, not as a finding in itself.
+
+### 4.6 Excluded hazards
+
+Extreme wind is excluded: 10 m gusts are not comparable with IEC 61400-1
+design winds (50-year, 10-minute reference speeds of 50, 42.5 and 37.5 m/s
+at hub height for classes I-III, rarely approached outside tropical cyclone
+tracks); confidence in projected extreme wind change is low in IPCC AR6;
+and GCM resolution does not capture the relevant extremes. Riverine and
+coastal flooding, sea-level rise and wildfire are outside the scope of this
+article.
+
+---
+
+## 5. Exposure metric, lenses and classes
+
+For country c, technology t, hazard h, scenario s and model k, capacity
+exposure is
+
+E_{c,t,h,s,k} = sum_{i in (c,t)} Cap_i x 1[Delta_{i,h,s,k} >= tau_h] /
+sum_{i in (c,t)} Cap_i,
+
+reported both as a share and in GW. Ensemble results are the median across
+the 5 models with the full model range; model agreement tables report k =
+1, 3 and 5 of 5 GCMs exposed, replacing an earlier ">=4 of 5 same sign" rule
+that was never implemented (final definition pending, O31).
+
+Two lenses are reported for every hazard, and neither replaces the other:
+- Change lens (headline): dTX35 >= 30 d/yr; R_D >= 2. Question: how much
+  does it worsen relative to the baseline?
+- Level lens: TX35 future (days/yr); F_D future (% months SPEI-12 <=
+  -1.5). Question: how severe is the 2041-2070 climate at the plant? A
+  delta alone ignores the level, so both are always shown side by side.
+
+Heat level classes (O28, closed C45). Exclusive bins of TX35 future
+(days/yr): low < 10; medium 10 to < 30; high 30 to < 60; extreme >= 60.
+Baseline uses the same cuts, reported next to the future class (class
+shift). Labels are conventions with no physical basis (tier 3); cuts are
+fixed by calendar anchors before seeing the future result, except the upper
+cut (60 d), chosen after seeing the distribution and justified only by the
+anchor and the O17 grid -- flagged for the sensitivity table (Section 9).
+Change classes (secondary): dTX35 < 10, 10 to < 20, 20 to < 30, >= 30. Per
+(unit, GCM, scenario) the class comes from that GCM's own value; GW per
+class is computed per GCM, then summarised as min/median/max across the 5
+GCMs and k of 5; maps show the class of the per-cell median with the number
+of GCMs agreeing.
+
+Drought level classes (O29, closed; cell-scale null pool adopted for
+thermal). F_D future against the null distribution of no climate change:
+low <= p50; medium p50-p90; high p90-p99; extreme > p99 of the null (SPEI
+<= -1.5). "Extreme" means natural variability alone rarely produces that
+F_D; it is not a probability of impact, and because units are compared
+one-by-one against a marginal null while being spatially correlated, the GW
+share above a percentile is not binomially distributed. Change classes: R_D
+< 1.5, 1.5 to < 2, 2 to < 3, >= 3, each reported with its own null rate
+(Section 6). The baseline-to-future class migration is descriptive only,
+since the baseline is conditioned on the fit and the future is not; the
+canonical drought lens is F_D future against the null, not the migration.
+
+---
+
+## 6. The null model of internal variability (O34, D90)
+
+Because SPEI's own-baseline calibration makes the baseline F_D nearly fixed
+by construction (Section 4.2), the baseline cannot serve as a free draw of
+natural variability. Drought exposure is instead always reported against an
+explicit null of internal climate variability, estimated three different
+ways, with NO canonical choice among them (D90):
+
+1. Free null (W4a/W4g, DONE). Block bootstrap (12-month blocks; 24/36/60-
+   month and AR(1) as sensitivities) drawing baseline and future from
+   different series of the 1,110-series pool, with no refit. At the
+   production point (SPEI <= -1.5, 12-month blocks, N=2,000, seed 23):
+   18.88% of series reach R_D >= 2 (1,991 of 2,000 with R_D defined); a
+   white-noise lower reference gives 1.80%. Block-length sensitivity (null
+   pct_rd_ge2 by block length 12/24/36/60 months): 18.88 / 19.36 / 21.87 /
+   20.75%, scenario-invariant by construction. The rate is not monotonic in
+   block length -- block60 (20.75%) falls below block36 (21.87%) --
+   consistent with only 6 blocks being drawn per 360-month series at that
+   length, which may not resample meaningfully (D83; confirmed in W4b,
+   D102). An AR(1) variant is treated as an informative, not abort-on-fail,
+   soft check: phi estimated from the full 1,110-series pool gives 27.58%,
+   different from a fixed-phi reference (phi = 0.9291, 26.12%, estimated on
+   a 200-series sample in an earlier audit) -- two different phi
+   estimations of the same quantity, reported side by side. This free null
+   ignores the 30-year parameter-estimation error and draws baseline and
+   future from different series, whereas the real data pairs them within
+   the same plant and GCM.
+
+2. Emulated null, variant "year" (craei.hazards.null_emulator, DONE). One
+   series of the pool per draw; the water-balance deficit D is resampled in
+   whole calendar years; a fresh 12-month accumulation and distribution
+   refit is computed on the resampled 360 baseline months with the
+   production estimator; baseline and future are standardized with the
+   same refitted parameters, and F_D uses the same denominators as the
+   real data.
+
+3. Emulated null, variant "anystart": identical, but using 12-month blocks
+   starting at any month rather than whole calendar years.
+
+Emulator fidelity (DONE). Refitting the real D of all 1,110 series
+reproduces the stored SPEI-12 exactly: 0 fit failures, identical
+distribution label (log-logistic vs Pearson III) in all 1,110 series,
+maximum |z - stored| = 7.77e-05 for |SPEI| < 3 (tolerance 1e-3), maximum
+|dF_D| = 0.0000 pp (tolerance 0.01). A fixed-abort check script enforces
+this before any emulator output is used.
+
+Validity rule (fixed before running). The emulated baseline F_D must
+reproduce the real one within |delta sd| <= 0.20 and |delta corr(halves)|
+<= 0.10 (real: sd 1.23, r = -0.797). At n = 2,000 per variant: year gives sd
+1.42, r = -0.723 (PASS); anystart gives sd 1.06, r = -0.732 (PASS); the real
+value lies between the two. An earlier n = 150 pilot failed both (standard
+error of sd ~0.09 then, ~0.02 now).
+
+Per-GCM validation (DONE, diagnostic). Applying the same rule separately
+per GCM (1,000 draws per GCM/variant against that GCM's own 222-series real
+value) shows neither variant passes in every GCM:
+
+| GCM | real (sd / corr) | year (sd / corr) | anystart (sd / corr) |
+|---|---|---|---|
+| GFDL-ESM4 | 1.45 / -0.651 | 1.39 / -0.745 PASS | 1.09 / -0.766 FAIL |
+| IPSL-CM6A-LR | 1.32 / -0.723 | 1.47 / -0.704 PASS | 1.04 / -0.692 FAIL |
+| MPI-ESM1-2-HR | 0.85 / -0.864 | 1.35 / -0.736 FAIL | 1.00 / -0.758 FAIL |
+| MRI-ESM2-0 | 1.36 / -0.715 | 1.41 / -0.748 PASS | 1.10 / -0.726 FAIL |
+| UKESM1-0-LL | 1.01 / -0.810 | 1.39 / -0.724 FAIL | 1.07 / -0.737 PASS |
+
+year passes 3 of 5 GCMs, anystart 1 of 5, and MPI fails both; the pooled
+PASS (real sd 1.23, between the two variants) may partly reflect mixing
+GCMs with different real dispersion, which was not tested directly. Margins
+are narrow in two cases (GFDL year corr gap 0.094 against the 0.10 limit;
+MPI anystart corr gap 0.106, just over), and the real per-GCM sd comes from
+only 222 spatially correlated plants, so its own sampling error -- not
+measured -- is likely larger than nominal.
+
+Stationarity and trend. The nulls assume a stationary climate, but the
+real GCM baselines carry their own trend: F_D second-half-minus-first-half
+is +4.95 (GFDL), +4.66 (IPSL), -4.55 (MPI), +2.96 (MRI), -0.27 pp (UKESM),
+mean +1.55 pp, against ~0 for both emulated variants. The lag-1
+autocorrelation of annual D is close to zero (0.044; 0.005 detrended), so
+persistence is not what the emulators are failing to reproduce -- it is the
+trend. UKESM, whose real trend is near zero, still fails the year sd check
+(1.39 vs 1.01), so the trend alone does not fully explain the sd gap
+(series-level trends may cancel in the pooled mean; not tested further).
+
+Preliminary outputs (n = 2,000 per variant; final run needs 20,000,
+pending). F_D future p99: year 25.5%, anystart 19.2%, free 16.11%. R_D >=
+2: 17.3% / 8.6% / 18.06%. R_D >= 3: 4.2% / 1.0% / 8.10%. The three nulls
+differ substantially, confirming that none is canonical.
+
+Reporting rule. Every drought result is shown under all three nulls; a
+conclusion enters the main text only if it holds under all three, otherwise
+it is reported as a range. R_D is always descriptive, shown with the
+null-rate range, never as a significance test. Bounds behave as expected
+qualitatively: AR(1) (soft reference) gives a lower excess-over-null than
+block12, since its null rate is higher (27.58%); white noise gives the
+widest excess, since its null rate is lowest (1.80%) (confirmed directly in
+the W4b excess table, D102).
+
+Production excess-over-null result (W4b, DONE, D102). Hydro BRA, Itaipu b
+(Brazilian share, headline) and Itaipu a (whole asset, sensitivity), at the
+production point (SPEI <= -1.5, R_D >= 2.0). Headline (hydro operating,
+Itaipu b, block12, median excess_pp over 5 GCMs), SSP1-2.6/3-7.0/5-8.5:
++40.75 / +43.20 / +53.94 pp (null 18.88%; observed median
+59.63/62.09/72.83%). Itaipu a gives a close result (+36.94/+39.24/+55.68
+pp), as expected since only the capacity weight differs between the two
+Itaipu versions. R_D is undefined for 0 of 6,660 unit-level rows (194 hydro
+plants per fleet x Itaipu group).
+
+---
+
+## 7. Co-located exposure (D88, D89)
+
+Spatial coincidence of both hazards at the same plant location, never
+simultaneity in time and never called a "compound event". Units considered
+are water-dependent thermal (cell scale) and hydro (catchment-scale SPEI
+plus plant-cell TX35); air-only thermal and solar are not included. Per GCM
+and scenario, a 4x4 cross-tab (heat level class x drought level class) is
+built in GW, with the headline being extreme-in-both and a sensitivity of
+high-or-extreme-in-both; the same GCM is used for both hazards in a given
+cell of the cross-tab, and results are reported as min/median/max and k of
+5. Because the drought classes depend on which null is used (Section 6),
+the cross-tab is produced under each of the three nulls. Marginal totals
+are required to equal the independently computed heat (Section 5) and
+drought class totals; the production script aborts otherwise. No index, no
+weights and no ranking are built from the cross-tab; individual hazards are
+always presented first. Whether ISIMIP3BASD preserves the real
+heat-rainfall dependence structure of the underlying GCM has not been
+verified (O30), so temporal coincidence (years with both hazards present)
+is not currently reported.
+
+National 4x4 cross-tab results (W4h, D97, C59) exist and are DONE, but the
+specific GW/share values have not yet been transcribed into this document's
+result-handler table (CO1-CO3, Appendix D remain TO BE DEFINED pending that
+transcription -- a bookkeeping gap, not a missing analysis).
+
+State and macro-region breakdown (M10, W3h, DONE). Units are assigned to
+Natural Earth admin1 polygons (fields name, postal, region) by spatial
+join, with points outside any polygon assigned to the nearest polygon and
+the fallback count reported (craei.geo.state_assignment). For the heat-only
+state summary (ST1, C62, D99): 1,122 rows, 19 of 6,926 plants (0.27%) via
+nearest-polygon fallback; both capacity-parity and pre-median
+national-sum-parity checks passed at 0.00e+00 difference. Headline
+(all_thermal, operating, SSP5-8.5, extreme class): Sao Paulo, Maranhao and
+Mato Grosso do Sul lead (2.88-2.89 GW median), preliminary. For the
+state-level co-exposure summary (ST2, C63, D100): 2,952 rows, 921 plants
+(hydro + thermal_water_dependent), 3 nearest-polygon fallbacks; three parity
+checks (capacity, pre-median state-sum, and cross-check against the national
+W4h cross-tab) all passed at 0.00e+00-order differences (max 7.11e-15). ST2
+reports its own high-or-extreme-in-both quantity as the median of a single
+combined flag, which is NOT the same number as W4h's own sum-of-four-medians
+definition of the same label (medians are not additive); this distinction
+is documented, not reconciled, since both are internally consistent within
+their own tables. Headline (extreme x extreme, operating, SSP5-8.5,
+block12): Para leads in hydro (22.35 GW median), followed by Rondonia,
+Parana, Bahia and Minas Gerais, preliminary.
+
+---
+
+## 8. Planned versus operating fleet
+
+Reported as a substantive result, not a caveat.
+
+Change lens (paired planned-minus-operating, percentage points of GW with
+dTX35 >= 30 d/yr; SSP1-2.6/3-7.0/5-8.5): -7.16 / -0.12 / +1.35, with every
+cell-bootstrap interval including 0.
+
+Level lens (share of GW in the extreme heat class, median [min-max]):
+operating 23.8 [17.7-33.1] / 30.6 [26.6-52.9] / 32.4 [31.2-75.9];
+planned_all 14.3 [1.6-34.7] / 24.1 [20.1-61.8] / 30.0 [20.6-74.3]. Ranges
+overlap in every scenario.
+
+Taken together, no consistent difference in exposure between planned and
+operating capacity is found under the change lens (GW weighting); under the
+level lens, the planned share in the extreme class is lower in SSP1-2.6 and
+SSP3-7.0 and similar in SSP5-8.5, again with overlapping ranges. This is not
+read as evidence that fleet expansion "locks in" or "reduces" exposure.
+
+Weighting sensitivity (W3f-7, DONE, D101) -- a finding that changes this
+reading. Repeating the change-lens contrast under TX40 (instead of TX35)
+and under plant-count weighting (instead of GW weighting) shows the
+GW-weighted result above does NOT generalize. Under GW weight (the
+reference above), the median contrast is near zero with n_planned_ge 1-2 of
+5 GCMs -- "no consistent difference". Under plant-count weight, the same
+hazard and threshold grid give a median contrast that is consistently
+POSITIVE in all three scenarios (+12.07 / +7.98 / +9.87 pp,
+SSP1-2.6/3-7.0/5-8.5; n_planned_ge 4-5 of 5 GCMs). The planned fleet is
+exposed more than the operating fleet when plants are weighted equally
+rather than by capacity -- i.e. the planned fleet's exposure is
+concentrated in a larger number of smaller plants. This is the clearest
+sign-reversal found so far across any single-choice sensitivity test and is
+flagged for explicit treatment in the sensitivity table (Section 9) and in
+the article text, not only archived as a technical note.
+
+---
+
+## 9. Aggregation, uncertainty and sensitivity
+
+GW is computed per class per GCM, then summarised as min/median/max and k
+of 5 (k = 1, 3, 5 of 5 GCMs exposed; the final definition of "agreement" is
+open, O31). Ranges are structural (the spread across 5 deterministic GCM
+runs), not confidence intervals (D85). Cell bootstrap (currently n_boot =
+2,000; a final run at n_boot = 5,000 for the W3d and W3f-3 tables is
+pending) reports percentiles only when a bucket has >= 10 cells and zero
+NaN fraction, otherwise results stay descriptive (O25). Every hydro
+headline is reported beside a leave-one-out of the 5 largest plants (Itaipu
+14,000 MW whole-asset, Belo Monte 11,233, Tucurui 8,535, Jirau 3,750, Santo
+Antonio 3,568, Ilha Solteira 3,444 MW; O19, pending). A 7-set GCM-exclusion
+sensitivity is DONE for the heat axis; any statement framed as "GCM
+sensitivity" still rests on the unverified claim in Section 3 (O33).
+
+A single sensitivity table (W5, PLANNED) will report, for each discrete
+methodological choice, the headline value, the alternative value, the delta
+in percentage points, and the planned-vs-operating contrast recomputed
+under that same choice, flagged for sign change, fuel-order change,
+non-overlapping ranges, or a bootstrap interval crossing zero. The families
+to be covered: heat threshold grid, TX40, the baseline-relative heat
+threshold (TH1), planned-fleet definition, capacity vs plant-count
+weighting, water-dependent vs air-only thermal, GCM exclusion, bootstrap
+sample size, Itaipu a vs b, SPEI-3 vs SPEI-12, SPI vs SPEI, the SPEI drought
+threshold, the R_D threshold, null type and block length (including the two
+emulated variants), the heat-class cut values, and the drought-null
+percentiles. Out of scope for W5: the 15-day heat grid point (removed with
+O17's closure) and the coastal buffer/H3 freshwater bound.
+
+Two findings must be surfaced as flagged rows in W5, not buried among
+families with a near-zero effect:
+
+- Weighting reverses the planned-vs-operating sign (Section 8, W3f-7,
+  D101): GW weighting shows no consistent difference; plant-count weighting
+  shows a consistent, positive difference in all three scenarios.
+- Block length is not monotonic in the drought null (Section 6, W4b,
+  D102): the null rate falls from block12 (18.88%) to block36 (21.87%) as
+  D83's persistence-breaking hypothesis predicts, then partially recovers
+  at block60 (20.75%), a result read as a small-sample artifact of only 6
+  blocks per 360-month series rather than evidence against the hypothesis.
+  W5 must report all four block lengths, not only 12 vs 36.
+---
+
+## 10. Validation
+
+National-scale validation against the Brazilian system operator's (ONS)
+natural energy inflow (ENA) is DONE: Spearman rho = 0.361, 95% CI
+[0.027, 0.811], n = 20 years (supplementary, D73). The correlation is weak
+and reported as such. Subsystem-level validation (North, Northeast, South,
+Southeast) is suspended for the current article version: no official
+plant-to-subsystem mapping source was found (D62).
+
+Extended validation (module W8, scheduled after Section 7 closes;
+underlying data availability not yet verified) is DEFERRED:
+(a) a monthly-resolution ENA-vs-SPEI-12 comparison with block bootstrap
+correcting for autocorrelation, giving more data points than the annual
+series above, at the cost of reduced independence between points;
+(b) a distributional comparison of cell-level TX35 climatology against
+INMET station records -- distributional rather than year-by-year, because
+GCM simulation years do not correspond to real calendar years; W5E5 is
+itself derived from ERA5, so comparing the bias-adjustment reference
+against ERA5 would not be an independent check;
+(c) generation-based consistency checks (Appendix F, item B1).
+
+The constraint that GCM years are not synchronized with real calendar years
+applies throughout: any validation must compare either the observed-forcing
+index (SPEI computed from W5E5) against observed records, or climatological
+distributions against station data, never GCM output against observation
+year-by-year.
+
+Portugal (REN hydro productivity index) and India validation work was
+carried out under an earlier three-country design and is not part of the
+Brazil-only scope adopted in D71. The methodology (REN DataHub acquisition,
+monthly cross-validation against APA 2018 Tabela 7, the unresolved annual
+REN-ERSE aggregation gap, DGEG generation as an auxiliary check) and its
+results (D59-D61, O10, O11) are preserved via the archive pointer in
+Appendix G and are not reproduced in the current scope.
+
+---
+
+## 11. What is not claimed
+
+This article does not claim: impact, vulnerability or generation loss;
+probabilities of any kind; confidence intervals derived from the 5-GCM
+range (which is a structural spread, not a sampling distribution);
+harvest-window effects for bioenergy; a composite exposure index combining
+heat and drought; findings for solar PV or wind beyond the documentation in
+Sections 4.5 and 4.6; flood risk from the H4 extreme-precipitation
+indicator; results for countries other than Brazil; or temporal (as
+opposed to spatial) coincidence of heat and drought hazards.
+
+---
+
+## Key references
+
+- van Vliet, M.T.H. et al. (2016). Power-generation system vulnerability and
+  adaptation to changes in climate and water resources. Nature Climate
+  Change.
+- Frieler, K. et al. (2021, protocol). ISIMIP3b scenario and forcing
+  protocol.
+- Lange, S. (2019). Trend-preserving bias adjustment and statistical
+  downscaling with ISIMIP3BASD. Geoscientific Model Development.
+- Cucchi, M. et al. (2020) and Lange, S. et al. (2021). W5E5 / WFDE5.
+- Vicente-Serrano, S.M. et al. (2010). A multiscalar drought index sensitive
+  to global warming: SPEI. Journal of Climate.
+- Hargreaves, G.H. and Samani, Z.A. (1985). Reference crop evapotranspiration
+  from temperature. Applied Engineering in Agriculture.
+- Allen, R.G. et al. (1998). FAO Irrigation and Drainage Paper 56.
+- Kuzma, S. et al. (2023). Aqueduct 4.0 technical note. World Resources
+  Institute.
+- Lehner, B. and Grill, G. (2013). HydroSHEDS / HydroBASINS. Hydrological
+  Processes.
+- Bobee, B. and Robitaille, R. (1977). The use of the Pearson Type III
+  distribution for flood frequency analysis. Water Resources Research.
+- IEC 61400-1 (Wind energy generation systems, design requirements).
+- IPCC AR6 WGI, Chapter 11 and Interactive Atlas.
+---
+
+## Appendix A. Technical pipeline
+
+Execution machine, measured: AMD Ryzen 3 PRO 2200G, 4 cores / 4 logical
+processors, 6.4 GB RAM total. Project data (data_root, country-cropped
+climate files, plants.parquet, etc.) lives on the internal SSD (Samsung
+MZNLN128HAHQ, 128 GB); the raw global ISIMIP cache lives on an external USB
+HDD (Seagate Basic, 4 TB). This is well below the 8+ cores / 32 GB this
+section originally assumed; per-step times below are measured where a
+logged run on this machine recorded one, and explicitly marked "not
+measured" otherwise.
+
+**Step 1. Plant inventory.** Input: GEM tracker CSV; Natural Earth 10 m
+coastline. Processing: filter countries and statuses; aggregate units to
+plants; assign technology class and water dependence; compute distance to
+coast; flag coastal plants at 2/5/10 km. Output: plants.parquet (plant_uid,
+country, fleet, tech_class, water_dependent, hydro_type, capacity_mw, lat,
+lon, dist_coast_km). Time: not measured with wall-clock precision.
+
+**Step 2. Climate data acquisition.** Input: ISIMIP repository. Processing:
+download bounding-box cutouts for 5 GCMs x {historical, ssp126, ssp370,
+ssp585} x {tasmax, tasmin, pr}, keeping files overlapping 1984-2014 and
+2041-2070; W5E5 observations 1984-2019 for the same variables. Output:
+data/isimip/{model}/{scenario}/{var}_{country}_{decade}.nc;
+data/w5e5/{var}_{country}_{decade}.nc; checksum manifest. Time: not a
+single measured duration by design (server-queue-dependent).
+
+**Step 3. Spatial mapping.** Input: plants.parquet; HydroBASINS level 6;
+one ISIMIP grid template. Processing: nearest land cell per plant; for
+hydro, sub-basin containing the plant and upstream set via NEXT_DOWN
+traversal; area weights of grid cells intersecting each catchment. Output:
+plant_cell.parquet; catchment_weights.parquet. Time: not measured with
+wall-clock precision.
+
+**Step 4. Daily temperature and precipitation indices.** Input: ISIMIP
+cutouts; unique cells from Step 3. Processing: for each model and period,
+per cell: annual TX35, TX40; monthly N35; wet-day P95 (baseline) and
+exceedance counts in both periods; annual Rx5day. Output:
+indices_daily.parquet. Time: measured, 72 min end to end for all 60
+model/scenario/country jobs, under real memory constraints and with the
+system near its RAM ceiling for part of the run. Faster than a naive
+estimate because Step 4 only ever touches the cells a plant actually uses
+(a few hundred to ~1,000 per country), not the full country grid.
+
+**Step 5. PET and water balance.** Input: ISIMIP tasmax, tasmin, pr; W5E5
+for validation. Processing: daily Ra from latitude and day of year;
+Hargreaves PET; monthly P, PET, D; catchment-averaged D for hydro plants.
+Output: water_balance_cell.parquet, water_balance_catchment.parquet. Time:
+completed successfully but without a logged start timestamp, so no reliable
+elapsed time is available; input cell count is larger than Step 4's (union
+of nearest-cell and hydro-catchment cells, e.g. 1,993 for Brazil vs. Step
+4's 967), so Step 4's measurement is not a safe proxy.
+
+**Step 6. SPEI and SPI.** Input: Step 5 outputs. Processing: 12-month and
+3-month accumulation; SPEI-12 fit once per (id, model) series on its own
+360 baseline values; SPEI-3 fit per calendar month with a +/-1
+adjacent-month window (n=90); both via PWM log-logistic with a Pearson III
+MLE fallback where PWM does not converge (full comparison in Appendix B);
+apply the same per-series parameters to 2041-2070; clip to [-3, 3]; SPI
+with gamma distribution, per (id, model) per calendar month, n=30. Future
+series start in December 2041 because 2031-2040 is not downloaded. Output:
+spei.parquet (id, model, scenario, month, spei12, spei3, spi12,
+distribution). Time: measured, fit+standardize loop only: 581.5 s
+(~9.7 min), using the per-series temporal method -- faster than an earlier
+per-calendar-month hybrid's 3,649 s (~61 min) because the per-series fit
+needs one fit attempt per series instead of twelve.
+
+**Step 7. Plant-level hazard table.** Input: Steps 3-6. Processing
+(craei.hazards.consolidate): plants are assigned one bucket each
+(hydro_reservoir incl. pumped storage, hydro_run_of_river,
+thermal_water_dependent, thermal_air_only, solar); dTX35/dTX40 (cell scale)
+for the two thermal buckets; F_D/R_D of catchment-scale SPEI-12 for hydro
+(plus catchment-scale SPEI-3 for run-of-river) and cell-scale SPEI-12 for
+water-dependent thermal; H4 for every bucket with a linked cell. R_D is
+left NaN, not computed, when baseline F_D is exactly zero. Output:
+plant_hazards.parquet. Time: measured, 68 s (includes Step 8). 446,700
+rows. R_D-baseline-zero rate: 0.000% hydro_reservoir, 0.000%
+hydro_run_of_river, 0.016% thermal_water_dependent (3/19,200).
+
+**Step 8. Aqueduct water stress.** Input: Aqueduct 4.0 future_annual ws
+(2050, 3 scenarios, pfaf_id-keyed) and baseline_annual bws. Processing:
+water-dependent thermal plants joined to their containing HydroBASINS
+polygon's pfaf_id; Aqueduct categories applied as published; two cooling
+bounds reported (upper: all plants; lower: excluding plants within 5 km of
+the coast). Output: plant_aqueduct.parquet. Time: included in Step 7's
+68 s. 7,311 rows (1,280 plants x 3 scenarios x 2 bounds, minus 369 rows
+excluded from the lower bound as coastal). 0 plants fell into category -1
+or "no_data" in this run.
+
+**Step 9. Exposure aggregation and agreement.** Input: Steps 1, 7, 8.
+Processing: capacity shares and GW above headline classes per country x
+technology x fleet x scenario x model; ensemble median and range; model
+agreement flags per plant. Output: exposure_summary.csv. Time: 0.5 h (not
+measured).
+
+**Step 10. Compound metric -- SUPERSEDED.** The originally specified
+future-to-baseline likelihood ratio (LR_C) for a joint hydro-drought /
+thermal-heat national monthly series was replaced by two separate
+quantities (diff_pp, a percentage-point change in compound-month
+frequency; dependence_ratio, observed future co-occurrence over what
+independent marginals would predict), after a direct diagnostic found LR_C's
+large values in several country x scenario x model cells reflected each
+marginal's own baseline-relative drift, not extra co-occurrence. This
+compound-metric design was carried out under the earlier three-country
+scope and is outside the current Brazil-only article (D63, D72); the
+script (11_compound.py) is archived. Restricting to cells where the
+percentile threshold still discriminated extremes, dependence_ratio showed
+measurable positive dependence in a majority of answerable cells (median
+1.23, 5th/95th percentile 0.78/2.69), not pure independence -- preserved
+here as a methodological record, not as part of the current article's
+result set.
+
+**Step 11. Validation.** Input: W5E5 SPEI; ONS ENA; REN productivity index;
+plants. Processing: hydro-capacity-weighted annual SPEI-12 per subsystem
+and Portugal; Spearman rho with block bootstrap; odds ratio for low-inflow
+years. Output: validation.csv. Time: 1 h (not measured). Brazil national
+result: Section 10. Subsystem and Portugal results: outside current scope
+(see Appendix G).
+
+**Step 12. Sensitivity and figures.** Input: all previous outputs.
+Processing: rerun Steps 9-10 under each alternative; generate figures.
+Output: sensitivity.csv; figure files. Time: 2-3 h (not measured). Status:
+the current sensitivity work (Section 9, W5) supersedes this step's
+original design; table and figure generation for the current scope is
+PLANNED.
+
+Total compute: roughly 11-18 h, not measured as a single run.
+
+### A.1 Additional downloads
+
+| Dataset | Source | Approx. size | Purpose |
+|---|---|---|---|
+| ISIMIP3b bias-adjusted daily tasmax, tasmin, pr; 5 GCMs; historical + 3 SSPs | ISIMIP repository | ~35 GB for Brazil | All hazard indices |
+| W5E5 v2.0 daily tasmax, tasmin, pr, 1984-2019 | ISIMIP repository | ~5 GB (estimate) | Validation |
+| HydroBASINS level 6 | HydroSHEDS | Tens to a few hundred MB | Hydro catchments |
+| Natural Earth 1:10m coastline | naturalearthdata.com | <10 MB | Cooling bound |
+| ONS natural energy inflow (ENA) | ONS open data portal | <10 MB | Validation, Brazil |
+| Aqueduct 4.0 baseline bws | Existing GEE asset | <100 MB | H3 |
+---
+
+## Appendix B. SPEI fitting method: PWM failures and the Pearson III fallback
 
 The three-parameter log-logistic distribution in Step 6 is fit by unbiased
-probability-weighted moments (PWMs), the closed-form estimator of
-Vicente-Serrano et al. (2010): from a calendar month's 30 baseline values
-(1985-2014), sample PWMs b0, b1, b2 give a shape parameter beta =
-(2b1-b0)/(6b1-b0-6b2), then scale alpha and location gamma from beta. The
-production implementation (`craei.hazards.spei._fit_loglogistic_pwm`)
-rejects a fit whenever beta is non-positive or non-finite, any Gamma-function
-evaluation in the alpha step is non-finite or zero, or the fitted gamma
-(location) exceeds the sample minimum (a log-logistic's support is
+probability-weighted moments (PWM), the closed-form estimator of
+Vicente-Serrano et al. (2010): from a series' baseline values, sample PWMs
+b0, b1, b2 give a shape parameter beta = (2b1-b0)/(6b1-b0-6b2), then scale
+alpha and location gamma from beta. The production implementation rejects a
+fit whenever beta is non-positive or non-finite, any Gamma-function
+evaluation in the alpha step is non-finite or zero, or the fitted location
+gamma exceeds the sample minimum (a log-logistic's support is
 [gamma, infinity), so gamma above the smallest observed value is a support
-violation, fixed in COMANDO 17-D). On this project's real water-balance
-deficit D = P - PET, roughly 30% of (plant/cell, model, calendar-month)
-baseline fits are rejected this way (COMANDO 17-B: 32.4% hydro catchment
-SPEI-12, 14.4% run-of-river SPEI-3, 29.1% thermal-cell SPEI-12, all with the
-full 30-sample baseline and zero missing months -- COMANDO 17-C ruled out
-sample size and data gaps as causes). Every rejected fit is left as `NaN` in
-`spei.parquet` and counted, never silently replaced by a default value.
+violation). On this project's real water-balance deficit D = P - PET,
+roughly 30% of (plant/cell, model, calendar-month) baseline fits are
+rejected this way (32.4% hydro catchment SPEI-12, 14.4% run-of-river
+SPEI-3, 29.1% thermal-cell SPEI-12, all with the full 30-sample baseline
+and zero missing months -- sample size and data gaps were ruled out as
+causes). Every rejected fit is left as NaN and counted, never silently
+replaced by a default value.
 
-*Why PWM fails for the 3-parameter log-logistic under high skewness.* The
-PWM estimator inverts three sample moments (b0, b1, b2) into three
-distribution parameters through the closed-form relation above. That
-relation is only defined, and only gives a physically meaningful beta > 0,
-for a restricted region of the (b0, b1, b2) space consistent with a
-log-logistic shape; a 30-observation empirical sample of a distribution that
-is more sharply skewed, more symmetric, or otherwise differently shaped than
-a log-logistic (as D = P - PET can be, month to month and cell to cell, in
-this project's real data) can and does land the PWM triplet outside that
-region, most commonly flipping the sign of the numerator/denominator ratio
-that defines beta. COMANDO 17-C measured this directly: 100% of the failures
-are the beta <= 0 branch, with beta ranging from -2.96 to -21,878 -- not
-values near zero, but sign-flipped and often large in magnitude, consistent
-with the sample's L-moments falling well outside the PWM formula's valid
-domain for this distribution family rather than marginally missing it.
-COMANDO 17-C also found no support for two alternative explanations tested
-directly: the failures are not concentrated in any particular season (16-50%
-across every calendar month in all three countries, with Brazil's rate
-higher than India's dry-season rate if anything), and failing vs. passing
-groups show no consistent difference in coefficient of variation. This
-matches a known small-sample weakness of the L-moment/PWM estimator for the
+**Why PWM fails under high skewness.** The PWM estimator inverts three
+sample moments into three distribution parameters through a relation that
+is only defined, and only gives a physically meaningful beta > 0, for a
+restricted region of moment-space consistent with a log-logistic shape. A
+30-observation empirical sample of a distribution more sharply skewed, more
+symmetric, or otherwise differently shaped than a log-logistic (as D can be,
+month to month and cell to cell) can land outside that region. Measured
+directly: 100% of the failures are the beta <= 0 branch, with beta ranging
+from -2.96 to -21,878 -- sign-flipped and often large in magnitude, not
+values near zero. No concentration by season was found (16-50% failure
+rate across every calendar month in all three countries), and failing vs.
+passing groups show no consistent difference in coefficient of variation.
+This matches a known small-sample weakness of the PWM estimator for the
 three-parameter log-logistic reported in the hydrological literature, not a
 defect specific to this implementation.
 
-*Why taking the absolute value of beta is mathematically and physically
-invalid.* The sign of beta determines which tail of the log-logistic
-distribution is heavier: a positive beta gives the standard right-skewed
-log-logistic form used for SPEI (Vicente-Serrano et al. 2010); replacing a
-computed beta < 0 with |beta| does not recover a valid alternative fit to
-the same data -- it substitutes the parameters of a different distribution
-shape than the one the sample's moments actually support, with the tail
-direction inverted. Because SPEI's standardization step
-(`norm.ppf(cdf(D_acc, *params))`) maps quantiles of the fitted distribution
-onto the standard normal, inverting the tail inverts which end of the
-distribution reads as extreme: a real wet anomaly could be reported as an
-extreme dry SPEI value, and vice versa, silently corrupting both the
-severe-drought frequency F_D (Sec. 1.4 H2) and any classification built on
-it. `|beta|` was considered and rejected on exactly this basis, not adopted.
+**Why |beta| is not a valid substitute.** The sign of beta determines which
+tail of the log-logistic is heavier; a positive beta gives the standard
+right-skewed form used for SPEI. Replacing a computed beta < 0 with |beta|
+does not recover a valid fit to the same data -- it substitutes a different
+distribution shape with the tail direction inverted. Because SPEI's
+standardization step maps quantiles of the fitted distribution onto the
+standard normal, inverting the tail would invert which end reads as
+extreme: a real wet anomaly could read as extreme dry SPEI, silently
+corrupting F_D and any classification built on it. |beta| was considered
+and rejected on this basis.
 
-*Alternative estimators measured, not adopted (COMANDO 17-E).* A
-stratified-sample benchmark (`scripts/benchmark_spei_fitters.py`, fixed
-seed) compared the production PWM estimator against a moment-seeded
+**Alternative estimators measured, not adopted.** A stratified-sample
+benchmark compared the production PWM estimator against a moment-seeded
 3-parameter log-logistic MLE, a Generalized Extreme Value fit (MLE), and a
-Pearson Type III fit (MLE). Fitting every alternative on the full ~247,000
-baseline combos was measured as computationally infeasible in this session
-(a 200-combo pilot: ~60-100ms per MLE call vs. PWM's closed-form
-microseconds), so each bucket's evaluation is a fixed-seed random sample of
-up to 800 PWM-failing and 800 PWM-passing combos (not the full population;
-treat every percentage below as approximate, not exact):
+Pearson Type III fit (MLE), on a fixed-seed random sample of up to 800
+PWM-failing and 800 PWM-passing combinations per bucket (not the full
+~247,000-combination population, since a 200-combo pilot showed ~60-100 ms
+per MLE call against PWM's closed-form microseconds):
 
 | Bucket | Method | Failure rate | Recovery on PWM failures | F_D | Relative time |
 |---|---|---|---|---|---|
-| Hydro catchment SPEI-12 | PWM (production) | 50.0%\* | 0.0% | 5.90% | 1.0x |
+| Hydro catchment SPEI-12 | PWM (production) | 50.0%* | 0.0% | 5.90% | 1.0x |
 | | MLE log-logistic | 0.0% | 100.0% | 7.71% | 396x |
 | | GEV (MLE) | 0.0% | 100.0% | 7.94% | 580x |
 | | Pearson III (MLE) | 0.0% | 100.0% | 7.46% | 219x |
-| Run-of-river SPEI-3 | PWM (production) | 50.0%\* | 0.0% | 5.35% | 1.0x |
+| Run-of-river SPEI-3 | PWM (production) | 50.0%* | 0.0% | 5.35% | 1.0x |
 | | MLE log-logistic | 0.0% | 100.0% | 7.86% | 449x |
 | | GEV (MLE) | 0.0% | 100.0% | 8.13% | 735x |
 | | Pearson III (MLE) | 0.0% | 100.0% | 7.26% | 288x |
-| Thermal cell SPEI-12 | PWM (production) | 50.0%\* | 0.0% | 5.70% | 1.0x |
+| Thermal cell SPEI-12 | PWM (production) | 50.0%* | 0.0% | 5.70% | 1.0x |
 | | MLE log-logistic | 0.0% | 100.0% | 7.74% | 262x |
 | | GEV (MLE) | 0.0% | 100.0% | 8.72% | 480x |
 | | Pearson III (MLE) | 0.0% | 100.0% | 7.37% | 154x |
 
-\*PWM's 50.0% sample failure rate is the stratified sample design (800
-failing + 800 passing drawn on purpose to measure recovery), not the real
-population rate (32.4% / 14.4% / 29.1%, COMANDO 17-B); its F_D is computed
-only from the sample's passing half, consistent with the real production
-run's 5.9-6.6% (COMANDO 17-D).
+*PWM's 50.0% sample failure rate reflects the stratified sample design
+(800 failing + 800 passing drawn on purpose), not the real population rate
+(32.4% / 14.4% / 29.1%); its F_D is computed only from the sample's passing
+half, consistent with the real production run's 5.9-6.6%.
 
 All three alternatives recovered every one of the 2,400 sampled PWM
 failures (100%) with zero failures of their own, at 150-735x PWM's
-wall-clock cost. All three land somewhat above the ~6.7% expectation (PWM's
-own passing-only F_D lands somewhat below it); Pearson III is closest to
-6.7% and cheapest among the three alternatives, GEV furthest and most
-expensive. Following this benchmark, COMANDO 17-F adopted the hybrid
-strategy below.
+wall-clock cost. All three land somewhat above the ~6.7% standard-normal
+expectation; Pearson III is closest to 6.7% and cheapest among the three,
+GEV furthest and most expensive.
 
-**Fitting strategy (hybrid PWM + MLE fallback, COMANDO 17-F, closes
-`docs/DECISIONS.md` D45):**
+**Adopted hybrid strategy.** The log-logistic distribution is fit via PWM
+when it yields valid parameters (beta > 0, gamma <= min(sample)); where PWM
+is rejected, a Pearson Type III distribution is fit via maximum likelihood
+(scipy.stats.pearson3.fit), numerically stable under high skewness and
+established in hydrological drought analysis (Bobee and Robitaille 1977).
+In practice 29.6% of (plant/cell, model, calendar-month) baseline
+combinations across the three SPEI series need the fallback. The hybrid
+recovers 100% of PWM's fitting failures on this project's real data
+(0/3,275 hydro catchment, 0/1,305 run-of-river, 0/16,010 thermal-cell
+combinations left unfit; the remaining 3.03% NaN rate in SPEI_12 is the
+already-documented structural lead-in NaN from the accumulation window's
+min_periods behavior, not a fitting failure). Baseline F_D (SPEI-12 <=
+-1.5), hydro and thermal combined, mean over (id, model) groups: 6.21%,
+close to the ~6.7% standard-normal expectation.
 
-We fit the log-logistic distribution via closed-form probability-weighted
-moments (PWM; Vicente-Serrano et al. 2010) when the estimator yields valid
-parameters (shape beta > 0, and location gamma <= min(sample), the
-log-logistic support restriction, COMANDO 17-D). In practice 29.6% of
-(plant/cell, model, calendar-month) baseline combinations across the 3
-SPEI series (hydro catchment SPEI-12, run-of-river SPEI-3, thermal-cell
-SPEI-12; `spei.parquet`'s `distribution` column) need the fallback -- close
-to, if a little below, the ~30% COMANDO 17-B/17-C measured for PWM's own
-failure rate, since the fallback only fires on PWM's actual rejects, not a
-fixed quota. The PWM estimator produces beta <= 0 for these because of high
-skewness in the water balance D = P - PET over a 30-sample baseline
-(COMANDO 17-C: a shape-parameter sign flip, beta ranging -2.96 to -21,878,
-not a near-zero edge case, and not concentrated in any particular season --
-see the "Why PWM fails" note above). For these cases we fall back to
-fitting the Pearson Type III distribution via maximum likelihood estimation
-(`scipy.stats.pearson3.fit`), which is numerically stable under high
-skewness and used in hydrological drought analysis (Bobee and Robitaille
-1977). The hybrid recovers 100% of PWM's fitting failures on this
-project's real data (0/3,275 hydro catchment, 0/1,305 run-of-river, 0/16,010
-thermal-cell (group, calendar-month) combinations left unfit; the 3.03%
-`NaN` rate remaining in `spei.parquet`'s `SPEI_12` column is the
-already-documented, structural lead-in `NaN` from `accumulate()`'s
-`min_periods=window` behavior -- the first 11 months of each of the
-baseline and 3 future scenario blocks per group, Spec L05 -- not a fitting
-failure). Baseline F_D (SPEI-12 <= -1.5), hydro and thermal combined, mean
-over (id, model) groups: 6.21%, close to the ~6.7% standard-normal
-expectation. Computational overhead: measured directly, both sides of the
-same comparison, on the real full ~247,000 baseline (plant/cell, model,
-calendar-month) combinations -- 3,649s (~61 min) for the hybrid
-fit+standardize loop vs. 189s (~3.2 min) for an otherwise-identical
-PWM-only pass (`fit_spei_distribution` swapped for `loglogistic_fit_fn`,
-same data, same machine), a **~19.3x overhead**. This is higher than a
-draft estimate of ~15x and far higher than an earlier, pre-measurement
-draft's "minimal (~1.2-1.4x)" framing, which is not supported by
-measurement and is corrected here; ~19.3x is acceptable for this project's
-batch, offline scientific processing (a single Step 6 run, not a
-latency-sensitive path). The final SPEI values are
+Computational overhead, measured directly on the real full ~247,000
+baseline combinations: 3,649 s (~61 min) for the hybrid fit+standardize
+loop vs. 189 s (~3.2 min) for an otherwise-identical PWM-only pass -- a
+~19.3x overhead, higher than an earlier, unmeasured draft estimate (~15x,
+and a still-earlier "minimal ~1.2-1.4x" framing that is not supported by
+measurement and is corrected here). ~19.3x is acceptable for this
+project's batch, offline processing. The final SPEI values are
 distribution-agnostic (standardized via inverse normal CDF regardless of
 which distribution produced them), preserving comparability with the SPEI
-literature for the majority (70.4%) of baseline combinations still fit by
-the standard log-logistic estimator.
+literature for the 70.4% of baseline combinations still fit by the standard
+log-logistic estimator.
 
-**Step 7. Plant-level hazard table**
-Input: Steps 3-6.
-Processing (`craei.hazards.consolidate`, COMANDO 18): plants are assigned one bucket each (hydro_reservoir incl. pumped storage, hydro_run_of_river, thermal_water_dependent, thermal_air_only, solar); ΔTX35/ΔTX40 (cell-scale) for the two thermal buckets, F_D/R_D of catchment-scale SPEI-12 for hydro (plus catchment-scale SPEI-3, additional not substitute, for run-of-river) and cell-scale SPEI-12 for water-dependent thermal (SPEI, not SPI -- SPI-12 is COMANDO 22's sensitivity test), and H4 (Supplementary Information: p95 exceedance-frequency ratio, Rx5day percentage change) for every bucket with a linked cell. R_D is left `NaN`, not computed, when the baseline F_D is exactly zero (rare by construction, F_D's baseline expectation is ~6.2%, D45); this is counted, not silently substituted.
-Output: `plant_hazards.parquet` (plant_uid, bucket, model, scenario, hazard, baseline_value, future_value, delta, ratio).
-Time: measured, COMANDO 18, this machine: **68s** (script wall time, includes Step 8). 446,700 rows (5,910 hydro_reservoir F_D-SPEI12 + 2 H4 hazards x 394 plants x 5 models x 3 scenarios; 3,915 hydro_run_of_river F_D-SPEI12 + F_D-SPEI3 x 262 x 5 x 3, plus H4; 19,200 x 4 hazards thermal_water_dependent (1,280 plants); 795 x 4 hazards thermal_air_only (53 plants); 157,050 x 2 H4-only hazards solar (10,470 plants)). R_D-baseline-zero rate (Action 2, stop threshold 1%): 0.000% hydro_reservoir, 0.000% hydro_run_of_river (both SPEI series), 0.016% thermal_water_dependent (3/19,200) -- did not trigger the stop condition. See docs/DECISIONS.md D47 for the full breakdown.
+Note: this appendix describes the per-series (D54/D55) fitting method
+currently in production. An earlier per-calendar-month hybrid variant was
+tested and superseded (Step 6 timing comparison in Appendix A); its
+specific failure-rate breakdown is preserved in the archived decision
+record (Appendix G) and not repeated here, since the per-series method is
+the only one in current use.
+---
 
-**Step 8. Aqueduct water stress**
-Input: Aqueduct 4.0 `future_annual` `ws` (2050, 3 scenarios, `pfaf_id`-keyed) and `baseline_annual` `bws` (acquired and deduplicated to (country, pfaf_id), D32/D38).
-Processing: water-dependent thermal plants joined to their containing HydroBASINS polygon's `pfaf_id` (D37's distance-guarded nearest match); Aqueduct categories applied as published (D33/D36); two cooling bounds reported per L01 (D47) -- "upper" (all water-dependent thermal plants) and "lower" (same set excluding plants within `coastal_buffer_km`=5 km of the coast).
-Output: `plant_aqueduct.parquet` (plant_uid, scenario, cooling_bound, ws_value, ws_category, bws_value, bws_category).
-Time: measured, COMANDO 18, this machine: included in Step 7's 68s (single script run). 7,311 rows = 1,280 water-dependent thermal plants x 3 scenarios x 2 cooling bounds (7,680) minus 369 rows (123 plants x 3 scenarios) excluded from "lower" as coastal. 0 plants in category -1 ("arid_low_water_use") or "no_data" (no Aqueduct match) in this run, in any country or cooling bound (see D47 for a discrepancy this raises against an earlier ad-hoc session note, not reconciled).
+## Appendix C. Results map (figures and tables)
 
-**Step 9. Exposure aggregation and agreement**
-Input: Steps 1, 7, 8.
-Processing: capacity shares and GW above headline classes per country × technology × fleet × scenario × model; ensemble median and range; model agreement flags per plant.
-Output: `exposure_summary.csv` (country, tech_class, fleet, hazard, scenario, cooling_bound, median_share, min_share, max_share, median_gw, agreement_share).
-Time: 0.5 h (not measured).
-
-Total compute: roughly 11-18 h (not measured as a single run; see O07 in docs/DECISIONS.md for the projection from Steps 1-4's actual measured/observed times and the open question this raises about the 24 h criterion).
-
-
-## 4. Results map (figure/table -> source -> producing script -> blocking item)
-
-| Item | Source table | Producing script | Blocking |
+| Item | Content | Source table(s) | Status / blocking |
 |---|---|---|---|
-| Fig 1 fleet and capacity by technology and fuel | plant_units.parquet | to be written (C29) | D77, D78 (C28) |
-| Fig 2 TX35 exposure maps per thermal plant by fuel | plant_hazards.parquet (h1) + plants coords + plant_units | to be written (C31, C41) | C28 |
-| Fig 3 heat-threshold curves, operating vs planned | plant_hazards + plant_units | to be written (C32, C34) | O17 |
-| Fig 4 drought maps SPEI and SPI per hydro plant | plant_hazards (SPEI); SPI only in spei.parquet | to be written (C35) | O18 |
-| Fig 5 excess over null by bucket and scenario, GCM range | null table + plant_hazards | to be written (C30, C36) | O20, O21 |
-| Table 1 GW fraction exposed by technology, fuel, scenario | plant_units + plant_hazards | to be written (C38) | O16, O17 |
-| Table 2 leave-one-out, 5 largest hydro | c23d_7_leave_one_out.csv (audit) | to be promoted (C37) | O19, L30 |
-| Supplementary ONS validation | validation.csv | exists (scripts/25_validation_stats.py) | none |
+| Fig 1 | Fleet and capacity by technology and fuel | plant_units | DONE (data), figure PLANNED |
+| Fig 2 | Heat level class map (cells, plants sized by GW) | w3g_heat_cell_class | Blocked on W3g map table |
+| Fig 3 | Threshold curves, operating vs planned | w3_curves_plot | DONE (data), figure PLANNED |
+| Fig 4 | Drought level class map, SPEI and SPI | w4g tables | Blocked on W4g map table, O18 |
+| Fig 5 | Excess over the null by scenario, GCM range | w4b_excess_over_null.csv | DONE (C64, D102); figure PLANNED |
+| Fig 6 | Co-located exposure map and cross-tab | w4h_coexposure.csv, w3h_state_coexposure.csv | DONE (data, C59/C63); figure PLANNED |
+| Table 1 | GW exposed by technology, fuel, scenario | w3_table1 | DONE (data), table PLANNED |
+| Table 2 | Leave-one-out, 5 largest hydro | W4d table (planned) | Blocked on O19 |
+| Table 3 | 4x4 cross-tab, GW | w4h_coexposure.csv | DONE (C59, D97) |
+| Supplementary | ONS validation | validation.csv | DONE (D73) |
 
 ---
 
+## Appendix D. Result handlers
 
----
-
-## Appendix A. Pipeline components outside v2 article scope (verbatim from v1; v1 numbering)
-
-
-> Editorial note (C24): ONS national validation is supplementary (D73); subsystem validation and Portugal REN/DGEG are outside v2.
-
-### 1.6 Compound hydro-drought and thermal-heat metric
-
-For each country, model and period, two monthly national series are built:
-
-S_hydro(m) = Σ_{i∈hydro} Cap_i × 1[SPEI-12_i(m) ≤ −1.5] / Σ Cap_i (share of hydro capacity in severe drought)
-
-H_thermal(m) = Σ_{j∈thermal} Cap_j × N35_j(m) / Σ Cap_j (capacity-weighted number of TX35 days in the month)
-
-A compound month occurs when both series exceed their own 90th percentile estimated on 1985-2014 of the same model (if the S_hydro percentile is zero, any value above zero qualifies). Under independence the baseline frequency is about 1%. The national aggregation is justified by interconnection in Brazil (SIN) and India (national grid) and by Iberian market coupling for Portugal.
-
-**Metric closure (D63, COMANDO 22, current state, supersedes the LR_C design below this paragraph)**: the future-to-baseline likelihood ratio LR_C = F_C,future / F_C,baseline, as originally specified, is not used as the headline quantity. A direct diagnostic found that in 13 of 45 country x scenario x model cells, at least one of S_hydro or H_thermal exceeds its own baseline P90 in a majority of future months (worst case: Brazil x UKESM1-0-LL, 64-92% of future months across the two series and three scenarios). In those cells the ratio `f_compound_observed / (f_s_above * f_h_above)` -- the observed compound frequency divided by what independence of the two marginals would predict -- is close to 1.0, meaning LR_C's large values there come from each series' own baseline-relative drift (a mean shift), not from extra co-occurrence; the P90 threshold has stopped discriminating extremes in those cases. The metric is reported instead as two separate quantities, both computed directly from the already-aggregated monthly series, no new climate data processed:
-
-- `diff_pp` = 100 x (F_C,future - F_C,baseline): the change in compound-month frequency in percentage points. A difference, not a ratio, so it stays well-defined and interpretable even where a marginal's baseline P90 is exceeded most of the time in the future.
-- `dependence_ratio` = F_C,future / (f_s_above,future x f_h_above,future), where `f_s_above,future` and `f_h_above,future` are each series' own share of future months above its baseline P90: observed future co-occurrence over the co-occurrence independence would predict, from the future marginals only. Values near 1.0 mean the two series are behaving independently above their respective thresholds in the future period (no extra coupling to report); values further from 1.0 indicate measurable dependence.
-
-Restricting to the 32 of 45 cells where the percentile threshold still discriminates (both marginals under 50% of future months), `dependence_ratio` is not uniformly 1.0: median 1.23, 5th/95th percentile 0.78/2.69, and 20/32 cells (62.5%) deviate from 1.0 by more than 20%, mostly upward and most pronounced for India. This is reported as a real, moderate finding of positive dependence in a majority of the cells where the question is answerable, not explained away as pure independence -- see §2.3.
-
-### 1.7 Validation
-
-Validation targets the one sector with open observed response data. SPEI-12 is computed from W5E5 observations (1985-2019) with the same procedure and aggregated to hydro-capacity-weighted series for the four Brazilian subsystems and for Portugal. These are compared with annual natural energy inflow (ENA) from the Brazilian system operator (ONS) and with the hydro productivity index (IPH) published by the Portuguese transmission operator (REN). Statistics: Spearman correlation with 3-year block bootstrap confidence intervals, and the odds ratio of a bottom-tercile inflow year given December SPEI-12 ≤ −1. Short records produce wide intervals, which are reported as such. W5E5 is derived from ERA5, so a comparison of hazard climatology against ERA5 would not be independent and is not used as validation. EM-DAT is used only descriptively in Supplementary Information. India is not validated, which is stated as a limitation.
-
-**Subsystem validation status**: A desagregação por subsistema ONS (N/NE/S/SE) está suspensa para v0.1.0 por ausência de fonte oficial de mapeamento planta→subsistema (ver D62). A validação de Portugal (REN IPH × SPEI-12, n=57 meses) e a correlação nacional Brasil permanecem.
-
-**Portugal / REN IPH (D59-D61, O10-O11, COMANDO 21-23)**: primary validation variable is REN's monthly Hydro Productivity Index (IPH), acquired directly from REN DataHub's `RegimeYearly` endpoint (`craei.acquire.ren`).
-
-- REN data coverage: 2015-01 to 2026-09.
-- Climate-model overlap: 2015-01 to 2019-12.
-- Usable complete calendar years: 2016-2019 (4 years; 2015 is a partial year, missing jul/aug/sep, see D60).
-- Available overlap months: 57 (not the nominally assumed 60).
-- Monthly validation: implementation-level / observational cross-validation against APA 2018 Tabela 7 -- matches to within 2-decimal rounding for all 33 overlapping months (`reports/ren_iph_validation.md` §4). This confirms the acquisition and date semantics are correct, not that five years of overlap gives long-term climatological power.
-- Annual validation: **resolved as a methodological limitation, not a failure** (D61). Every raw REN response inspected directly exposes no annual/weighting field -- only the 12 monthly values -- and no public REN/ERSE/DGEG documentation of the exact annual aggregation formula was found. A derived calendar-year mean does not reproduce ERSE's published annual figure in general (2017 is the clearest case); this is recorded as a gap in what can be independently checked at the annual resolution, and is not used to support or undermine the monthly-resolution statistics the study actually reports.
-- Auxiliary validation: DGEG gross monthly hydroelectric generation (GWh), used only as a consistency check (O11, D61) -- never treated as equivalent to IPH. Annual correlation with IPH is strong (Pearson/Spearman ≈ 0.90 over 2015-2019); monthly correlation is weaker, as expected, since generation additionally depends on afluência timing, reservoir operation, dispatch, capacity and pumping.
-
-**Limitation**: the five-year overlap prevents robust long-term climatological inference from the Portugal correlation/odds-ratio statistics; report accordingly, parallel to L08/L09's existing short-record notes for Brazil/India.
-
-### 1.8 Uncertainty
-
-Uncertainty is reported through (i) scenario spread, (ii) inter-model range and agreement, and (iii) one-at-a-time tests of each discrete choice: heat class (15/30/60 days), drought class (R_D 1.5/2/3), SPEI threshold (−1.0/−1.5/−2.0), PET formulation (SPEI Hargreaves vs SPI), coastal cooling distance (2/5/10 km), and exclusion of UKESM1-0-LL (highest climate sensitivity in the ensemble). A global variance-based analysis (Sobol) is not used because the design has few discrete choices whose individual effects are more informative when shown directly.
-
-**H3. Chronic water stress (water-dependent thermal, freshwater bound only).** WRI Aqueduct 4.0, keyed by HydroBASINS `pfaf_id`, for the baseline and for 2050 under the optimistic, business-as-usual and pessimistic scenarios, mapped to SSP1-2.6, SSP3-7.0 and SSP5-8.5. Aqueduct 4.0 splits the indicator across two collections with different field names: the baseline collection (`baseline_annual`) exposes `bws` (baseline water stress); the 2050 projections (`future_annual`) expose `ws` (water stress) under each `{bau|opt|pes}{30|50|80}` scenario/horizon code. Both are the same underlying stress ratio (withdrawal over available supply) on the same 0-5 category scale; the field renaming between collections is WRI's own convention, not a methodological difference. Aqueduct categories are used as published: low (<10%), low-medium (10-20%), medium-high (20-40%), high (40-80%), extremely high (>80%). Exposure is capacity in high or extremely high stress. H3 is reported separately from H1 and H2 because Aqueduct uses its own climate and socioeconomic forcing and is not consistent with the ISIMIP3b ensemble. Aqueduct's future-annual values are themselves the median of an internal 5-GCM ensemble distinct from this project's ISIMIP3b ensemble, with no per-model breakdown available (L13).
-
-**H4. Extreme precipitation (Supplementary Information, all fleets).** Wet-day 95th percentile (days ≥1 mm) estimated on the baseline per cell and model; change metric is the ratio of exceedance frequency (baseline 5% of wet days by construction) and the percentage change in mean annual Rx5day. Reported as a change in flood-forcing precipitation, not as flood risk.
-
-**Solar PV (Supplementary Information).** Peak-hour temperature loss L = γ × max(0, TX + 31.25 − 25), with γ = 0.4% °C⁻¹ (typical crystalline silicon; verify against datasheet range) and 31.25 °C the cell-to-air difference from NOCT = 45 °C at 1000 W m⁻². Because L is linear in TX above the threshold, ΔL mainly reflects warming; it is included to document that heat-driven PV losses are small compared with thermal and hydro hazards, not as a finding in itself.
-
-**Excluded hazards.** Extreme wind is excluded for three reasons: 10 m gusts are not comparable with IEC 61400-1 design winds (50-year 10-minute reference speeds of 50, 42.5 and 37.5 m s⁻¹ at hub height for classes I-III), which are rarely approached outside tropical cyclone tracks; confidence in projected extreme wind change is low in IPCC AR6; and GCM resolution does not capture the relevant extremes. Riverine and coastal flooding, sea-level rise and wildfire are outside the scope.
-
-
-> SUPERSEDED (D63/D72): the LR_C metric below was replaced by diff_pp and dependence_ratio, and the whole compound metric is outside v2 scope. 11_compound.py is archived.
-
-**Step 10. Compound metric**
-Input: `spei.parquet`, monthly N35, plants.
-Processing: national monthly S_hydro and H_thermal; baseline P90 per model; compound months; LR_C per country, scenario, model.
-Output: `compound.csv` (country, scenario, model, f_baseline, f_future, lr_c); `compound_months.parquet` for seasonal inset.
-Time: 0.5 h (not measured).
-
-**Step 11. Validation**
-Input: W5E5 SPEI (Step 6 applied to observations); ONS ENA; REN productivity index; plants.
-Processing: hydro-capacity-weighted annual SPEI-12 per subsystem and Portugal; Spearman ρ with block bootstrap; odds ratio for low-inflow years.
-Output: `validation.csv` (region, n_years, rho, rho_ci_low, rho_ci_high, odds_ratio, or_ci_low, or_ci_high).
-Time: 1 h (not measured).
-
-**Step 12. Sensitivity and figures**
-Input: all previous outputs.
-Processing: rerun Steps 9-10 under each alternative; generate figures.
-Output: `sensitivity.csv` (test, parameter_value, result_id, value); figure files.
-Time: 2-3 h (not measured).
-
-## 5. Additional downloads
-
-| Dataset | Source | Approx. size | Purpose |
-|---|---|---|---|
-| ISIMIP3b bias-adjusted daily tasmax, tasmin, pr; 5 GCMs; historical + 3 SSPs | ISIMIP repository (files API cutouts) | ~35 GB uncompressed for three country boxes; compressed size lower (estimate from grid size, verify after first model) | All hazard indices |
-| W5E5 v2.0 daily tasmax, tasmin, pr, 1984-2019 | ISIMIP repository (ISIMIP3a obsclim) | ~5 GB uncompressed (estimate) | Validation |
-| HydroBASINS level 6, South America, Asia, Europe | HydroSHEDS | Tens to a few hundred MB (verify) | Hydro catchments |
-| Natural Earth 1:10m coastline | naturalearthdata.com | <10 MB | Cooling bound |
-| ONS natural energy inflow (ENA) by subsystem | ONS open data portal | <10 MB | Validation, Brazil (verify record length) |
-| REN hydro productivity index | REN statistical data | <1 MB | Validation, Portugal |
-| Aqueduct 4.0 baseline bws | Existing GEE asset | <100 MB | Only if baseline not yet exported |
-
-Example (ISIMIP cutouts; check function names and filters against the current `isimip-client` README before running):
-
-```python
-from pathlib import Path
-from isimip_client.client import ISIMIPClient
-
-client = ISIMIPClient()
-
-MODELS = ["gfdl-esm4", "ipsl-cm6a-lr", "mpi-esm1-2-hr", "mri-esm2-0", "ukesm1-0-ll"]
-SCENARIOS = ["historical", "ssp126", "ssp370", "ssp585"]
-VARIABLES = ["tasmax", "tasmin", "pr"]
-BBOX = {  # west, east, south, north
-    "BRA": (-74.5, -34.0, -34.5, 6.0),
-    "IND": (68.0, 98.0, 6.0, 37.5),
-    "PRT": (-31.5, -6.0, 32.5, 42.5),  # includes Azores and Madeira
-}
-
-def years_needed(path, scenario):
-    y0, y1 = (int(x) for x in Path(path).stem.split("_")[-2:])
-    lo, hi = (1984, 2014) if scenario == "historical" else (2041, 2070)
-    return y1 >= lo and y0 <= hi
-
-for model in MODELS:
-    for scenario in SCENARIOS:
-        for var in VARIABLES:
-            resp = client.datasets(
-                simulation_round="ISIMIP3b",
-                product="InputData",
-                climate_forcing=model,
-                climate_scenario=scenario,
-                climate_variable=var,
-                time_step="daily",
-            )
-            paths = [
-                f["path"]
-                for ds in resp["results"]
-                for f in ds["files"]
-                if "bias-adjusted" in f["path"] and years_needed(f["path"], scenario)
-            ]
-            for country, (w, e, s, n) in BBOX.items():
-                job = client.cutout_bbox(paths, w, e, s, n, poll=30)
-                out = Path(f"data/isimip/{model}/{scenario}/{var}/{country}")
-                out.mkdir(parents=True, exist_ok=True)
-                client.download(job["file_url"], path=out, validate=False, extract=True)
-```
-
-Implementation notes: submit jobs in small batches to respect server limits; record each file checksum in the existing manifest; check each file's calendar attribute before computing annual counts.
-
----
-
----
-
-## Key references to verify and cite
-
-- van Vliet, M.T.H. et al. (2016). Power-generation system vulnerability and adaptation to changes in climate and water resources. *Nature Climate Change*.
-- Frieler, K. et al. (2021, protocol). ISIMIP3b scenario and forcing protocol.
-- Lange, S. (2019). Trend-preserving bias adjustment and statistical downscaling with ISIMIP3BASD. *Geoscientific Model Development*.
-- Cucchi, M. et al. (2020) and Lange, S. et al. (2021). W5E5 / WFDE5.
-- Vicente-Serrano, S.M. et al. (2010). A multiscalar drought index sensitive to global warming: SPEI. *Journal of Climate*.
-- Hargreaves, G.H. & Samani, Z.A. (1985). Reference crop evapotranspiration from temperature. *Applied Engineering in Agriculture*.
-- Allen, R.G. et al. (1998). FAO Irrigation and Drainage Paper 56.
-- Kuzma, S. et al. (2023). Aqueduct 4.0 technical note. World Resources Institute.
-- Lehner, B. & Grill, G. (2013). HydroSHEDS / HydroBASINS. *Hydrological Processes*.
-- IEC 61400-1 (Wind energy generation systems, design requirements).
-- IPCC AR6 WGI, Chapter 11 and Atlas.
-
-
----
-
-## v2.1 addendum (C44, D88): level lens, classes, co-located exposure, result handlers
-
-This addendum is appended; the sections above are not edited. Where they conflict, v2.1 governs. Stale or superseded items above:
-- 1.4 H1 "tested at 15 and 60 days": the heat grid is 10/20/30/40/50/60/80/100 d (O17); 30 d stays the change-lens headline.
-- 1.5, 1.7 "agreement = at least 4 of 5 GCMs": tables report k = 1, 3, 5 of 5 GCMs exposed (O31).
-- 1.7, 1.8 "TO BE DEFINED, see O17/O18/O19/O21": O17 is closed (D87); the null script is delivered (W4a, DECISIONS C42); the others are in the plan (G addendum 3).
-- 1.8 "N_SIM=2000 ... script to be written (C30)": delivered as W4a (block 12, 24, 36, 60, AR(1), white noise).
-- 1.3 and Appendix 1.8 statements on the climate sensitivity of the GCMs: not verified in the repository (O33).
-- Section 4 (results map): replaced by the table at the end of this addendum.
-
-### A. Two lenses
-- Change lens (headline, Axis 1): dTX35 >= 30 d/yr; R_D >= 2. Question: how much does it worsen against the baseline?
-- Level lens (new): TX35 future (days/yr) and F_D future (% of months with SPEI-12 <= -1.5). Question: how severe is the climate at the plant in 2041-2070?
-- Reason: a delta ignores the level. Both lenses are reported; neither replaces the other.
-
-### B. Heat level classes (O28)
-- Exclusive bins of TX35 future, days/yr: low < 10; medium 10 to < 30; high 30 to < 90; extreme >= 90. Labels are conventions with no physical basis (tier 3). Cuts are fixed by calendar anchors (30 d about one month, 90 d about one quarter) and the O17 grid, never tuned on the future result.
-- Baseline classes use the same cuts and are reported next to the future classes (class shift).
-- Per (unit, GCM, scenario) the class comes from that GCM's value; GW per class is computed per GCM; then min, median, max across the 5 GCMs and k of 5. Map: class of the median over GCMs per cell, with the number of GCMs in that class.
-- Units: thermal (water-dependent and air-only; air-only only inside all_thermal) and hydro. Hydro uses TX35 at the plant cell; reading: climatic context, not a cooling hazard.
-- Change classes (secondary): exclusive bins of dTX35 (< 10, 10 to < 20, 20 to < 30, >= 30), derived per GCM from the existing grid.
-- TX40: sensitivity on its own grid (O27).
-
-### C. Drought level classes (O29)
-- F_D future against the null of no climate change: low <= p50; medium p50 to p90; high p90 to p99; extreme > p99 of the null distribution of F_D future (SPEI <= -1.5).
-- Null: block bootstrap, 12-month blocks (canonical); AR(1) as sensitivity; percentile sensitivity p75/p90/p95. Percentiles use 20,000 simulations in their own stream default_rng([23, 99]); the W4a stream is untouched.
-- "Extreme" means natural variability alone rarely produces that F_D. It is not a probability of impact. Units are compared one by one with the marginal null and are spatially correlated, so the GW share above a percentile is not binomial.
-- Hydro: pool of catchment series. Water-dependent thermal (cell-scale SPEI-12): pool TO BE DEFINED (O29).
-- Change lens: R_D classes < 1.5, 1.5 to < 2, 2 to < 3, >= 3, each shown with its null rate from W4a. R_D undefined (baseline F_D = 0) is its own category.
-
-### D. Co-located exposure (D88)
-- Spatial coincidence at the plant location, not simultaneity in time. Calling it "co-located exposure", never "compound event".
-- Units with both hazards: water-dependent thermal (cell scale) and hydro (catchment SPEI-12; TX35 at the plant cell). Air-only thermal and solar are not included. Cooling bound for thermal: O32.
-- Per GCM and scenario: 4 x 4 cross-tab (heat level class x drought level class) in GW; headline = extreme in both; sensitivity = high or extreme in both. The same GCM is used for both hazards. Reported with min, median, max and k of 5.
-- No index, no weights, no ranking. Individual hazards are presented first.
-- Temporal coincidence (years with both): optional, O30.
-
-### E. Aggregation rules
-- Capacity from plant_units. Hydro: Itaipu counted as 7,000 MW (b) in the headline, 14,000 MW (a) as sensitivity (D82). Leave-one-out beside every headline.
-- Ranges are structural, not confidence intervals. Bootstrap limits only with >= 10 cells and nan_frac = 0 (O25); otherwise descriptive.
-- State and macro-region: Natural Earth admin1 (fields name, postal, region); nearest polygon for points outside, with the count reported.
-- New modules take a country parameter; older scripts filter Brazil explicitly.
-
-### F. Not claimed
-Impact, vulnerability, generation loss, probabilities, ICs from the GCM range, harvest-window effects, a composite index, solar, wind, H4, results outside Brazil, simultaneity in time.
-
-### G. Open items
-O16 (harvest window, no source); O18 (SPI x SPEI scheme); O19 (leave-one-out of Axis 2); O20 (water x air in Fig 5); O21 (hydro cell bootstrap); O28 (heat cuts, proposal); O29 (null pool for thermal cells, percentiles); O30 (temporal coincidence); O31 (agreement definition); O32 (cooling bound in co-exposure); O33 (claims to verify). Pending without id: re-run W3d and W3f-3 at n_boot = 5,000.
-
-### H. Result handlers
-Every number in the text comes from one handler. A value is filled only from pasted output. Table names marked (planned) do not exist yet.
+Every number quoted in the article text must trace to exactly one row
+below. A value is filled only from an actually-pasted script output, never
+estimated or interpolated. Table names marked (planned) do not exist yet.
 
 | Id | Statement slot | Table | Filter | Column | Value |
 |---|---|---|---|---|---|
@@ -532,243 +915,172 @@ Every number in the text comes from one handler. A value is filled only from pas
 | HC2 | Same, in GW | w3_table1 | same | gw_median | TO BE DEFINED |
 | HC3 | Agreement k = 3 and k = 5 | w3_table1 | same | pct_gw_k3, pct_gw_k5 | TO BE DEFINED |
 | HC4 | By fuel (bioenergy, gas) | w3_table1 | group = fuel | pct_median, pct_min, pct_max | TO BE DEFINED |
-| HC5 | Planned minus operating, paired, with cell bootstrap | w3_heat_bootstrap_paired | planned_fleet = planned_all, threshold = 30 | obs_median_diff, boot_p025, boot_p975 | TO BE DEFINED |
+| HC5 | Planned minus operating, paired, with cell bootstrap | w3_heat_bootstrap_paired | planned_fleet = planned_all, threshold = 30 | obs_median_diff, boot_p025, boot_p975 | DONE (Section 8): -7.16 / -0.12 / +1.35 pp (SSP126/370/585), all CIs include 0 |
 | HC6 | Scenario contrast | w3_heat_scenario_contrast | pair, threshold = 30 | obs_median_diff, n_gcm_pos, boot_p025_pp, boot_p975_pp | TO BE DEFINED |
 | HC7 | Cell bootstrap of the share | w3_heat_bootstrap_shares | threshold = 30 | obs_median, boot_p025, boot_p975 | TO BE DEFINED |
 | HC8 | Leave-one-cell-out range | w3_table1 | threshold = 30 | loo_min, loo_max | TO BE DEFINED |
-| HL1 | GW and share per heat level class, thermal, by fleet and scenario | w3g_heat_level_classes (planned) | group, fleet, scenario, class | gw_median, pct_median, pct_min, pct_max | TO BE DEFINED |
+| HL1 | GW and share per heat level class, thermal, by fleet and scenario | w3g_heat_level_classes (planned) | group, fleet, scenario, class | gw_median, pct_median, pct_min, pct_max | DONE (Section 8, level lens): operating 23.8 [17.7-33.1] / 30.6 [26.6-52.9] / 32.4 [31.2-75.9]; planned_all 14.3 [1.6-34.7] / 24.1 [20.1-61.8] / 30.0 [20.6-74.3] (extreme class share) |
 | HL2 | Same, hydro | w3g_heat_level_classes (planned) | group = hydro | same | TO BE DEFINED |
 | HL3 | Baseline to future class shift | w3g_heat_class_shift (planned) | fleet, scenario | gw_median | TO BE DEFINED |
 | HL4 | Change classes (exclusive delta bins) | w3g_heat_change_classes (planned) | group, fleet, scenario | pct_median | TO BE DEFINED |
 | HL5 | Map class per cell and GCM agreement | w3g_heat_cell_class (planned) | scenario | class_median, n_gcm_same | TO BE DEFINED |
-| DR1 | Null percentiles of F_D future (20,000 simulations) | w4g_null_percentiles (planned) | null, spei_threshold = -1.5 | p50, p90, p99 | TO BE DEFINED |
+| DR1 | Null percentiles of F_D future (20,000 simulations) | w4g_null_percentiles (planned) | null, spei_threshold = -1.5 | p50, p90, p99 | PRELIMINARY (n=2,000 only, Section 6): year p99 25.5%, anystart p99 19.2%, free p99 16.11%; final 20,000-draw run TO BE DEFINED |
 | DR2 | Hydro GW per drought level class, by scenario | w4g_drought_classes (planned) | group = hydro, class | gw_median, pct_min, pct_max | TO BE DEFINED |
 | DR3 | Share above null p99 and share expected by chance | w4g_drought_classes (planned) | class = extreme | pct_median | TO BE DEFINED |
-| DR4 | Share with R_D >= 2 and null rate by block | w4a: w4_null_rates | is_production_point | pct_rd_ge | TO BE DEFINED |
+| DR4 | Share with R_D >= 2 and null rate by block | w4a: w4_null_rates | is_production_point | pct_rd_ge | DONE (Section 6): free null block12 18.88%, block24 19.36%, block36 21.87%, block60 20.75%; white noise 1.80% |
 | DR5 | Excess over the null, Itaipu b headline, a sensitivity | w4b_excess_over_null.csv | scenario | excess_pp | DONE (C64, D102): hydro BRA, block12/24/36/60 + AR1/white-noise bounds, Itaipu a/b, 108 rows. Headline (operating, Itaipu b, block12), median excess pp SSP126/370/585: +40.75 / +43.20 / +53.94. Block-length sensitivity confirms D83 hypothesis in direction, not monotonic (block60 < block36). |
 | DR6 | SPI x SPEI with the same fitting scheme | W4c table (planned) | scenario | pct_exposed | TO BE DEFINED |
 | DR7 | Leave-one-out of the 5 largest hydro plants | W4d table (planned) | plant, scenario | pct_exposed | TO BE DEFINED |
 | DR8 | GCM range and agreement of the hydro result | W4e table (planned) | scenario | pct_min, pct_median, pct_max, k | TO BE DEFINED |
-| CO1 | 4 x 4 cross-tab, GW | w4h_coexposure (planned) | group, scenario | gw_median | TO BE DEFINED |
-| CO2 | GW and share extreme in both, range | w4h_coexposure (planned) | heat = extreme, drought = extreme | gw_median, gw_min, gw_max | TO BE DEFINED |
-| CO3 | High or extreme in both (sensitivity) | w4h_coexposure (planned) | heat, drought >= high | gw_median | TO BE DEFINED |
+| CO1 | 4 x 4 cross-tab, GW | w4h_coexposure.csv | group, scenario | gw_median | DONE (C59, D97), values not yet transcribed into this handler |
+| CO2 | GW and share extreme in both, range | w4h_coexposure.csv | heat = extreme, drought = extreme | gw_median, gw_min, gw_max | DONE (C59, D97), values not yet transcribed into this handler |
+| CO3 | High or extreme in both (sensitivity) | w4h_coexposure.csv | heat, drought >= high | gw_median | DONE (C59, D97) as sum-of-4-medians; ST2's own single-flag version is a DIFFERENT number, not interchangeable (Section 7) |
 | ST1 | GW in extreme heat by state and macro-region | w3h_state_summary.csv | class = extreme | gw_median | DONE (C62, D99): BRA, 1,122 rows, checks (a) capacity parity and (b) pre-median national-sum parity both diff 0.00e+00; 19/6,926 plants (0.27%) assigned by nearest-polygon fallback. Headline (all_thermal, operating, ssp585): SP/MA/MS lead (2.88-2.89 GW median). |
-| ST2 | Co-exposure by state; units assigned by nearest polygon | w3h_state_coexposure.csv | state | gw_median, n_nearest | DONE (C63, D100): BRA, 2,952 rows, checks (a) capacity parity, (b) pre-median state-sum parity, (c) parity against w4h_coexposure.csv all 0.00e+00-order diffs (max 7.11e-15); CO2 (extreme x extreme) only, CO3 (high-or-extreme both) uses a single-flag median, NOT the same number as W4h's own sum-of-4-medians CO3 (median is not additive, D80/D96/D97/D99). Headline (extreme x extreme, operating, ssp585, block12): PA leads in hydro (22.35 GW median), then RO, PR, BA, MG. |
+| ST2 | Co-exposure by state; units assigned by nearest polygon | w3h_state_coexposure.csv | state | gw_median, n_nearest | DONE (C63, D100): BRA, 2,952 rows, checks (a) capacity parity, (b) pre-median state-sum parity, (c) parity against w4h_coexposure.csv all 0.00e+00-order diffs (max 7.11e-15); CO2 (extreme x extreme) only, CO3 (high-or-extreme both) uses a single-flag median, NOT the same number as W4h's own sum-of-4-medians CO3 (median is not additive). Headline (extreme x extreme, operating, ssp585, block12): PA leads in hydro (22.35 GW median), then RO, PR, BA, MG. |
 | SE1 | GCM exclusion (drop one, drop UKESM+IPSL) | w3_gcm_exclusion, w3_gcm_exclusion_contrast, w3_gcm_exclusion_rank | exclusion | pct_median, diff_median, sign_changed, order | TO BE DEFINED |
-| SE2 | Threshold, weight, TX40 | w3_heat_sensitivity, w3_tx40_curves | choice | diff_median_pp, pct_median | TO BE DEFINED |
-| SE3 | Null type and block size | w4_null_rates | null, block_months | pct_rd_ge | TO BE DEFINED |
+| SE2 | Threshold, weight, TX40 | w3_heat_sensitivity, w3_tx40_curves | choice | diff_median_pp, pct_median | DONE (C63, D101) for weight x TX40 cell only: GW weight median contrast ~0 (n_planned_ge 1-2/5); plant-count weight +12.07/+7.98/+9.87 pp (n_planned_ge 4-5/5). Other cells of this family TO BE DEFINED |
+| SE3 | Null type and block size | w4_null_rates | null, block_months | pct_rd_ge | DONE (Section 6/DR4 above); AR1/white-noise bounds DONE (C64, D102) |
 | SE4 | Cuts of the classes, percentiles | w5_sensitivity (planned) | family | delta_pp | TO BE DEFINED |
-| VA1 | ONS national validation | validation | region = Brazil | rho, rho_ci_low, rho_ci_high, n_years | TO BE DEFINED |
-
-### I. Results map (v2.1)
-| Item | Content | Source | Blocking |
-|---|---|---|---|
-| Fig 1 | Fleet and capacity by technology and fuel | plant_units | none |
-| Fig 2 | Heat level class map (cells, plants sized by GW) | w3g_heat_cell_class | W3g |
-| Fig 3 | Threshold curves, operating vs planned | w3_curves_plot | none |
-| Fig 4 | Drought level class map, SPEI and SPI | w4g tables | W4g, O18 |
-| Fig 5 | Excess over the null by scenario, GCM range | W4b table | W4b, O20, O21 |
-| Fig 6 | Co-located exposure map and cross-tab | w4h_coexposure | W4h, O32 |
-| Table 1 | GW exposed by technology, fuel, scenario | w3_table1 | none |
-| Table 2 | Leave-one-out, 5 largest hydro | W4d table | W4d, O19 |
-| Table 3 | 4 x 4 cross-tab, GW | w4h_coexposure | W4h |
-| Supplementary | ONS validation | validation | none |
-
-### v2.1 amendment (C45)
-- Heat level cuts in section B of the v2.1 addendum are 10 / 30 / 60 days (low < 10; medium 10 to < 30; high 30 to < 60; extreme >= 60), not 10 / 30 / 90. See DECISIONS O28 (C45).
-- Thermal water-dependent drought classes use a cell-scale null pool (O29, closed); hydro uses the catchment pool.
+| VA1 | ONS national validation | validation | region = Brazil | rho, rho_ci_low, rho_ci_high, n_years | DONE (D73): rho = 0.361, CI [0.027, 0.811], n = 20 |
+| NU1 | Emulator validity (sd, corr, variant, GCM) | w4r_emulator_validation (planned) | - | - | DONE (Section 6, pasted table); formal table export TO BE DEFINED |
+| NU2 | F_D future percentiles under the 3 nulls, 20,000 draws | w4r_null_percentiles (planned) | - | - | PRELIMINARY only (n=2,000); see DR1 |
+| NU3 | R_D null rates under the 3 nulls | w4r_null_rd (planned) | - | - | PRELIMINARY only (n=2,000); see Section 6 |
+| NU4 | Drought classes under the 3 nulls | w4r_drought_classes (planned) | - | - | TO BE DEFINED |
+| PL1 | Planned - operating, level lens, paired | W3f-7 table (planned) | - | - | DONE (C63, D101); see Section 8 and SE2 |
+| VA2 | Extended validation | W8 table (planned) | - | - | DEFERRED |
+| PE1 | SPI vs SPEI | W4c table (planned) | - | - | TO BE DEFINED |
+| TH1 | Relative heat threshold | th1_relative_threshold.csv, th1_thresholds.csv, th1_baseline_exceedance.csv | - | - | DONE (C60, D98): cell/GCM scope, BRA, 967 cells, 5 GCMs. Checks PASS: (a) baseline exceedance fraction 0.0500-0.0501; (b) tx35 reproduced 580,200/580,200 rows, max diff 0.0. Baseline mean identical across GCMs (18.27 days/yr, mechanical). Future diverges more under relative cut: ssp585 91.68-189.50 days/yr across GCMs (median threshold 34.4-34.7degC, min ~25degC in some cells). Not GW-weighted, not comparable to H1 headline. Fleet aggregation open (O39). |
 
 ---
 
-## v2.2 consolidated Methods (C48 draft; supersedes Section 1 and v2.1 addendum where they conflict)
+## Appendix E. Open items
 
-Status labels used below: DONE (output pasted and recorded), IN PROGRESS (code delivered, output not yet seen), PLANNED (next, no external data), DEFERRED (after the Brazil pipeline is closed; needs external data or new compute). No number below is new; values come from outputs recorded in STATUS_LOG/DECISIONS or pasted in the working chats. Anything else is TO BE DEFINED with its item id. Proposed ids not yet recorded: C48, D90, O35.
+O16 (harvest window, no source); O18 (SPI x SPEI scheme, W4c); O19
+(leave-one-out of Axis 2, W4d); O20 (water x air thermal in Fig 5); O21
+(hydro cell bootstrap); O25 (bootstrap percentile gating, >=10 cells and
+zero NaN fraction); O27 (TX40 grid, closed); O28 (heat level cuts, closed
+C45: 10/30/60); O29 (drought null pool, closed for thermal: cell-scale
+pool adopted); O30 (temporal coincidence of heat and drought, not
+verified); O31 (agreement/k-of-5 definition, final form open); O32
+(cooling bound in co-exposure, not yet computed for the drought/co-exposure
+analyses, only for H3); O33 (GCM climate-sensitivity ranking claim, not
+verified, cite or remove before submission); O35 (full design
+documentation of the null: independent-series sampling in R_D, estimation
+error, calibrated-baseline effect); O38 (1 of 6 items remaining: constants
+still outside config/params.yaml; full script audit not done); O39 (TH1
+fleet/GW-level aggregation, not yet done); O40 (mojibake, closed by
+mitigation, D103 -- root cause not identified, do not reuse this id for a
+new claim).
 
-### M1. Scope and claims
-- Brazil only (D71). Modules take a `country` parameter; older scripts filter Brazil explicitly and were not audited for other countries. India and Portugal are a later step, after Brazil is closed.
-- The article measures EXPOSURE of power-generation assets (thermal and hydro) to heat and drought hazards under climate change, at asset level. It does not measure impact, vulnerability, generation loss, probabilities or confidence intervals.
-- Drought is PROJECTED by the GCMs, not observed. Exposure is measured to a simulated drought and compared with what internal variability alone would produce (the null, M6).
-- Axis 1: heat in the thermal fleet by fuel, operating vs planned. Axis 2: drought in hydro (and in water-dependent thermal) against the null. Co-located exposure of both hazards (M8).
+Pending without an id: re-run W3d and W3f-3 bootstraps at n_boot = 5,000
+(currently 2,000); reconcile the Pearson III baseline share quoted as ~26%
+in an early draft against the measured 423/1,110 in the current
+hydro-BRA pool (Section 4.2) -- likely different sample scopes, not
+re-checked; reconcile an earlier note of "6 plants" misclassified by the
+hazard-table bucket field against the 5 plants actually found (Section 2).
 
-### M2. Infrastructure data
-- Source: Global Energy Monitor, Global Integrated Power Tracker, snapshot 9 August 2026. Plants use a stable id (hash of name, latitude, longitude). Capacity by fleet and fuel is computed from unit rows (`plant_units`, 14,280 units), not from `plants.parquet` (D77, D78).
-- Fleets: operating; planned advanced (construction, pre-construction); planned early (announced); planned_all = advanced + early. Shelved, cancelled, mothballed and retired units are excluded.
-- Fuel classes (D77): coal, nuclear, bioenergy (subtypes agricultural_waste as bagasse proxy, paper_mill_waste, wood_biomass, other), gas (Gas, LNG only), oil, multi_fuel. Technology and water dependence come from `tech_class` of `plant_units` (D80), not from the `bucket` of `plant_hazards`, which misclassifies 6 units (5 plants, 3,100.4 MW) as air-only; for these the drought index was computed directly from `spei.parquet`.
-- Hydro: reservoir, run-of-river, pumped storage as recorded; missing type is treated as reservoir. Itaipu is counted as 7,000 MW (version b, headline) and 14,000 MW (version a, sensitivity) (D82, D85).
-- Cooling: GEM has no cooling-technology field. The co-exposure and drought analyses of water-dependent thermal use the UPPER bound (all `thermal_water_dependent` units: 788 units, 699 plants, 342 cells; D89). The lower bound (5 km coastal exclusion) is NOT computed: TO BE DEFINED (no identified column; H3/Aqueduct outside scope). Air-only thermal is inside all_thermal for heat classes and outside co-exposure.
-
-### M3. Climate data
-- ISIMIP3b bias-adjusted daily tasmax, tasmin, pr at 0.5 degree; GFDL-ESM4, IPSL-CM6A-LR, MPI-ESM1-2-HR, MRI-ESM2-0, UKESM1-0-LL; baseline 1985-2014 (historical simulation of each model); future 2041-2070 under SSP1-2.6, SSP3-7.0, SSP5-8.5. Bias adjustment to W5E5 v2.0 with ISIMIP3BASD v2.5.0.
-- The claim that the five models cover the range of climate sensitivity, and that UKESM1-0-LL has the highest sensitivity, is NOT verified: cite a source or remove (O33).
-- Baseline statistics (thresholds, distribution parameters) are estimated on the baseline of each model and applied unchanged to the future of the same model.
-- TX >= TN consistency checked on the full ensemble (707,545,940 cell-days over the three original countries, 0 inversions).
-- The baseline accumulation has 372 monthly rows (1984-01 to 2014-12); the first valid SPEI-12 is 1984-12 (361 valid months). The fit uses only 1985-2014 (360 values); December 1984 enters the F_D denominator but not the fit (effect measured as negligible: mean -0.003 pp). Future series have 360 rows from 2041-01, first valid in 2041-12 (349 valid months, because the accumulation restarts per block).
-- Plants are assigned to the nearest 0.5 degree land cell. Hydro catchments: HydroBASINS level 6, upstream via NEXT_DOWN, area-weighted over intersecting cells. Hydro receives TX35 from the plant cell (reading: climatic context, not a cooling hazard).
-
-### M4. Hazards
-**H1 Heat.** TX35 and TX40 (days/yr at or above 35 and 40 degC), baseline and future; change dTX35 = future - baseline (difference, because baselines are zero in many cells). Indicators of cooling-relevant heat, not operating limits (tier 3).
-- Change lens (headline): dTX35 >= 30 d/yr (about one extra month; tested on the grid 10, 20, 30, 40, 50, 60, 80, 100 d; O17 closed).
-- Level lens: TX35 future in d/yr (M5).
-- TX40: sensitivity on its own grid (O27). DONE: grid and TX40 curves.
-- PLANNED (needs rereading daily tasmax; not a precomputed index): a baseline-relative heat threshold (days above the local baseline 95th percentile of tasmax), as a check that results do not depend on the absolute 35/40 degC. The existing `p95_exceedance_frequency` index is precipitation (H4) and is NOT usable for this.
-- DEFERRED: technology-specific thresholds (need a source; TO BE DEFINED); wet-bulb temperature (needs humidity, not in the data used).
-
-**H2 Drought.** SPEI-12 with Hargreaves-Samani PET (formula as in Section 1.4 of v2, unchanged). D = P - PET monthly; 12-month accumulation; three-parameter log-logistic by PWM, Pearson III MLE fallback; one fit per (series, GCM) on the 360 baseline months, no calendar split (D54/D55 closed, not reopened). Values clipped to [-3, 3].
-- F_D = % of months with SPEI-12 <= -1.5. R_D = F_D future / F_D baseline; change-lens headline R_D >= 2; R_D undefined (baseline F_D = 0) is its own category.
-- Property of the estimator (measured, hydro BRA catchment pool, 1,110 series = 222 plants x 5 GCMs): because SPEI is calibrated on each series' own baseline, the baseline F_D is nearly fixed: mean 6.75, sd 1.23, min 2.50, max 11.11 (nominal 6.68). The two halves of the baseline are strongly anti-correlated (r = -0.797). Log-logistic fits 687 series (mean 6.48, sd 1.12); Pearson III 423 (mean 7.21, sd 1.26). Consequence: the baseline cannot be used as a free draw of natural variability, which motivates the emulated null (M6).
-- Hydro: catchment scale. Water-dependent thermal: cell scale (1,710-series cell pool for the null). SPEI-3 (calendar-month fit, +/-1 month window, n = 90) for run-of-river as an addition.
-- PLANNED (W4c, O18): SPI-12 (precipitation only) vs SPEI-12 with the same classes, as the measure of how much the Hargreaves PET changes results. SPI-12 is already in `spei.parquet`. DEFERRED: Penman-Monteith PET (needs wind, radiation, humidity; availability in the ISIMIP3b input not verified).
-
-### M5. Exposure classes (never combined into a score)
-- Heat level classes (O28; tier 3 conventions; cuts fixed by anchors and the O17 grid, 60 d chosen after seeing the distribution, justified only by the anchor and the grid): TX35 future low < 10; medium 10 to < 30; high 30 to < 60; extreme >= 60 d/yr. Baseline uses the same cuts. Change classes (secondary): dTX35 < 10, 10-20, 20-30, >= 30. Cut sensitivity (10/30/90, 10/20/40): in W5.
-- Drought level classes (O29): F_D future vs percentiles of the null of no climate change: low <= p50; medium p50-p90; high p90-p99; extreme > p99 (SPEI <= -1.5). "Extreme" means natural variability rarely produces that F_D; it is not a probability of impact. Units are compared one by one with a marginal null and are spatially correlated, so the GW share above a percentile is not binomial. Change classes: R_D < 1.5, 1.5-2, 2-3, >= 3, each with the null rate of the same threshold.
-- The baseline-to-future class migration for drought is DESCRIPTIVE only: the baseline is conditioned on the fit, the future is not. The canonical lens is F_D future vs the null.
-- Per (unit, GCM, scenario) the class comes from that GCM; GW per class per GCM; then min, median, max across GCMs and k of 5. Maps: class of the median per cell plus the number of GCMs in that class.
-
-### M6. Null of internal variability (O34 -> O35, D90 proposed)
-Three nulls are reported side by side, WITHOUT a canonical one:
-1. Free null (W4a/W4g, DONE): block bootstrap (12-month blocks; AR(1) as sensitivity) with baseline and future drawn from different series of the pool, no refit. Percentiles of F_D future (20,000 draws, bacia/cell, p50/p75/p90/p95/p99) and R_D rates are recorded in `w4g_null_percentiles`, `w4g_null_rd_bins`, `w4_null_rates`. Limitation: it ignores the estimation error of 30-year parameters, and baseline and future come from different series, whereas in the data they come from the same plant and GCM.
-2. Emulated null, variant `year` (module `craei.hazards.null_emulator`; IN PROGRESS): one series of the pool per draw; D resampled in whole calendar years (31 years for the baseline accumulation, 30 for the future); 12-month accumulation; the distribution is refitted on the last 360 baseline accumulations with the production estimator; baseline and future are standardized with the same parameters; F_D is computed with the same denominators as in the data.
-3. Emulated null, variant `anystart`: same, with 12-month blocks starting at any month.
-- Fidelity of the emulator to the pipeline (DONE, diagnostic): refitting the real D of the 1,110 series reproduces the stored SPEI-12 (0 fit failures; same distribution label in 1,110 of 1,110; max |z - stored| 7.8e-5 on |SPEI| < 3; identical F_D). A formal check script with abort is delivered (IN PROGRESS).
-- Validity rule, fixed before running: the emulated baseline F_D must reproduce the real one within |delta sd| <= 0.20 and |delta corr(halves)| <= 0.10 (real: sd 1.23, r = -0.797). Result at n = 2,000 per variant: `year` sd 1.42, r = -0.723 (PASS); `anystart` sd 1.06, r = -0.732 (PASS). An earlier n = 150 run failed both; the standard error of sd was about 0.09, now about 0.02. The real value lies between the two variants.
-- Preliminary outputs, n = 2,000 (noisy tail; final with 20,000 per pool): F_D future p99 `year` 25.5, `anystart` 19.2, free 16.11; R_D >= 2: 17.3, 8.6, 18.06 (%); R_D >= 3: 4.2, 1.0, 8.10 (%). The variants differ greatly, so no single null is canonical (D90 proposed). Choosing `year` on the structural argument (each 12-month window holds every calendar month once) was formulated after seeing results and is not used.
-- Reporting rule: every drought result is shown under the three nulls; a conclusion enters the main text only if it holds under all three, otherwise it is reported as a range. R_D is reported as descriptive with the null-rate range, not as a significance test.
-- Known limitation: the nulls assume stationary climate, whereas the GCM baselines have their own trends (F_D second half minus first half: GFDL +4.95, IPSL +4.66, MPI -4.55, MRI +2.96, UKESM -0.27 pp; mean +1.55; the emulators give about 0). The lag-1 autocorrelation of annual D is about 0 (0.044; 0.005 detrended), so persistence is not lost; the trend is. Not tested whether the trend explains the sd gap. Mean(h2 - h1) is not part of the validity rule.
-- IN PROGRESS: validation by GCM (same rule against the real value of the same GCM; 222 series per GCM, so a marginal FAIL is ambiguous). PLANNED sensitivity (own id): emulator with the trend of D removed before resampling; it changes the meaning of the null and is never the headline.
-
-### M7. Aggregation and uncertainty
-- GW per class per GCM, then min/median/max and k of 5 (k = 1, 3, 5; the spec's ">= 4 of 5 with the same sign" is replaced by the implemented k; O31 open, proposal: spec follows implementation).
-- Ranges are structural, not CIs (D85). Cell bootstrap (n_boot = 2,000 now; final 5,000, re-running W3d and W3f-3 pending) reports percentiles only with >= 10 cells and nan_frac = 0, otherwise descriptive (O25).
-- Leave-one-out of the 5 largest hydro plants beside every hydro headline (Itaipu 14,000, Belo Monte 11,233, Tucurui 8,535, Jirau 3,750, Santo Antonio 3,568, Ilha Solteira 3,444 MW; O19). Itaipu b headline, a sensitivity.
-- GCM-exclusion sensitivity (7 sets; DONE for heat). Statements about GCM sensitivity rest on O33.
-
-### M8. Co-located exposure (D88, D89)
-Spatial coincidence at the plant location, never "compound event"; no index, no weights, no ranking; individual hazards first. Units: water-dependent thermal (cell) and hydro (catchment SPEI + plant-cell TX35). Per GCM and scenario, a 4 x 4 cross-tab (heat level x drought level) in GW; headline extreme in both; sensitivity high-or-extreme in both; same GCM in both hazards; range and k of 5. Because drought classes depend on the null (M6), the cross-tab is produced under each of the three nulls, with cuts read from a table. Marginals must equal the W3g and W4g class totals (abort otherwise). Temporal coincidence: O30, NOT verified whether ISIMIP3BASD preserves the heat-rainfall dependence of the GCM.
-
-### M9. Planned vs operating
-Reported as a result, not a defect, with the existing numbers:
-- Change lens, paired planned - operating (percentage points of GW with dTX35 >= 30 d; SSP126/370/585): -7.16 / -0.12 / +1.35, all intervals include 0 (cell bootstrap).
-- Level lens, share of GW in extreme heat (median [min-max]): operating 23.8 [17.7-33.1] / 30.6 [26.6-52.9] / 32.4 [31.2-75.9]; planned_all 14.3 [1.6-34.7] / 24.1 [20.1-61.8] / 30.0 [20.6-74.3]. Ranges overlap in all scenarios. The paired contrast under the level lens is not yet computed (W3f-7 / W5).
-- Reading: no consistent difference in exposure between planned and operating capacity is found in the change lens; under the level lens the planned share in extreme is lower in SSP126 and SSP370 and similar in SSP585, with overlapping ranges. Not claimed: that expansion "locks in" or "reduces" exposure.
-- PLANNED: absolute GW of planned capacity by class, state and macro-region recorte (W3h), contrast under TX40 and unit-count weighting (W3f-7), planned hydro (28 units; planned_adv 5,605 MW, planned_early 2,019 MW).
-
-### M10. State and macro-region
-Natural Earth admin1 (fields name, postal, region); points outside any polygon are assigned to the nearest polygon and the count is reported (W3h, PLANNED).
-
-### M11. Sensitivity (W5, PLANNED; reports, does not choose)
-Long table choice x alternative with headline, alternative, delta pp and the planned-operating contrast under the same choice; flags: sign of contrast, fuel order, non-overlapping ranges, bootstrap interval including 0. Families: heat threshold, TX40, relative heat threshold, planned fleet, weighting, water vs air, GCM, n_boot, Itaipu a/b, SPEI-3 vs SPEI-12, SPI vs SPEI, SPEI threshold, R_D threshold, null type and block (including the emulated variants), heat class cuts, null percentiles. Not in scope: 15 d heat (O17), coastal buffer/H3. FLAGGED FINDING (W3f-7, D101, C63, pre-W5 note): the planned-minus-operating contrast is NOT sign-stable across the weighting choice alone -- under GW weight (reference), median diff pp is near zero in SSP126/370 (no consistent difference, as in M9); under plant-count weight, same hazard (TX35), same threshold grid, the median diff is consistently positive in all 3 scenarios (n_planned_ge 4-5 of 5 GCMs). This is the clearest non-overlapping-direction case found so far across any single-choice sensitivity; W5's implementation must surface it as a flagged row (sign_changed = true), not bury it among families with near-zero effect.
-
-FLAGGED FINDING (W4b, D102, C64, pre-W5 note): the block-length sensitivity
-test of D83's hypothesis (that 12-month blocks break persistence, inflating
-the null F_D rate) is confirmed in direction but NOT monotonic: null
-pct_rd_ge2 by block length (12/24/36/60 months) is 18.88 / 19.36 / 21.87 /
-20.75%, falling from block12 to block36 as expected, then partially
-recovering at block60. D83 itself flags block60 as unreliable (only 6
-blocks per 360-month series), so this is read as a block60 sampling
-artifact, not evidence against the hypothesis. W5's block/null family row
-must report all four block lengths, not just 12 vs 36, to show this
-non-monotonicity explicitly.
-
-### M12. Validation
-- DONE: national ONS validation, rho = 0.361, CI [0.027; 0.811], n = 20 (supplementary, D73). Weak; reported as such. Subsystem validation suspended (D62, no official plant-to-subsystem map).
-- DEFERRED (module W8, after W4h; data availability NOT verified): (a) more data points from monthly ENA vs SPEI-12 with block bootstrap that accounts for autocorrelation; (b) comparison of the TX35 climatology per cell with INMET stations (distributional, not year by year, because the GCM runs are not synchronized with real time; W5E5 is derived from ERA5, so a comparison with it is not independent); (c) generation-based checks (see B1).
-
-### M13. Not claimed
-Impact, vulnerability, generation loss, probabilities, CIs from the GCM range, harvest-window effects, a composite index, solar, wind, H4, results outside Brazil, simultaneity in time.
-
-### M14. Status
-| Item | Status |
-|---|---|
-| Heat axis W3a-W3g; classes 10/30/60 | DONE |
-| Drought classes vs free null (W4g) | DONE; interpretation under revision (O34/O35) |
-| Emulator module, check, per-GCM validation | DONE (C48 update; see M6 update below) |
-| Emulated nulls: 20,000 draws, bacia and cell, tables | PLANNED (cell pool path not yet read) |
-| W4h co-exposure (C59, D97) | DONE |
-| W3h state/macro-region heat and co-exposure (C62/C63, D99/D100) | DONE |
-| W3f-7 planned-vs-operating, TX40 and plant-count weight (C63, D101) | DONE |
-| W4b excess over the null, Itaipu a/b, block-length sensitivity (C64, D102) | DONE |
-| W4c-W4f, W5 | PLANNED |
-| SPI x SPEI (W4c); trend-removed emulator | PLANNED |
-| Relative heat threshold | PLANNED |
-| Lower cooling bound; Penman-Monteith; wet-bulb; technology limits | DEFERRED / TO BE DEFINED |
-| W8 validation extension; B1; B2 | DEFERRED |
-
-### Additional handlers (existing table H unchanged; values TO BE DEFINED until pasted)
-| Id | Statement slot | Table | Value |
-|---|---|---|---|
-| NU1 | Emulator validity (sd, corr, variant, GCM) | w4r_emulator_validation (planned) | TO BE DEFINED |
-| NU2 | F_D future percentiles under the 3 nulls, 20,000 draws | w4r_null_percentiles (planned) | TO BE DEFINED |
-| NU3 | R_D null rates under the 3 nulls | w4r_null_rd (planned) | TO BE DEFINED |
-| NU4 | Drought classes under the 3 nulls | w4r_drought_classes (planned) | TO BE DEFINED |
-| PL1 | Planned - operating, level lens, paired | W3f-7 table (planned) | TO BE DEFINED |
-| VA2 | Extended validation | W8 table (planned) | TO BE DEFINED |
-| PE1 | SPI vs SPEI | W4c table (planned) | TO BE DEFINED |
-| TH1 | Relative heat threshold | th1_relative_threshold.csv, th1_thresholds.csv, th1_baseline_exceedance.csv | DONE (C60, D98): cell/GCM scope, BRA, 967 cells, 5 GCMs. Checks PASS: (a) baseline exceedance fraction 0.0500-0.0501; (b) tx35 reproduced 580,200/580,200 rows, max diff 0.0. Baseline mean identical across GCMs (18.27 days/yr, mechanical). Future diverges more under relative cut: ssp585 91.68-189.50 days/yr across GCMs (median threshold 34.4-34.7degC, min ~25degC in some cells). Not GW-weighted, not comparable to H1 headline. Fleet aggregation open (O39). |
-
-### Open items after v2.2
-O16, O18, O19, O20, O21, O30, O31, O33; O35 (design of the null: independent series in R_D, estimation error, calibrated baseline; to be recorded). Pending without id: n_boot = 5,000 for W3d and W3f-3; reconcile the Pearson III share (26% in the old text vs 423/1,110 here); reconcile "6 plants" (D80) with the 5 plants found.
-
+Author-level open items, outside the pipeline: O20, O31, O33 pending
+assignment; India and Portugal analysis deferred until Brazil closes;
+external copy/backup of the raw data directory deferred.
 ---
 
-## Appendix B. Known limitations and planned extensions (to be revisited after Brazil is closed)
+## Appendix F. Known limitations and planned extensions
 
-### B1. Exposure only, no link to generation or impact
-- **Criticism:** exposure does not show that generation changes.
-- **Why it stays now:** the article is framed as exposure; a modelled derating needs coefficients from the literature (TO BE DEFINED; sources not verified) and would move the paper toward impact.
-- **Options:** (i) empirical association between observed monthly generation (ONS open data; plant-level availability NOT verified) and observed SPEI-12 or TX in the past, kept as "association", not a model of impact; (ii) a literature-based sensitivity with explicit coefficients, only if a citable source exists; (iii) keep exposure-only and state it in abstract and discussion.
-- **Cost and risks:** medium/high. Generation is confounded by dispatch order, reservoir operation, demand and maintenance, so (i) supports at most a statement that exposure is relevant, not a magnitude.
-- **Would allow claiming:** the hazard is related to generation in the observed record. Still not projected loss.
+To be revisited after the Brazil pipeline closes.
 
-### B2. Resolution (0.5 degree) and five GCMs
-- **Criticism:** coarse for an asset; small ensemble.
-- **Now:** ranges across the 5 GCMs, k of 5, leave-one-GCM-out, never CIs.
-- **Options:** (i) compare the TX35 climatology of the cell with INMET stations near plants (distributional; cell mean vs point; stations' availability not verified); (ii) a larger ensemble or finer product (NEX-GDDP, D22) is a different pipeline, out of scope.
-- **Cost:** (i) medium (download, station selection, quality control); (ii) high.
-- **Would allow claiming:** an estimate of the local bias of TX35; the limitation remains stated.
+**B1. Exposure only, no link to generation or impact.** Exposure does not
+show that generation changes. The article is framed as exposure; a modelled
+derating needs coefficients from the literature not yet verified, and would
+move the paper toward impact. Options under consideration: (i) an empirical
+association between observed monthly generation (ONS open data;
+plant-level availability not verified) and observed SPEI-12 or TX in the
+past, reported as an association, not an impact model; (ii) a
+literature-based sensitivity with explicit, citable coefficients; (iii)
+remaining exposure-only and stating this explicitly in the abstract and
+discussion. Cost and risk: medium to high, since generation is confounded
+by dispatch order, reservoir operation, demand and maintenance, so option
+(i) can support at most a statement that exposure is relevant, not a
+magnitude of effect.
 
-### B3. SPEI with Hargreaves-Samani PET
-- **Criticism:** temperature-range PET may over- or under-state drying under warming.
-- **Now:** SPEI is the main index; Hargreaves is chosen for data availability (it needs only tasmax and tasmin).
-- **Planned (low cost, W4c):** SPI-12 vs SPEI-12 under the same classes; the difference isolates the contribution of atmospheric demand as computed here. It does not validate Hargreaves.
-- **Deferred (medium/high):** Penman-Monteith needs wind, radiation and humidity at daily scale; availability in ISIMIP3b and the download size are not verified.
-- **Would allow claiming:** how much the drought exposure depends on the PET choice.
+**B2. Resolution (0.5 degree) and five GCMs.** Coarse for an individual
+asset; a small ensemble. Current treatment: ranges across the 5 GCMs, k of
+5 agreement, leave-one-GCM-out, never confidence intervals. Options: (i)
+compare cell-level TX35 climatology against INMET station records near
+plants (distributional, not year-by-year; station availability not
+verified); (ii) a larger ensemble or finer-resolution product (e.g.
+NEX-GDDP) would be a different pipeline, out of scope. Cost: (i) medium,
+(ii) high.
 
-### B4. TX35/TX40 thresholds not tied to plant physics
-- **Criticism:** no link to operating limits of cooling systems or turbines.
-- **Done:** a grid 10-100 days of TX35 change, TX40 on its own grid, level and change lenses.
-- **Planned (medium, needs daily tasmax):** a baseline-relative threshold (days above the local baseline 95th percentile), to show conclusions do not depend on 35/40 degC. Not the existing `p95_exceedance_frequency`, which is precipitation.
-- **Deferred:** technology-specific limits (need a citable source), wet-bulb temperature (needs humidity).
-- **Would allow claiming:** robustness to the threshold, not to physical limits.
+**B3. SPEI with Hargreaves-Samani PET.** Temperature-range PET may over- or
+under-state drying under warming. Hargreaves is used for data availability
+(needs only tasmax and tasmin). Planned, low cost (W4c): SPI-12 vs SPEI-12
+under the same classes, isolating the contribution of atmospheric demand as
+computed here -- this does not validate Hargreaves against a better PET
+formulation, only measures sensitivity to including it at all. Deferred,
+medium/high cost: Penman-Monteith needs wind, radiation and humidity at
+daily scale; availability in ISIMIP3b and download size not verified.
 
-### B5/B8. Weak observational validation (rho 0.361, CI [0.027; 0.811], n = 20)
-- **Why it is weak:** 20 annual points at national scale; the subsystem split is suspended (D62).
-- **Constraint:** the GCM years are not synchronized with real years, so a year-by-year check of GCM output is not meaningful; validation must be of the observed-forcing index (W5E5) against observed inflow, or of climatology (distribution) against stations.
-- **Options (data not verified):** (a) monthly ENA vs SPEI-12 with block bootstrap, correcting for autocorrelation (more points but not independent); (b) ENA by basin if a plant-to-basin mapping can be justified; (c) INMET station climatology vs cell TX35 (see B2); (d) generation checks (see B1).
-- **Cost:** medium (download, mapping, a separate script). It does not change the planned order if run as W8 after W4h.
-- **Would allow claiming:** tighter evidence that the index tracks observed hydrological stress and that the heat climatology is not biased locally.
+**B4. TX35/TX40 thresholds not tied to plant physics.** No link to actual
+operating limits of cooling systems or turbines. Done: a grid of 10-100
+days of TX35 change, TX40 on its own grid, both level and change lenses,
+and a baseline-relative threshold (TH1) showing results are not an artifact
+of the absolute 35/40 degC cut. Deferred: technology-specific thermal
+limits (need a citable source) and wet-bulb temperature (needs humidity,
+not available in the current data).
 
-### B6. Planned vs operating about zero
-- **Treatment (done in text, M9):** reported as a result with intervals and ranges; paired contrast under the level lens, TX40, weighting and states planned. Not inflated.
+**B5/B8. Weak observational validation.** rho = 0.361, CI [0.027, 0.811], n
+= 20 annual points at national scale; the subsystem split is suspended
+(D62, no official plant-to-subsystem map). Constraint: GCM years are not
+synchronized with real years, so validation must compare the observed-
+forcing index (W5E5-derived SPEI) against observed inflow, or compare
+climatological distributions against stations, never GCM output against
+observation year-by-year. Options (data availability not verified): (a)
+monthly ENA vs SPEI-12 with block bootstrap correcting for autocorrelation;
+(b) ENA by hydrological basin if a defensible plant-to-basin mapping can be
+built; (c) INMET station climatology vs cell TX35 (see B2); (d) generation
+checks (see B1). Cost: medium; does not change the current work-plan order
+if scheduled as module W8, after Section 7 (co-located exposure) closes.
 
-### B7. Trend in the baseline
-- **Now:** nulls ignore the GCM trend; documented as a limitation (M6).
-- **Planned (low cost after the module):** per-GCM validation (shows where the trend matters) and an emulator with the trend of D removed, as a sensitivity with its own id. Changes the meaning of the null, so never the headline.
+**B6. Planned vs operating result near zero under GW weighting.** Already
+treated as a substantive result in Section 8, with intervals, ranges, and
+the plant-count-weighting reversal reported explicitly, not minimized.
 
-### M6 update (C48): emulator check and per-GCM validation (supersedes the IN PROGRESS labels in M6 and M14)
-- Emulator check (scripts/w4r_emulator_check.py, aborts on failure): 1,110 series (expected 1,110); 0 fit failures; 0 distribution-label mismatches; max |z - stored| 7.77e-05 on |SPEI| < 3 (tolerance 1e-3); max |dF_D| 0.0000 pp (tolerance 0.01). PASS. Values with |SPEI| >= 3 are excluded from the z comparison.
-- Per-GCM validation (1,000 draws per GCM and variant; rule |delta sd| <= 0.20 and |delta corr| <= 0.10 against the real value of the same GCM, 222 series per GCM; cells show sd / corr of the two halves):
+**B7. Trend in the baseline.** The three null models (Section 6) assume
+stationarity; the real GCM baselines carry their own trend, documented as a
+limitation there. Planned, low cost: a trend-removed emulator variant as an
+explicit, separately labelled sensitivity (never the headline null), to
+isolate how much of the sd gap in the per-GCM validation table is driven by
+trend versus some other property of each GCM's internal variability.
+---
 
-| GCM | real | year | anystart |
-|---|---|---|---|
-| GFDL-ESM4 | 1.45 / -0.651 | 1.39 / -0.745 PASS | 1.09 / -0.766 FAIL |
-| IPSL-CM6A-LR | 1.32 / -0.723 | 1.47 / -0.704 PASS | 1.04 / -0.692 FAIL |
-| MPI-ESM1-2-HR | 0.85 / -0.864 | 1.35 / -0.736 FAIL | 1.00 / -0.758 FAIL |
-| MRI-ESM2-0 | 1.36 / -0.715 | 1.41 / -0.748 PASS | 1.10 / -0.726 FAIL |
-| UKESM1-0-LL | 1.01 / -0.810 | 1.39 / -0.724 FAIL | 1.07 / -0.737 PASS |
+## Appendix G. Archive pointers
 
-- Reading: `year` passes in 3 of 5 GCMs, `anystart` in 1 of 5, MPI fails both, and neither variant passes in all GCMs. The emulated sd varies little across GCMs (year 1.35-1.47; anystart 1.00-1.10) while the real sd ranges from 0.85 to 1.45: the emulators do not reproduce GCM-specific dispersion. Whether the pooled PASS (real 1.23, between the variants) partly reflects mixing GCMs was not measured.
-- Margins and uncertainty: GFDL `year` corr gap 0.094 (limit 0.10); MPI `anystart` corr gap 0.106 (just over). The real per-GCM sd comes from 222 plants with spatially correlated cells and catchments, so its sampling error is larger than nominal (not measured); marginal results are ambiguous.
-- Trend: emulated mean(h2 - h1) lies between -0.12 and +0.34 in every GCM, against real +4.95, +4.66, -4.55, +2.96, -0.27 (GFDL, IPSL, MPI, MRI, UKESM). UKESM, with a near-zero real mean, still fails `year` on sd (1.39 vs 1.01), so the trend alone does not explain the sd gap (series-level trends may cancel in the mean; not tested).
-- Reporting: unchanged (three nulls side by side, no canonical null). Add as limitation: the emulated nulls were validated pooled (both variants pass) and per GCM (year 3 of 5, anystart 1 of 5); for MPI the nulls may be wider than the real pipeline, with the effect on the future not measured.
-- Status: emulator module (craei.hazards.null_emulator), tests and check script DONE; per-GCM validation DONE (diagnostic, no script kept). PLANNED next: production run with 20,000 draws per pool, trend-removed sensitivity (own id), relative heat threshold (TH1, before W5).
+The following content was produced under earlier design iterations and is
+not part of the current Brazil-only scope (D71). It is preserved for
+traceability, not reproduced in this document:
+
+- **docs/archive/METHODS_SPEC_v1_pre_rework.md**: the original
+  three-country (Brazil, India, Portugal) design, including the compound
+  hydro-heat metric's original LR_C specification (superseded by diff_pp
+  and dependence_ratio, D63/D72; see Appendix A, Step 10), the national
+  compound-event analysis, and the full Portugal (REN IPH, DGEG) and India
+  validation methodology and results (D59-D61, O10, O11).
+- **docs/archive/METHODS_SPEC_v2.2_pre_C66.md**: the immediately prior
+  version of this document (the v2.2 consolidated Methods, C48 draft, with
+  all edits through C65/D103), kept as the direct predecessor of the
+  current restructuring (C66/D104). Every number in the current document
+  traces back to this file or to docs/DECISIONS.md; nothing was
+  recalculated during the C66 restructuring.
+- **docs/DECISIONS.md**: the full decision log (D1 through the current
+  maximum id), the single source of truth for every number cited in this
+  document. Any discrepancy between this document and DECISIONS.md should
+  be resolved in favor of DECISIONS.md, and reported as an error in this
+  document.
+- **docs/STATUS_LOG.md**: the session-by-session technical log (commands,
+  checks, pass/fail outcomes), useful for understanding how a DECISIONS.md
+  entry was produced, not needed to use its result.
+
+This document (METHODS_SPEC.md) is the current, article-oriented synthesis
+of the above; it is restructured periodically (as in C66) to track the
+state of the analysis, but it is never the primary record of a decision --
+DECISIONS.md is.
