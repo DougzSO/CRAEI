@@ -62,3 +62,7 @@
 - C59 / D97: W4h concluído (co-exposição calor x seca, 4x4, sob os 3 nulos); year mais restritivo, anystart com ressalva D94/O37, block12 mais permissivo; marginais checados contra W3g/W4g/W4g-rev antes da mediana (D80); w4h_coexposure.csv (3456 linhas); piso 215 passed, 1 skipped.
 
 [C60] D98 fechado. TH1 (D91) rodado com sucesso: checks (a) e (b) PASS. Piso 220 passed/1 skipped mantido após mover script para archive. O39 aberto: agregação TH1 por frota/GW (join plant_units/plant_cell, estilo W3g) — extensão futura, fora do escopo literal do D91, critérios de validade a fixar antes de rodar.
+
+[C62] D99 fechado. W3h/ST1 (calor por estado/macrorregião) rodado com sucesso: checks (a) e (b) PASS, diff 0,00e+00. Piso 225 passed/1 skipped (220+5 do módulo craei.geo.state_assignment). ST2 (seca por estado) ainda pendente.
+
+[C62] D99 fechado. W3h/ST1 (calor por estado/macrorregião) rodado com sucesso: checks (a) e (b) PASS, diff 0,00e+00. Piso 225 passed/1 skipped (220+5 do módulo craei.geo.state_assignment). O41 investigado e fechado na hora (falso alarme, params.yaml já estava correto). ST2 (seca por estado) ainda pendente.

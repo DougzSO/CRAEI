@@ -552,7 +552,7 @@ Every number in the text comes from one handler. A value is filled only from pas
 | CO1 | 4 x 4 cross-tab, GW | w4h_coexposure (planned) | group, scenario | gw_median | TO BE DEFINED |
 | CO2 | GW and share extreme in both, range | w4h_coexposure (planned) | heat = extreme, drought = extreme | gw_median, gw_min, gw_max | TO BE DEFINED |
 | CO3 | High or extreme in both (sensitivity) | w4h_coexposure (planned) | heat, drought >= high | gw_median | TO BE DEFINED |
-| ST1 | GW in extreme heat by state and macro-region | w3h_state_summary (planned) | class = extreme | gw_median | TO BE DEFINED |
+| ST1 | GW in extreme heat by state and macro-region | w3h_state_summary.csv | class = extreme | gw_median | DONE (C62, D99): BRA, 1,122 rows, checks (a) capacity parity and (b) pre-median national-sum parity both diff 0.00e+00; 19/6,926 plants (0.27%) assigned by nearest-polygon fallback. Headline (all_thermal, operating, ssp585): SP/MA/MS lead (2.88-2.89 GW median). |
 | ST2 | Co-exposure by state; units assigned by nearest polygon | w3h_state_summary (planned) | state | gw_median, n_nearest | TO BE DEFINED |
 | SE1 | GCM exclusion (drop one, drop UKESM+IPSL) | w3_gcm_exclusion, w3_gcm_exclusion_contrast, w3_gcm_exclusion_rank | exclusion | pct_median, diff_median, sign_changed, order | TO BE DEFINED |
 | SE2 | Threshold, weight, TX40 | w3_heat_sensitivity, w3_tx40_curves | choice | diff_median_pp, pct_median | TO BE DEFINED |

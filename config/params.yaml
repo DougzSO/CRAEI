@@ -85,3 +85,35 @@ solar_noct_cell_air_diff_c:
   value: 31.25
   tier: 2
   source: "Methods Spec §1.4 Solar PV, NOCT = 45C at 1000 W/m2"
+
+brazil_macroregion_map:
+  value:
+    AC: Norte
+    AP: Norte
+    AM: Norte
+    PA: Norte
+    RO: Norte
+    RR: Norte
+    TO: Norte
+    AL: Nordeste
+    BA: Nordeste
+    CE: Nordeste
+    MA: Nordeste
+    PB: Nordeste
+    PE: Nordeste
+    PI: Nordeste
+    RN: Nordeste
+    SE: Nordeste
+    DF: Centro-Oeste
+    GO: Centro-Oeste
+    MT: Centro-Oeste
+    MS: Centro-Oeste
+    ES: Sudeste
+    MG: Sudeste
+    RJ: Sudeste
+    SP: Sudeste
+    PR: Sul
+    RS: Sul
+    SC: Sul
+  tier: 1
+  source: "IBGE, Divisao Regional do Brasil (5 macro-regioes oficiais)"

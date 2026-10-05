@@ -214,7 +214,7 @@ n_boot for reported bootstrap tables.
 | W4g-rev | Reclassify drought level and R_D change classes under all three nulls (free block12 reused, year/anystart emulated via W4r draws); D92-D95 | W4g, O36, O37, D92, D93, D94, D95 | done (C58, D96) |
 | W4h | Co-located exposure: 4 x 4 cross-tab, extreme in both, sensitivity high-or-extreme; thermal water-dependent and hydro | W3g, W4g, O32 | done (C59, D97) |
 | TH1 | Baseline-relative heat threshold (p95 of baseline tasmax per cell/GCM), robustness check vs fixed 35degC threshold; cell/GCM scope only (BRA, 967 cells) | D91 | done (C60, D98) |
-| W3h | State and macro-region summary (Natural Earth admin1, nearest polygon for points outside) | W3g, W4g | sketch |
+| W3h | State and macro-region summary (Natural Earth admin1, nearest polygon for points outside); ST1 only, ST2 pending | W3g, W4g | ST1 done (C62, D99) |
 | W3f-7 | Planned minus operating under TX40 and plant-count weight | W3 tables | ready |
 | W4b-W4f | As before; Itaipu b headline | W4a | ready |
 | W3d/W3f-3 at 5,000 | Re-run, replace bootstrap limits | n_boot decision | pending |
