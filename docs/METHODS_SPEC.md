@@ -659,6 +659,17 @@ Natural Earth admin1 (fields name, postal, region); points outside any polygon a
 ### M11. Sensitivity (W5, PLANNED; reports, does not choose)
 Long table choice x alternative with headline, alternative, delta pp and the planned-operating contrast under the same choice; flags: sign of contrast, fuel order, non-overlapping ranges, bootstrap interval including 0. Families: heat threshold, TX40, relative heat threshold, planned fleet, weighting, water vs air, GCM, n_boot, Itaipu a/b, SPEI-3 vs SPEI-12, SPI vs SPEI, SPEI threshold, R_D threshold, null type and block (including the emulated variants), heat class cuts, null percentiles. Not in scope: 15 d heat (O17), coastal buffer/H3. FLAGGED FINDING (W3f-7, D101, C63, pre-W5 note): the planned-minus-operating contrast is NOT sign-stable across the weighting choice alone -- under GW weight (reference), median diff pp is near zero in SSP126/370 (no consistent difference, as in M9); under plant-count weight, same hazard (TX35), same threshold grid, the median diff is consistently positive in all 3 scenarios (n_planned_ge 4-5 of 5 GCMs). This is the clearest non-overlapping-direction case found so far across any single-choice sensitivity; W5's implementation must surface it as a flagged row (sign_changed = true), not bury it among families with near-zero effect.
 
+FLAGGED FINDING (W4b, D102, C64, pre-W5 note): the block-length sensitivity
+test of D83's hypothesis (that 12-month blocks break persistence, inflating
+the null F_D rate) is confirmed in direction but NOT monotonic: null
+pct_rd_ge2 by block length (12/24/36/60 months) is 18.88 / 19.36 / 21.87 /
+20.75%, falling from block12 to block36 as expected, then partially
+recovering at block60. D83 itself flags block60 as unreliable (only 6
+blocks per 360-month series), so this is read as a block60 sampling
+artifact, not evidence against the hypothesis. W5's block/null family row
+must report all four block lengths, not just 12 vs 36, to show this
+non-monotonicity explicitly.
+
 ### M12. Validation
 - DONE: national ONS validation, rho = 0.361, CI [0.027; 0.811], n = 20 (supplementary, D73). Weak; reported as such. Subsystem validation suspended (D62, no official plant-to-subsystem map).
 - DEFERRED (module W8, after W4h; data availability NOT verified): (a) more data points from monthly ENA vs SPEI-12 with block bootstrap that accounts for autocorrelation; (b) comparison of the TX35 climatology per cell with INMET stations (distributional, not year by year, because the GCM runs are not synchronized with real time; W5E5 is derived from ERA5, so a comparison with it is not independent); (c) generation-based checks (see B1).
@@ -671,9 +682,13 @@ Impact, vulnerability, generation loss, probabilities, CIs from the GCM range, h
 |---|---|
 | Heat axis W3a-W3g; classes 10/30/60 | DONE |
 | Drought classes vs free null (W4g) | DONE; interpretation under revision (O34/O35) |
-| Emulator module, check, per-GCM validation | IN PROGRESS |
+| Emulator module, check, per-GCM validation | DONE (C48 update; see M6 update below) |
 | Emulated nulls: 20,000 draws, bacia and cell, tables | PLANNED (cell pool path not yet read) |
-| W4h co-exposure, W3h states, W3f-7, W4b-W4f, W5 | PLANNED |
+| W4h co-exposure (C59, D97) | DONE |
+| W3h state/macro-region heat and co-exposure (C62/C63, D99/D100) | DONE |
+| W3f-7 planned-vs-operating, TX40 and plant-count weight (C63, D101) | DONE |
+| W4b excess over the null, Itaipu a/b, block-length sensitivity (C64, D102) | DONE |
+| W4c-W4f, W5 | PLANNED |
 | SPI x SPEI (W4c); trend-removed emulator | PLANNED |
 | Relative heat threshold | PLANNED |
 | Lower cooling bound; Penman-Monteith; wet-bulb; technology limits | DEFERRED / TO BE DEFINED |

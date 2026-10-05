@@ -80,3 +80,11 @@
   in direction (18.88% -> 21.87%, block12->36), not monotonic (block60
   20.75% < block36). Closes METHODS_SPEC DR5 handler. Floor unchanged: 225
   passed, 1 skipped.
+- C65 (2026-10-05): O40 closed by mitigation (D103) -- accepted the ASCII-only
+  policy for new prose (already in use since D83) as sufficient going
+  forward; root cause of the mojibake affecting D100/D101 (C63) not
+  identified, not reopened under a new id this session. METHODS_SPEC M11
+  gained a flagged finding for W4b's block-length non-monotonicity (D102);
+  M14 status table corrected: W4h/W3h/W3f-7/W4b rows moved from PLANNED to
+  DONE with their C/D ids, emulator module row moved from IN PROGRESS to
+  DONE. No code changed, no test run. Floor unchanged: 225 passed, 1 skipped.

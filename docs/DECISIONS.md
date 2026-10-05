@@ -1369,3 +1369,23 @@ hazard, only capacity weight differs, D82).
 
 Closes DR5's TO BE DEFINED in METHODS_SPEC. Plan item W4b done; next: W4c
 (O18), W4d (O19), W4e (O20/O21), W4f.
+## D103 - closed, C65
+
+O40 (mojibake in DECISIONS.md/STATUS_LOG.md, originally framed as
+pre-existing/historical) is closed by mitigation, not by root-cause fix.
+C64 found that D100/D101 (written in C63, inside the period the original
+framing called "historical") show the same corruption pattern, which means
+the "only historical" framing does not hold, but the actual cause was not
+identified this session (out of scope for W4b; candidates not tested:
+clipboard encoding, terminal code page, PowerShell console rendering between
+assistant output and pasted append -- none of these are the file-write code
+itself, which already checks BOM and writes UTF-8 without BOM every time).
+
+Decision: accept the existing mitigation as sufficient going forward. Any
+new DECISIONS/STATUS_LOG/METHODS_SPEC prose containing accented Portuguese
+characters or Unicode punctuation (em-dash, curly quotes) is written in
+English/ASCII instead (hyphen, straight quotes), as already practiced in
+D83-D95 and D102. This does not retroactively fix D100/D101 or any other
+already-corrupted entry, and does not identify why C63's output was
+affected. If a future session finds a cheap way to isolate the actual cause,
+reopen under a new O-id; do not reuse O40 for a different claim.
