@@ -446,10 +446,18 @@ heat-rainfall dependence structure of the underlying GCM has not been
 verified (O30), so temporal coincidence (years with both hazards present)
 is not currently reported.
 
-National 4x4 cross-tab results (W4h, D97, C59) exist and are DONE, but the
-specific GW/share values have not yet been transcribed into this document's
-result-handler table (CO1-CO3, Appendix D remain TO BE DEFINED pending that
-transcription -- a bookkeeping gap, not a missing analysis).
+National 4x4 cross-tab results (W4h, D97, C59) exist; the extreme-by-
+extreme headline (CO2) was transcribed into Appendix D in C67/D105 as a
+percentage GW share (not absolute GW), by null variant. The full 4x4
+matrix (CO1) remains untranscribed beyond that one cell (TO BE DEFINED,
+bookkeeping only -- the data exists in w4h_coexposure.csv). The
+high-or-extreme-in-both sensitivity (CO3) is NOT available as a valid
+number: D97's own console output for this cell summed four already-
+computed medians, which D97 itself flags as invalid because the median is
+not additive (D80); this was never written to a CSV, and the correct
+calculation (collapsing raw per-GCM values across the four cells before
+taking a single median) is pending with no id assigned. No CO3 figure
+should be cited until that calculation exists.
 
 State and macro-region breakdown (M10, W3h, DONE). Units are assigned to
 Natural Earth admin1 polygons (fields name, postal, region) by spatial
@@ -932,11 +940,11 @@ estimated or interpolated. Table names marked (planned) do not exist yet.
 | DR6 | SPI x SPEI with the same fitting scheme | W4c table (planned) | scenario | pct_exposed | TO BE DEFINED |
 | DR7 | Leave-one-out of the 5 largest hydro plants | W4d table (planned) | plant, scenario | pct_exposed | TO BE DEFINED |
 | DR8 | GCM range and agreement of the hydro result | W4e table (planned) | scenario | pct_min, pct_median, pct_max, k | TO BE DEFINED |
-| CO1 | 4 x 4 cross-tab, GW | w4h_coexposure.csv | group, scenario | gw_median | DONE (C59, D97), values not yet transcribed into this handler |
-| CO2 | GW and share extreme in both, range | w4h_coexposure.csv | heat = extreme, drought = extreme | gw_median, gw_min, gw_max | DONE (C59, D97), values not yet transcribed into this handler |
-| CO3 | High or extreme in both (sensitivity) | w4h_coexposure.csv | heat, drought >= high | gw_median | DONE (C59, D97) as sum-of-4-medians; ST2's own single-flag version is a DIFFERENT number, not interchangeable (Section 7) |
+| CO1 | 4 x 4 cross-tab, GW | w4h_coexposure.csv | group, scenario | gw_median | PARTIAL: only extreme x extreme (see CO2) transcribed; full 16-cell matrix exists in w4h_coexposure.csv (C59, D97) but not yet copied in. TO BE DEFINED for other cells. |
+| CO2 | Pct GW share extreme in both, by null variant | w4h_coexposure.csv | heat = extreme, drought = extreme, fleet = operating, cutset = p50_p90_p99 | pct_median (block12/year/anystart) | DONE (C67, D105, source D97): hydro SSP126 36.5/1.3/30.5, SSP370 37.4/11.5/34.4, SSP585 55.9/35.0/50.5; thermal_water_dependent SSP126 7.2/1.4/3.2, SSP370 10.6/2.7/7.3, SSP585 26.4/16.5/18.9. Pct share, not absolute GW; GCM min/max not in source. Canonical=True only for null=block12 (D90). |
+| CO3 | High or extreme in both (sensitivity) | w4h_coexposure.csv | heat, drought >= high | gw_median | PENDING, NOT DONE (corrected C67/D105): D97's only attempt was a console-printed sum of 4 already-computed medians, explicitly flagged by D97 itself as invalid (median not additive, D80); never saved to CSV. Correct calculation (raw per-GCM collapse across the 4 cells, then one median) not yet done, no id assigned. Do not cite a CO3 number from D97. |
 | ST1 | GW in extreme heat by state and macro-region | w3h_state_summary.csv | class = extreme | gw_median | DONE (C62, D99): BRA, 1,122 rows, checks (a) capacity parity and (b) pre-median national-sum parity both diff 0.00e+00; 19/6,926 plants (0.27%) assigned by nearest-polygon fallback. Headline (all_thermal, operating, ssp585): SP/MA/MS lead (2.88-2.89 GW median). |
-| ST2 | Co-exposure by state; units assigned by nearest polygon | w3h_state_coexposure.csv | state | gw_median, n_nearest | DONE (C63, D100): BRA, 2,952 rows, checks (a) capacity parity, (b) pre-median state-sum parity, (c) parity against w4h_coexposure.csv all 0.00e+00-order diffs (max 7.11e-15); CO2 (extreme x extreme) only, CO3 (high-or-extreme both) uses a single-flag median, NOT the same number as W4h's own sum-of-4-medians CO3 (median is not additive). Headline (extreme x extreme, operating, ssp585, block12): PA leads in hydro (22.35 GW median), then RO, PR, BA, MG. |
+| ST2 | Co-exposure by state; units assigned by nearest polygon | w3h_state_coexposure.csv | state | gw_median, n_nearest | DONE (C63, D100): BRA, 2,952 rows, checks (a) capacity parity, (b) pre-median state-sum parity, (c) parity against w4h_coexposure.csv all 0.00e+00-order diffs (max 7.11e-15); CO2 (extreme x extreme) only. CO3 (high-or-extreme both) here is a valid single-flag median computed directly for ST2; it is NOT comparable to any W4h-level CO3 value, because D97's own attempt at that quantity (summing four already-computed medians) was explicitly flagged as invalid in that same decision record and was never adopted (median not additive, D80) -- W4h currently has no valid CO3 number to compare against. Headline (extreme x extreme, operating, ssp585, block12): PA leads in hydro (22.35 GW median), then RO, PR, BA, MG. |
 | SE1 | GCM exclusion (drop one, drop UKESM+IPSL) | w3_gcm_exclusion, w3_gcm_exclusion_contrast, w3_gcm_exclusion_rank | exclusion | pct_median, diff_median, sign_changed, order | TO BE DEFINED |
 | SE2 | Threshold, weight, TX40 | w3_heat_sensitivity, w3_tx40_curves | choice | diff_median_pp, pct_median | DONE (C63, D101) for weight x TX40 cell only: GW weight median contrast ~0 (n_planned_ge 1-2/5); plant-count weight +12.07/+7.98/+9.87 pp (n_planned_ge 4-5/5). Other cells of this family TO BE DEFINED |
 | SE3 | Null type and block size | w4_null_rates | null, block_months | pct_rd_ge | DONE (Section 6/DR4 above); AR1/white-noise bounds DONE (C64, D102) |

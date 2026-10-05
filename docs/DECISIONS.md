@@ -1411,3 +1411,37 @@ One figure computed during drafting (423/1,110 as 38.1%) was removed before
 this commit so the file contains only numbers already recorded in
 DECISIONS.md or in a pasted script output. If this document and
 DECISIONS.md ever disagree, DECISIONS.md wins.
+## D105 - closed, C67
+
+Correction to METHODS_SPEC.md (C66/D104), found while transcribing CO1-CO3
+from D97's actual text (extracted to docs/archive/_extract_D97_for_CO.txt
+for verification, since long Portuguese console pastes in this session
+showed character-substitution corruption in transit, unrelated to O40 --
+isolated ASCII strings like "Line 1252" were corrupted to "]ine 1252" in
+one paste, confirming the corruption is in the terminal/clipboard/paste
+chain, not in the file on disk).
+
+D97's real content: CO2 (extreme x extreme, operating, cutset p50_p90_p99,
+median % GW share over 5 GCMs, by null block12/year/anystart) -- hydro:
+SSP126 36.5/1.3/30.5, SSP370 37.4/11.5/34.4, SSP585 55.9/35.0/50.5;
+thermal_water_dependent: SSP126 7.2/1.4/3.2, SSP370 10.6/2.7/7.3, SSP585
+26.4/16.5/18.9. This is a percentage share, not absolute GW; GCM min/max
+range was not in the pasted source. w4h_coexposure.csv has 3,456 rows;
+18,480 unit-level rows, 921 plants.
+
+CO3 (high-or-extreme in both axes): D97 explicitly states the only value
+computed was a console-printed SUM of 4 already-computed gw_median cells,
+which D97 itself flags as the WRONG form (median is not additive, D80);
+this was never written to w4h_coexposure.csv, and the correct calculation
+(collapse raw per-GCM values across the 4 cells first, single median after)
+is pending with no id assigned. The C66 rewrite of METHODS_SPEC Appendix D
+incorrectly described this as "DONE (C59, D97) as sum-of-4-medians", as
+though it were a valid, if differently-defined, result. It is not: it is an
+invalid number D97 itself rejected. Corrected in this same commit. No CO3
+figure should be cited from D97 until the correct calculation is done.
+
+CO1 (full 4x4 cross-tab in GW): only the extreme x extreme cell (CO2) was
+pasted/transcribed; the other 15 cells of the matrix exist in
+w4h_coexposure.csv but were not transcribed into METHODS_SPEC. Left as
+TO BE DEFINED for cells other than extreme x extreme (bookkeeping gap, not
+a missing analysis -- the data exists, just not copied in).

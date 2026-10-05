@@ -1,0 +1,44 @@
+## D97 — fechado, C59
+
+W4h: co-exposição calor×seca (cross-tab 4×4), sob os 3 nulos (D88 M8). Script de uso
+único `scripts/archive/w4h_coexposure.py`. População: hydro + thermal_water_dependent
+(D89 upper bound), pool próprio apenas (hydro→catchment, thermal→cell; sem sensibilidade
+cross-pool aqui, essa pergunta já respondida no W4g). Ambos os hazards usam a classe
+futura (mesmo GCM, mesmo cenário): calor = TX35 futuro, cortes fixos 10/30/60; seca =
+F_D futuro contra o nulo (block12 de `w4g_null_percentiles.csv`; year/anystart de
+`w4r_null_percentiles.csv`, checados contra os draws armazenados antes de usar, mesmo
+check do D96).
+
+Fonte de calor: térmica via `plant_hazards` (TX35, selecionado por `tech_class` de
+`plant_units`, não por `bucket` — 2 das 1285 plantas têm bucket errado, D77/M2); hidro
+não tem TX35 em `plant_hazards`, recomputado via `indices_daily` + célula da planta,
+mesmo caminho do script W3g. Seca reaproveitada sem recálculo de `w4g_fd_unit_values.csv`.
+
+Checks antes de gravar, todos PASS: sem valor de calor faltante/NaN após merge; percentis
+recomputados batendo com `w4r_null_percentiles.csv` (year/anystart); marginal de calor
+sozinho (soma de classes ANTES de tirar mediana sobre GCM, nunca a partir de medianas já
+calculadas — mediana não é aditiva por classe, D80) batendo com `w3g_heat_level_classes.csv`;
+marginal de seca sozinho batendo com `w4g_drought_level_classes.csv` (block12) ou
+`w4grev_drought_level_classes.csv` (year/anystart); gap de soma de classes (16 células do
+cross-tab + ambos marginais 1-D) <1e-6 MW. 18.480 linhas de unidade, 921 plantas; gap
+máximo observado 7,28e-12 MW (ruído de ponto flutuante). `w4h_coexposure.csv`: 3456 linhas.
+
+Resultado (CO2, classe extreme×extreme, operating, p50_p90_p99; mediana %GW sobre 5
+GCMs, block12/year/anystart):
+- hydro: ssp126 36,5/1,3/30,5 — ssp370 37,4/11,5/34,4 — ssp585 55,9/35,0/50,5
+- thermal_water_dependent: ssp126 7,2/1,4/3,2 — ssp370 10,6/2,7/7,3 — ssp585 26,4/16,5/18,9
+
+Padrão consistente com D93/D96: year sistematicamente mais restritivo (nulo mais
+exigente); anystart intermediário, mas com ressalva obrigatória (D94/O37 — baseline
+sorteado inválido sob parâmetros reais, variância das somas de 12 meses inflada
+~15-16%); block12 mais permissivo. Nenhum nulo canônico (D90 inalterado); `canonical`
+só True em null==block12, cutset==p50_p90_p99.
+
+CO3 (sensibilidade high-ou-extreme nos dois eixos) impresso no console só como soma de
+`gw_median` das 4 células correspondentes — **não é a forma correta** (soma de medianas
+já calculadas, não re-sumarizado a partir do bruto por GCM antes da mediana); não gravado
+em CSV, só exibido. Cálculo correto (marginal bruto colapsado nas 4 células, mediana
+depois) fica pendente, sem ID novo, se for necessário no texto.
+
+Plano item 2 (W4h) concluído. Próximo: TH1 (D91), W3h, W3f-7, W4c–W4f, refazer
+W3d/W3f-3 a 5.000, W5, W8, figuras, Fase 5; O38 antes do W7.

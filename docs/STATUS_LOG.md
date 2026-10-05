@@ -92,3 +92,15 @@
   code, no new number, floor unchanged (225 passed, 1 skipped). Prior text
   archived at docs/archive/METHODS_SPEC_v2.2_pre_C66.md. Derived 38.1%
   (423/1,110) removed before commit.
+- C67 (2026-10-05): Removed stray _tmp_check.txt. Transcribed CO2 real
+  values from D97 into METHODS_SPEC Appendix D (D105). Found and corrected
+  a C66 transcription error: CO3 had been marked DONE as a
+  "sum-of-4-medians" when D97 itself explicitly rejects that sum as invalid
+  (median not additive) and never saved it -- corrected to PENDING, no
+  number citable. CO1 marked PARTIAL (only extreme x extreme transcribed).
+  ST2 handler row corrected: its CO3-style value is valid on its own, not
+  comparable to the (invalid, unadopted) W4h CO3 attempt. Confirmed
+  terminal/clipboard corruption (character substitution, "Line"->"]ine")
+  is a paste-chain artifact, not a file-on-disk issue -- unrelated to O40,
+  not reopening it. No code changed. Floor unchanged: 225 passed, 1
+  skipped.
