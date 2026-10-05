@@ -104,3 +104,12 @@
   is a paste-chain artifact, not a file-on-disk issue -- unrelated to O40,
   not reopening it. No code changed. Floor unchanged: 225 passed, 1
   skipped.
+- C68 (2026-10-05): Investigated a reported discrepancy (external reading
+  claimed W4h blocked by O32, M14 table stale, Pearson III and plant-count
+  mismatches) against the current docs on disk. D106: no real contradiction
+  found. O32 was opened C44, closed C47 (D89, upper bound choice) before
+  W4h ran (C59, D97) -- dependency satisfied, not blocking. "M14" does not
+  exist post-C66. Pearson III and "6 vs 5 plants" items were already
+  disclosed in METHODS_SPEC's own pending list, not new findings; the
+  plants item is stale text (body already resolves it), noted for future
+  cleanup. No code changed. Floor unchanged: 225 passed, 1 skipped.

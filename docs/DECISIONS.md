@@ -1445,3 +1445,46 @@ pasted/transcribed; the other 15 cells of the matrix exist in
 w4h_coexposure.csv but were not transcribed into METHODS_SPEC. Left as
 TO BE DEFINED for cells other than extreme x extreme (bookkeeping gap, not
 a missing analysis -- the data exists, just not copied in).
+## D106 - closed, C68
+
+Investigation of a discrepancy reported between an external/independent
+reading of METHODS_SPEC.md and this session's tracked state (claimed: W4h
+blocked by O32 cooling-bound limit; M14 status table showing W4h/W3h/W5 as
+PLANNED in bulk despite ST1/ST2 individually DONE; Pearson III 26% vs 38.1%
+mismatch; 6 vs 5 misclassified plants mismatch). Checked by full-text search
+(IndexOf substring scan + Select-String) of docs/METHODS_SPEC.md,
+docs/DECISIONS.md, docs/STATUS_LOG.md, docs/CRAEI_work_plan_v2.md:
+
+1. O32 exists: opened C44 (cooling bound choice, upper vs lower, linked to
+   O20), closed C47 by D89 (author decision: upper bound, all
+   water-dependent thermal units, 788 units/699 plants/342 cells). The work
+   plan correctly lists W4h as depending on O32, and O32's status is
+   closed, not open -- the dependency was satisfied before W4h ran (C59,
+   D97), not left blocking. No contradiction: W4h is DONE, O32 is CLOSED.
+   The external reading likely saw the dependency listed without checking
+   O32's own status column.
+2. "M14" as a table name: zero occurrences in current METHODS_SPEC.md.
+   M14 was v2.2-era nomenclature (pre-C66 layered structure); does not
+   exist in the post-C66 Section 1-11 + Appendix A-G format. Claim not
+   reproduced against the file on disk.
+3. W4h: all occurrences in METHODS_SPEC.md tie to D97/C59 (national 4x4
+   cross-tab), confirmed DONE.
+4. Pearson III baseline share (~26% early-draft quote vs measured
+   423/1,110 = 38.1% in current hydro-BRA pool): genuinely unreconciled,
+   but already disclosed in METHODS_SPEC's own "pending without an id"
+   list (Section 4.2 area) -- not a hidden or new finding, likely different
+   sample scopes per that same text, not yet re-checked.
+5. Misclassified plants (6 vs 5): not a real conflict. Body text (near
+   line 70) already states "misclassify 6 units (5 plants, 3,100.4 MW)" --
+   units and plants are different counts of the same fact, already
+   resolved in prose. The "pending without an id" list's separate request
+   to reconcile "6 plants" against "5 plants" is stale text referring to
+   something the body already resolves; candidate for removal in a future
+   doc cleanup pass, non-blocking, no id needed.
+
+Conclusion: no real contradiction in current docs. Source of the external
+reading not identified (possibly docs/archive/METHODS_SPEC_v2.2_pre_C66.md,
+possibly a stale cache, not investigated further). No production action
+required. W4h remains DONE; O32 remains CLOSED; Pearson III reconciliation
+remains open pre-existing (no new id); stale "6 plants" cleanup noted
+non-blocking.
