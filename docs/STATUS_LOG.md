@@ -66,3 +66,10 @@
 [C62] D99 fechado. W3h/ST1 (calor por estado/macrorregião) rodado com sucesso: checks (a) e (b) PASS, diff 0,00e+00. Piso 225 passed/1 skipped (220+5 do módulo craei.geo.state_assignment). ST2 (seca por estado) ainda pendente.
 
 [C62] D99 fechado. W3h/ST1 (calor por estado/macrorregião) rodado com sucesso: checks (a) e (b) PASS, diff 0,00e+00. Piso 225 passed/1 skipped (220+5 do módulo craei.geo.state_assignment). O41 investigado e fechado na hora (falso alarme, params.yaml já estava correto). ST2 (seca por estado) ainda pendente.
+
+- C63 (2026-10-05): W3h/ST2 state-level co-exposure, checks (a)-(c) PASS (D100).
+  W3f-7 planned-vs-operating under TX40 and plant-count weight, checks (1)-(4)
+  PASS (D101); finding: plant-count weight flips the planned-operating reading
+  from "no consistent difference" to "consistently higher under planned" (see
+  D101). Fixed duplicate D96/D99 blocks in DECISIONS.md (1294 -> 1261 lines).
+  CLAUDE.md pytest floor line updated to C62 (225 passed, 1 skipped).

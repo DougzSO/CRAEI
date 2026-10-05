@@ -1204,37 +1204,6 @@ emuladas construídas de um conjunto finito de 349 valores mensais válidos).
 Tabelas: `w4grev_null_percentiles.csv`, `w4grev_drought_level_classes.csv`,
 `w4grev_drought_change_classes.csv`. Plano item 1 (W4g-rev) concluído; próximo: W4h.
 
-## D96 — fechado, C58
-
-W4g-rev: reclassificação de níveis de seca e de mudança (R_D) sob os 3 nulos
-(block12 reaproveitado do W4g sem recálculo; year/anystart emulados via draws do W4r,
-D92/D93). Script de uso único `scripts/archive/w4g_rev.py`.
-
-Checks antes de gravar, todos PASS: paridade de linhas entre tabela livre e emulada;
-soma de classes (gap) <1e-6 MW; percentis recomputados do array de sorteios batendo com
-`w4r_null_percentiles.csv` (tolerância 1e-6). 20.790 linhas de unidade, 921 plantas.
-
-Resultado (classe extreme, operating, future, cutset p50_p90_p99, pool = nulo do
-próprio grupo; mediana % de GW sobre 5 GCMs, block12/year/anystart):
-- hydro itaipu a: ssp126 48,1/3,2/32,3 — ssp370 46,4/10,9/38,3 — ssp585 73,1/40,3/64,1
-- hydro itaipu b: ssp126 51,4/3,5/34,5 — ssp370 49,6/11,7/41,0 — ssp585 71,3/43,1/61,6
-- thermal_water_dependent: ssp126 31,1/7,7/15,5 — ssp370 40,8/19,5/35,4 — ssp585 54,7/34,1/40,7
-
-year sistematicamente mais baixo que block12 em todas as combinações (nulo mais
-exigente, consistente com D93: reajuste de parâmetros no sorteio infla o nulo e eleva o
-corte). anystart fica entre os dois, mas carrega a ressalva D94/O37 — não é referência
-válida (baseline sorteado já viesado sob parâmetros reais). Nenhum nulo é canônico
-(D90 inalterado); a coluna `canonical` herdada do nulo livre nunca é `True` nas linhas
-emuladas e continua marcando só a combinação de exibição padrão pré-D90
-(pool==own, null==block12, cutset==p50_p90_p99), não uma afirmação de nulo correto.
-
-Discretização: fração de sorteios futuros exatamente no corte p50, catchment/cell ×
-year/anystart, entre 2,11% e 3,53% — confirma o lembrete do plano (distribuições
-emuladas construídas de um conjunto finito de 349 valores mensais válidos).
-
-Tabelas: `w4grev_null_percentiles.csv`, `w4grev_drought_level_classes.csv`,
-`w4grev_drought_change_classes.csv`. Plano item 1 (W4g-rev) concluído; próximo: W4h.
-
 ## D97 — fechado, C59
 
 W4h: co-exposição calor×seca (cross-tab 4×4), sob os 3 nulos (D88 M8). Script de uso
@@ -1288,6 +1257,64 @@ O40 (aberto, C60). Corrupção de encoding pré-existente (anterior a esta sess�
 
 D99 (fechado, C62). W3h/ST1: GW em calor extremo por estado e macrorregião (BRA). Mapa estado->macrorregião (IBGE, 5 regiões oficiais, tier 1) gravado em config/params.yaml (brazil_macroregion_map), não hardcoded (alinhado com O38). Módulo novo craei.geo.state_assignment (assign_state: join espacial planta->polígono, fallback nearest-polygon com contagem; add_macro_region) + 5 testes. Atribuição via lat/lon real da planta (plants.parquet), não da célula climática (mais grosseira). Checks fixados antes de rodar, ambos PASS com diff 0,00e+00: (a) capacidade total input == atribuída; (b) soma por estado, por GCM, ANTES da mediana (mediana não é aditiva, D80/D96/D97), bate com o total nacional já calculado por heat_levels. 6.926 plantas BRA, 19 (0,27%) via nearest-fallback. w3h_state_summary.csv: 1.122 linhas, classe extreme apenas. Escopo desta entrega: só ST1 (calor). ST2 (co-exposição por estado) pendente, exige revisão de w4_drought_levels.py ainda não feita.
 
-D99 (fechado, C62). W3h/ST1: GW em calor extremo por estado e macrorregião (BRA). Mapa estado->macrorregião (IBGE, 5 regiões oficiais, tier 1) gravado em config/params.yaml (brazil_macroregion_map), não hardcoded (alinhado com O38). Módulo novo craei.geo.state_assignment (assign_state: join espacial planta->polígono, fallback nearest-polygon com contagem; add_macro_region) + 5 testes. Atribuição via lat/lon real da planta (plants.parquet), não da célula climática (mais grosseira). Checks fixados antes de rodar, ambos PASS com diff 0,00e+00: (a) capacidade total input == atribuída; (b) soma por estado, por GCM, ANTES da mediana (mediana não é aditiva, D80/D96/D97), bate com o total nacional já calculado por heat_levels. 6.926 plantas BRA, 19 (0,27%) via nearest-fallback. w3h_state_summary.csv: 1.122 linhas, classe extreme apenas. Escopo desta entrega: só ST1 (calor). ST2 (co-exposição por estado) pendente, exige revisão de w4_drought_levels.py ainda não feita.
-
 O41 (investigado e fechado na hora, C62). Suspeita de mojibake em config/params.yaml (campos "source" exibindo "Â§" em vez de "§"). Verificação direta dos bytes do arquivo (offset do primeiro "§"): C2 A7, UTF-8 válido. Falso alarme — era artefato de exibição do Get-Content no console, não corrupção real. Nenhuma alteração de arquivo necessária.
+
+
+## D100 — fechado, C63
+
+W3h/ST2: co-exposição calor x seca por estado e macrorregião (BRA). Reaproveita
+craei.geo.state_assignment (C62) e a lógica de classificação de w4h_coexposure.py
+(D97). Escopo fixado antes de rodar: só células extreme x extreme (CO2) e
+high-or-extreme em ambos (CO3), sob os 3 nulos (block12, year, anystart), cutset
+p50_p90_p99 apenas — não a matriz 4x4 completa por estado (ilegível). População
+hydro + thermal_water_dependent (D89 upper bound), 921 plantas, 3 via
+nearest-fallback.
+
+Achado metodológico: W4h define CO3 ("high-or-extreme ambos") como soma de 4
+medianas separadas (uma por célula high-high/high-ext/ext-high/ext-ext), não como
+mediana de um único flag somado — mediana não é aditiva (D80/D96/D97/D99). O
+script de ST2 reporta co_hi_ext como a quantidade corretamente definida (mediana
+de um único flag), documentando que NÃO é o mesmo número do CO3 do W4h; o check
+(c) valida CO3 usando a própria definição do W4h só como diagnóstico de paridade
+de dado, sem adotar a quantidade não-aditiva como saída.
+
+Checks antes de gravar, todos PASS: (a) paridade de capacidade na atribuição de
+estado, diff 0,00e+00; (b) soma por estado, por GCM, ANTES da mediana, bate com a
+soma nacional recomputada neste script, max diff 3,64e-12 MW; (c) paridade contra
+w4h_coexposure.csv já verificado (D97) — CO2 max diff 9,71e-17, CO3 (definição do
+W4h) max diff 7,11e-15.
+
+Tabela: w3h_state_coexposure.csv, 2.952 linhas. Headline (extreme x extreme,
+operating, ssp585, block12, mediana sobre 5 GCMs): PA lidera em hydro (22,35 GW),
+seguido de RO (7,61), PR (7,00), BA (5,62), MG (5,42). Leitura preliminar, não é
+afirmação do artigo ainda. Script: scripts/w3h_state_coexposure.py.
+
+## D101 — fechado, C63
+
+W3f-7: contraste planejada-operante sob TX40 e sob peso por nº de usinas.
+Reaproveita heat_fuel.planned_vs_operating() (já em produção para TX35/peso-GW em
+w3_heat_fuel.py) e as curvas já validadas em w3_heat_sensitivity.csv (choices
+metric_TX40, weight_plant_count, de w3_sensitivity.py). Nenhum cálculo novo de
+hazard ou peso; só estende o contraste planejada-operante a essas duas variantes.
+
+Checks antes de gravar, todos PASS: (1) reconstrução da referência (TX35, peso GW)
+bate com w3_heat_planned_vs_operating.csv, 432/432 linhas, max diff 7,11e-15; (2)
+curvas TX40 batem com w3_heat_sensitivity.csv (choice metric_TX40), 648/648, max
+diff 7,11e-15; (3) curvas por nº de plantas batem com w3_heat_sensitivity.csv
+(choice weight_plant_count), 648/648, max diff 1,42e-14; (4) paridade de
+contagem de linhas entre as 3 variantes, 432 cada.
+
+Achado (all_thermal, planned_all - operating, corte 30 d, mediana sobre 5 GCMs):
+referência (TX35/GW) ssp126/370/585: -7,16 / -0,12 / +1,35 pp, n_planned_ge
+1/2/5 de 5 — sem diferença consistente (leitura já registrada em M9).
+TX40: -0,00 / -0,01 / -2,13 pp, n_planned_ge 3/2/1 de 5 — mesma leitura,
+diferenças ainda menores (TX40 é raro).
+PESO POR Nº DE PLANTAS: +12,07 / +7,98 / +9,87 pp, n_planned_ge 4/4/5 de 5 —
+MUDA A LEITURA QUALITATIVA: sob este peso a frota planejada mostra exposição
+consistentemente maior que a operante nos 3 cenários, contradizendo "nenhuma
+diferença consistente" quando o peso é por GW. A conclusão do M9 é condicional
+ao peso por capacidade, não generaliza ao peso por nº de plantas. Candidato a
+nota explícita no texto do artigo, não só tabela de sensibilidade (W5).
+
+Tabela: w3f7_planned_vs_operating.csv, 1.296 linhas (3 choices x 432). Script:
+scripts/w3f7_sensitivity.py.
