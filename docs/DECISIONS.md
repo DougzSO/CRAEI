@@ -1543,3 +1543,54 @@ Design intent: w5_sensitivity.csv grows incrementally as W4c-f close, one
 family per closed item, same script pattern (read source CSV, fixed
 filter, drift-guard assert, append rows). Not a new analysis -- pure
 aggregation of already-closed, already-checked results.
+## D108 - O18 scope: SPI-12 full recalibration plus thermal extension, definition fixed before running (closed, C70)
+
+Author decision on O18 (SPI vs SPEI confound), after full code-level
+investigation with no execution: option (a-complete). Two actions, not
+one. (1) Recalibrate SPI-12 to use fit_baseline_single (the same
+per-series scheme SPEI-12 already uses, D54), replacing the current
+per-calendar-month fit_baseline that SPI-12 alone still uses in
+08_spei.py (confound #1). (2) Extend SPI-12 to thermal cells for the
+first time; today process_thermal_cell hard-sets SPI_12 = pd.NA, so
+655/3,857 non-null SPI_12 ids are 100% hydro, 0% thermal (confound #2,
+compounded by c23d_checks.py applying the SPEI bootstrap null to SPI
+without recalibration, a confound the script's own comment already
+flags).
+
+Risk of regression: none identified. consolidate.py uses only SPEI_12
+(explicit comment: "SPI-12 is COMANDO 22's sensitivity test"); no closed
+result depends on SPI_12. water_balance_cell.parquet (468 MB, P/PET/D by
+cell/model/scenario/period/month) already carries P for thermal cells,
+so the thermal extension needs no new raw data, only processing.
+compute_drought_hazards's _f_d_r_d(spei_scale, plant_key, spei_col,
+hazard_name, threshold) already takes spei_col as a parameter, so adding
+SPI_12 is reuse, not a rewrite.
+
+Four-step execution plan, approved, not started as of this record:
+(1) 08_spei.py: fit_kind "calendar" -> "single" for SPI-12 in
+process_hydro; add SPI-12 computation to process_thermal_cell using d["P"]
+(mirrors process_hydro's pattern). Validity criterion fixed before
+running: SPEI_12 and SPEI_3 output must be identical (diff <1e-12) to the
+current spei.parquet at matching keys (id, model, scenario, period,
+month); write to a temp file, diff, only replace spei.parquet after zero
+diff outside float tolerance.
+(2) consolidate.py: extend compute_drought_hazards with two more
+_f_d_r_d calls (hydro + thermal) using spei_col="SPI_12",
+hazard_name="f_d_spi12". Validity criterion: existing f_d_spei12 values
+must not change; only new f_d_spi12 rows may appear.
+(3) New scripts/w4c_null_spi.py, structural clone of w4_null.py
+(SPEI_12 -> SPI_12), dropping the REF_BB12/REF_WN checks (they do not
+apply to a newly-computed null). Validity criterion: pool size 1,110
+(hydro BRA), no external reference value (first time this rate is
+computed), check is structural integrity only (pool size, no NaN).
+Output: w4c_null_rates_spi.csv.
+(4) New scripts/w4c_spi_vs_spei.py, structural clone of
+w4b_excess_over_null.py. Scope: hydro (same filter as W4b: operating,
+itaipu=b, block12) AND thermal (thermal_water_dependent), full scope per
+author approval, not hydro-only. Validity criterion: report excess_pp for
+SPI alongside SPEI (D102 for hydro) without assuming direction. Output:
+w4c_spi_vs_spei.csv, new family/families in w5_sensitivity.csv.
+
+Status at time of writing: plan approved, zero code changes made, zero
+scripts run. This record exists so the scope decision is not lost before
+implementation begins in a later session.
