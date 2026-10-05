@@ -689,7 +689,7 @@ Impact, vulnerability, generation loss, probabilities, CIs from the GCM range, h
 | PL1 | Planned - operating, level lens, paired | W3f-7 table (planned) | TO BE DEFINED |
 | VA2 | Extended validation | W8 table (planned) | TO BE DEFINED |
 | PE1 | SPI vs SPEI | W4c table (planned) | TO BE DEFINED |
-| TH1 | Relative heat threshold | planned table | TO BE DEFINED |
+| TH1 | Relative heat threshold | th1_relative_threshold.csv, th1_thresholds.csv, th1_baseline_exceedance.csv | DONE (C60, D98): cell/GCM scope, BRA, 967 cells, 5 GCMs. Checks PASS: (a) baseline exceedance fraction 0.0500-0.0501; (b) tx35 reproduced 580,200/580,200 rows, max diff 0.0. Baseline mean identical across GCMs (18.27 days/yr, mechanical). Future diverges more under relative cut: ssp585 91.68-189.50 days/yr across GCMs (median threshold 34.4-34.7degC, min ~25degC in some cells). Not GW-weighted, not comparable to H1 headline. Fleet aggregation open (O39). |
 
 ### Open items after v2.2
 O16, O18, O19, O20, O21, O30, O31, O33; O35 (design of the null: independent series in R_D, estimation error, calibrated baseline; to be recorded). Pending without id: n_boot = 5,000 for W3d and W3f-3; reconcile the Pearson III share (26% in the old text vs 423/1,110 here); reconcile "6 plants" (D80) with the 5 plants found.
