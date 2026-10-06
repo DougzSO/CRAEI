@@ -2195,3 +2195,10 @@ comparison + W5 entry) remain open, per the D108 plan.
 - Status: Group C (integrate w4b_agreement.csv, w4c_spi_vs_spei.csv and
   w4f_threshold_grid.csv into w5_sensitivity.csv) DONE. 36 rows, 12
   families, w5_sensitivity.csv (outside git). Commit C82.
+
+## D129 - METHODS_SPEC Appendix C fix: Fig2/Fig4/Table2 false blocks + pyproject deps (C83)
+- Corrected three stale "blocked" entries in METHODS_SPEC.md Appendix C (Fig 1-6 / Table 1-3 status table), left over from before the data existed: (1) Fig 2 - w3g_heat_cell_class.csv (1,404 rows, 468 cells x 3 scenarios) ready since C46/daee8c2 (W3g), not "Blocked on W3g map table"; commit id corrected from a wrong citation "C55" to the confirmed "C46" via git log --diff-filter=A. (2) Fig 4 - O18 closed (D123/D125); no dedicated per-cell drought table exists, but w4g_fd_unit_values.csv (13,815 rows, per plant) supports a point map via join with plants.parquet on plant_uid (lat/lon); not "Blocked on W4g map table, O18". (3) Table 2 - O19 closed in D113; w4d_leave_one_out.csv (15x7) confirmed content-identical (same columns, equal after sort) to c23d_7_leave_one_out.csv (audit/c23/c23d), a copy under outputs/tables; not "Blocked on O19".
+- No other Appendix C line or Section 9 (DR6-PE1, already fixed in D127) was touched. BOM/CRLF/LF confirmed unchanged before/after (no BOM, 0 CRLF, 1,097 LF-only, identical to HEAD).
+- pyproject.toml: added matplotlib, cartopy, geopandas to dependencies (already installed in the environment but previously undeclared; reproducibility risk flagged for the figures phase, Group E/H).
+- A new pytest warning (UserWarning, geographic CRS in distance calc, test_hazards_aqueduct.py) was confirmed pre-existing via git stash (same warning present without this session's changes) - not a regression. pytest: 225 passed, 1 skipped, 4 warnings, unchanged.
+- No figure was generated in this step - mapping/text-fix only, preparing for subsequent plotting scripts.
