@@ -1825,3 +1825,40 @@ comparison + W5 entry) remain open, per the D108 plan.
   this is expected).
 - Status: O21 CLOSED (method decided under D119, now implemented and
   validated).
+
+## D121 (2026-10-06): O38 config linking completed (3 of 4 modules)
+
+- config/params.yaml: added heat_days_cuts ([10,30,60]), n_boot (2000), seed
+  (86), and heat_sensitivity_grid ([10,20,30,40,50,60,80,100], new field,
+  sourced from O17/O27's wider TX35 delta sensitivity grid). The
+  model_agreement_fraction entry keeps its original value/tier/source and
+  gains a superseded-by-O31/D114 note in its source field (k-of-5 sign
+  agreement is the practice in use, not a 0.8 fraction); not read by any
+  current code path.
+- Three modules now import craei.config and read their constant from
+  params.yaml instead of a hardcoded literal: null_emulator.THRESHOLD
+  (from drought_spei_threshold), heat_levels.LEVEL_CUTS (from
+  heat_days_cuts), heat_fuel.THRESHOLDS (from heat_sensitivity_grid).
+  Each change verified individually (anchor count == 1 before edit, full
+  test suite rerun after each edit, 225 passed / 1 skipped maintained
+  throughout).
+- drought_levels.RD_EDGES intentionally NOT linked to craei.config: its
+  three values (1.5, 2.0, 3.0) only exist in params.yaml split across
+  drought_class_rd_ratio's value (2) and alternatives ([1.5, 3]), which
+  encode a different semantic (a primary value plus sensitivity
+  alternatives) than "ordered classification edges"; reconstructing one
+  from the other was judged a fragile conflation the YAML schema was not
+  designed to express. Author concurred. This is a documented, conscious
+  exception, not an incomplete edit.
+- Incident during this work: an earlier attempt to annotate
+  model_agreement_fraction introduced a duplicate key via a heredoc that
+  did not match the file's real indentation; corrected and reconfirmed
+  (occurrences == 1) before any further edit, per the project's
+  YAML-duplicate-key rule. Separately, the heat_days_cuts/n_boot/seed
+  block added earlier had been written with LF line endings while the
+  rest of the file was CRLF; detected by byte-level EOL audit against
+  git HEAD (which is pure LF) and corrected by normalizing the whole
+  file back to LF, its original convention.
+- Status: O38 CLOSED. Config scope (parts 1+2) complete for 3 of 4
+  target modules; drought_levels.py left unlinked by documented decision
+  above, not a false-done.

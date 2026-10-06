@@ -13,8 +13,9 @@ import numpy as np
 from scipy.stats import norm
 
 from craei.hazards.spei import DIST_BY_NAME, fit_spei_distribution
+from craei.config import load_params
 
-THRESHOLD = -1.5
+THRESHOLD = load_params()["drought_spei_threshold"]["value"]
 WINDOW = 12
 N_BASE_BLOCKS = 31
 N_FUT_BLOCKS = 30

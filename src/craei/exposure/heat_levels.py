@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 
 from craei.inventory.fleet import apply_foreign_share
+from craei.config import load_params
 
-LEVEL_CUTS = (10.0, 30.0, 60.0)
+LEVEL_CUTS = tuple(float(x) for x in load_params()["heat_days_cuts"]["value"])
 LEVEL_LABELS = ("low", "medium", "high", "extreme")
 DELTA_CUTS = (10.0, 20.0, 30.0)
 DELTA_LABELS = ("d_lt10", "d10_20", "d20_30", "d_ge30")

@@ -8,9 +8,10 @@ between GCMs is reported next to the median (D85).
 from __future__ import annotations
 
 import pandas as pd
+from craei.config import load_params
 
 THERMAL_FUELS = ("gas", "oil", "coal", "nuclear", "bioenergy", "multi_fuel")
-THRESHOLDS = (10, 20, 30, 40, 50, 60, 80, 100)
+THRESHOLDS = tuple(int(x) for x in load_params()["heat_sensitivity_grid"]["value"])
 POOLED_PLANNED = "planned_all"
 PLANNED_FLEETS = (POOLED_PLANNED, "planned_adv", "planned_early")
 KEY = ["group", "fleet", "scenario", "threshold"]
