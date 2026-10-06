@@ -9,6 +9,9 @@ description = "Climate Risk Assessment for Energy Infrastructure"
 requires-python = ">=3.11"
 dependencies = [
     "pyyaml",
+    "matplotlib",
+    "cartopy",
+    "geopandas",
 ]
 
 [tool.setuptools.packages.find]

@@ -899,13 +899,13 @@ the only one in current use.
 | Item | Content | Source table(s) | Status / blocking |
 |---|---|---|---|
 | Fig 1 | Fleet and capacity by technology and fuel | plant_units | DONE (data), figure PLANNED |
-| Fig 2 | Heat level class map (cells, plants sized by GW) | w3g_heat_cell_class | Blocked on W3g map table |
+| Fig 2 | Heat level class map (cells, plants sized by GW) | w3g_heat_cell_class.csv | DONE (data, C46/W3g, 1,404 rows, cell_lat/cell_lon/class_median); figure PLANNED |
 | Fig 3 | Threshold curves, operating vs planned | w3_curves_plot | DONE (data), figure PLANNED |
-| Fig 4 | Drought level class map, SPEI and SPI | w4g tables | Blocked on W4g map table, O18 |
+| Fig 4 | Drought level class map, SPEI and SPI | w4g_fd_unit_values.csv joined to plants.parquet (plant_uid, lat/lon) | DONE (data, O18 closed D123/D125); no dedicated per-cell table exists, point map via join; figure PLANNED |
 | Fig 5 | Excess over the null by scenario, GCM range | w4b_excess_over_null.csv | DONE (C64, D102); figure PLANNED |
 | Fig 6 | Co-located exposure map and cross-tab | w4h_coexposure.csv, w3h_state_coexposure.csv | DONE (data, C59/C63); figure PLANNED |
 | Table 1 | GW exposed by technology, fuel, scenario | w3_table1 | DONE (data), table PLANNED |
-| Table 2 | Leave-one-out, 5 largest hydro | W4d table (planned) | Blocked on O19 |
+| Table 2 | Leave-one-out, 5 largest hydro | w4d_leave_one_out.csv (copy of c23d_7_leave_one_out.csv, audit/c23/c23d) | DONE (D113, O19 closed); table PLANNED |
 | Table 3 | 4x4 cross-tab, GW | w4h_coexposure.csv | DONE (C59, D97) |
 | Supplementary | ONS validation | validation.csv | DONE (D73) |
 
