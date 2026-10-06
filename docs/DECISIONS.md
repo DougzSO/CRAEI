@@ -1862,3 +1862,29 @@ comparison + W5 entry) remain open, per the D108 plan.
 - Status: O38 CLOSED. Config scope (parts 1+2) complete for 3 of 4
   target modules; drought_levels.py left unlinked by documented decision
   above, not a false-done.
+
+## D122 (2026-10-06): O39 closed (TH1 fleet/GW aggregation)
+
+- Scope decided (open item from D91/O39): level classes only (same
+  LEVEL_CUTS as TX35 W3g, 10/30/60 days/yr via config/params.yaml),
+  not the shift/level-x-delta/cell-map extras that were W3g-specific.
+  Design approved by the author in chat before running.
+- Implementation: scripts/th1_fleet_gw.py, reusing the W3g level-class
+  machinery (craei.exposure.heat_levels) unchanged: same Itaipu a/b
+  treatment via with_itaipu_versions, same capacity universe, same
+  GW-by-GCM aggregation with median/min/max over 5 GCMs. Only the
+  hazard input differs: th1_relative_threshold.csv (D91, baseline-
+  percentile day count) instead of TX35's indices_daily.parquet.
+- Checks fixed before running (same capacity universe as W3g, so same
+  reference totals): (1) class-sum gap per group/fleet/itaipu/
+  scenario, tolerance 1e-6 MW; (2) future/operating/ssp370 totals
+  match D82 (all_thermal 47.67 GW, hydro itaipu-a 109.67 GW, hydro
+  itaipu-b 102.67 GW), tolerance 0.01 GW. Both PASS: max class-sum
+  gap 7.28e-12 MW; totals 47.6682 / 109.667 / 102.667 GW.
+- Result (future, operating, ssp370, median over 5 GCMs): extreme
+  class (>=60 days/yr under the relative threshold) covers 62.6% of
+  thermal GW and 86.2% of hydro GW (itaipu-b) -- higher than under
+  the fixed 35 degC cut, consistent with D98's finding that the
+  relative threshold is more permissive than 35 degC in many cells.
+- Output: th1_fleet_gw.csv (560 rows), outputs/tables, not in git.
+- Status: O39 CLOSED.
