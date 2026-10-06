@@ -102,6 +102,7 @@ def _spei_rows(id_val, scale, model="gfdl-esm4"):
                     "month": month,
                     "SPEI_12": spei_val,
                     "SPEI_3": spei_val,
+                    "SPI_12": spei_val,
                     "distribution": "loglogistic",
                 }
             )
@@ -145,8 +146,8 @@ def test_compute_drought_hazards_ror_gets_spei3_reservoir_does_not(
     )
     res_hazards = set(drought[drought["plant_uid"] == "hydro_res"]["hazard"])
     ror_hazards = set(drought[drought["plant_uid"] == "hydro_ror"]["hazard"])
-    assert res_hazards == {"f_d_spei12"}
-    assert ror_hazards == {"f_d_spei12", "f_d_spei3"}
+    assert res_hazards == {"f_d_spei12", "f_d_spi12"}
+    assert ror_hazards == {"f_d_spei12", "f_d_spei3", "f_d_spi12"}
     assert isinstance(r_d_zeros, pd.DataFrame)
     # baseline SPEI = -0.5 (> -1.5 threshold): F_D baseline = 0% -> R_D must be NaN, not a division.
     row = drought[(drought["plant_uid"] == "hydro_res") & (drought["hazard"] == "f_d_spei12")].iloc[0]

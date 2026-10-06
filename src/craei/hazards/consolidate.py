@@ -181,6 +181,10 @@ def compute_drought_hazards(
     results.append(r)
     zero_reports.append(z)
 
+    r_spi, z_spi = _f_d_r_d(catchment_spei, hydro_key, "SPI_12", "f_d_spi12", threshold)
+    results.append(r_spi)
+    zero_reports.append(z_spi)
+
     ror_key = hydro_key[hydro_key["bucket"] == _BUCKET_HYDRO_ROR]
     r3, z3 = _f_d_r_d(catchment_spei, ror_key, "SPEI_3", "f_d_spei3", threshold)
     results.append(r3)
@@ -197,6 +201,10 @@ def compute_drought_hazards(
     rt, zt = _f_d_r_d(cell_spei, tw_key, "SPEI_12", "f_d_spei12", threshold)
     results.append(rt)
     zero_reports.append(zt)
+
+    rt_spi, zt_spi = _f_d_r_d(cell_spei, tw_key, "SPI_12", "f_d_spi12", threshold)
+    results.append(rt_spi)
+    zero_reports.append(zt_spi)
 
     return pd.concat(results, ignore_index=True), pd.concat(zero_reports, ignore_index=True)
 

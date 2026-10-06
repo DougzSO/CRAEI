@@ -1652,3 +1652,56 @@ never committed.
 Status: O18 Step 1 DONE. Steps 2-4 (consolidate.py extension, SPI null
 model, final SPI-vs-SPEI comparison + W5 entry) remain open, per the
 D108 plan.
+
+## D110 (2026-10-06): O18 Step 2 complete - consolidate.py extended with
+f_d_spi12 (craei/hazards/consolidate.py)
+
+Context: D108/D109 closed O18 Step 1 (SPI-12 recalibration + thermal
+extension in scripts/08_spei.py). This record closes Step 2.
+
+Changes made (src/craei/hazards/consolidate.py, compute_drought_hazards):
+1. Added a call to _f_d_r_d(catchment_spei, hydro_key, "SPI_12",
+   "f_d_spi12", threshold) immediately after the existing hydro
+   f_d_spei12 block.
+2. Added a call to _f_d_r_d(cell_spei, tw_key, "SPI_12", "f_d_spi12",
+   threshold) immediately after the existing thermal f_d_spei12 block.
+No other code in consolidate.py was touched.
+
+Companion change (tests/test_hazards_consolidate.py), required because
+the synthetic fixture predates Step 1:
+- _spei_rows: added "SPI_12": spei_val (same synthetic value already used
+  for SPEI_12/SPEI_3) to the row dict; without this, compute_drought_hazards
+  raised KeyError: 'SPI_12' against the fixture-built DataFrame.
+- test_compute_drought_hazards_ror_gets_spei3_reservoir_does_not: updated
+  the two exhaustive hazard-set assertions to include "f_d_spi12"
+  (res_hazards and ror_hazards). This is expected test maintenance, not a
+  bug fix: the test enumerates the full hazard set by design, so it must
+  be updated whenever a new hazard category is added.
+Full test suite: 225 passed, 1 skipped (floor unchanged).
+
+Validation against real data (temp-file protocol, never overwrote
+production directly):
+- Backed up data/processed/plant_hazards.parquet byte-for-byte to
+  plant_hazards.parquet.bak_preO18 (3,977,370 bytes) before any run.
+- Re-ran scripts/09_consolidate.py's Step 7 (consolidate.plant_hazards)
+  with the patched code against the real plants.parquet, indices_daily.
+  parquet, spei.parquet (already promoted post-Step-1) and plant_cell.
+  parquet; wrote to a temp file, not production.
+- Compared old (backup) vs new output on keys [plant_uid, model,
+  scenario, bucket, hazard]:
+  - f_d_spei12 (29,025 rows) and f_d_spei3 (3,915 rows): zero regression
+    on baseline_value, future_value, delta, ratio -- nan_mismatch=0,
+    max_abs_diff=0.0 on all four columns, both hazards. Criterion fixed
+    in D108 ("f_d_spei12 must not change") is met.
+  - f_d_spi12 (new): 29,025 rows, 100% non-null on baseline_value and
+    future_value, distributed across the three expected buckets
+    (hydro_reservoir 5,910; hydro_run_of_river 3,915; thermal_water_
+    dependent 19,200). No anomaly.
+- Promoted the new output to production (plant_hazards.parquet,
+  4,085,372 bytes); temp test file and the validation script
+  (scripts/_tmp_o18_step2_validate.py) deleted after validation.
+- Full test suite re-run after promotion: 225 passed, 1 skipped
+  (unchanged).
+
+Status: O18 Step 2 DONE. Steps 3-4 (own SPI null model, final SPI-vs-SPEI
+comparison + W5 entry) remain open, per the D108 plan.
