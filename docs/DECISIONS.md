@@ -1943,3 +1943,56 @@ comparison + W5 entry) remain open, per the D108 plan.
 - Status: O18 CLOSED (4 of 4 steps done: D109 Step 1, D110 Step 2,
   this record Steps 3-4). Integration of w4c_spi_vs_spei.csv as a new
   w5_sensitivity.csv family remains a separate, later action.
+
+## D124 (2026-10-07): O18/W4f threshold-grid sensitivity (SPEI x R_D)
+
+- Context: W4b's production point (SPEI<=-1.5, R_D>=2) is a single cell of a
+  3x3 grid of SPEI severity thresholds ({-1.0,-1.5,-2.0}) x R_D cuts
+  ({1.5,2.0,3.0}); the null side of that grid already existed in
+  w4_null_rates.csv (scripts/w4_null.py) but the observed side had never
+  been generalized beyond the production point. W4f (METHODS_SPEC Sec.1.x)
+  asked for this grid explicitly.
+
+- Decision: scripts/w4f_threshold_grid.py recomputes the observed drought
+  hazard table at each SPEI threshold by calling
+  craei.hazards.consolidate.compute_drought_hazards() directly (threshold is
+  a plain function argument there, independent of params.yaml's fixed
+  production value) and cross-joins against w4_null_rates.csv's matching
+  (spei_threshold, rd_threshold) cell. plant_hazards.parquet and params.yaml
+  are untouched.
+
+- Scope: HYDRO ONLY (hydro_reservoir + hydro_run_of_river, SPEI_12).
+  w4_null_rates.csv's null distribution was built from the 1,110-series
+  hydro BRA pool only (Sec.7/METHODS_SPEC Sec.6); there is no null reference
+  for thermal_water_dependent at any threshold. This is a documented scope
+  limit, not an oversight -- extending the null to thermal is future work,
+  not done here.
+
+- Checks fixed before running, all abort-on-fail, all PASS:
+  - Check 0 (identity): recomputed f_d_spei12 at threshold=-1.5 reproduces
+    plant_hazards.parquet's existing rows exactly (max abs diff = 0.00e+00
+    over baseline_value/future_value/ratio, hydro buckets).
+  - Check A (regression): at (spei=-1.5, R_D>=2.0, operating, itaipu=b,
+    block_bootstrap_12), excess_pp_median = 40.749/43.204/53.945 for
+    ssp126/370/585, matching D102's headline (40.75/43.20/53.94 pp) within
+    0.01 pp.
+  - Check B (capacity): hydro operating capacity 109.667/102.667 GW
+    (itaipu=a/b), matching D82 within 0.001 GW.
+
+- Output: w4f_threshold_grid.csv, 972 rows (3 spei_threshold x 3
+  rd_threshold x fleet x itaipu x scenario x null_type).
+
+- Finding (robustness, not a contradiction of D102): the production cell
+  (-1.5/2.0) and most of the grid show clearly positive excess over the
+  null. At the loosest SPEI threshold crossed with the strictest R_D cut
+  (spei=-1.0, R_D>=3.0), excess_pp_median turns slightly negative for
+  ssp126 (-0.51 pp) and ssp370 (-1.16 pp) -- i.e. observed exposure at that
+  specific combination is indistinguishable from or below the null. Reported
+  as a robustness/limitation point for the article, not a reversal of the
+  headline result (Check A confirms the headline reproduces exactly at the
+  production cell).
+
+- Status: O18/W4f threshold-grid sensitivity DONE. Integration of
+  w4f_threshold_grid.csv as a new w5_sensitivity.csv family remains a
+  separate, later action (same deferral already applied to
+  w4c_spi_vs_spei.csv under D123 and to w4b_agreement.csv under D120).
