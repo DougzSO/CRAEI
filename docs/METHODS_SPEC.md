@@ -110,7 +110,7 @@ bias-adjusted by the ISIMIP team against W5E5 v2.0 with ISIMIP3BASD v2.5.0
 (Lange, 2019; Frieler et al., 2021). The claim that the five models span the
 CMIP6 range of climate sensitivity, and that UKESM1-0-LL sits at the high
 end, is NOT independently verified in this project and should be cited or
-removed before submission (O33).
+removed before submission (O33). [NEED REFERENCE]
 
 All indices are computed in two stages: baseline statistics (thresholds,
 distribution parameters) are estimated once on 1985-2014 of a given model
@@ -281,7 +281,9 @@ sum_{i in (c,t)} Cap_i,
 reported both as a share and in GW. Ensemble results are the median across
 the 5 models with the full model range; model agreement tables report k =
 1, 3 and 5 of 5 GCMs exposed, replacing an earlier ">=4 of 5 same sign" rule
-that was never implemented (final definition pending, O31).
+that was never implemented (O31, closed: agreement means k of 5
+GCMs sharing the same sign in a contrast, e.g. future vs.
+baseline).
 
 Two lenses are reported for every hazard, and neither replaces the other:
 - Change lens (headline): dTX35 >= 30 d/yr; R_D >= 2. Question: how much
@@ -522,8 +524,9 @@ the article text, not only archived as a technical note.
 ## 9. Aggregation, uncertainty and sensitivity
 
 GW is computed per class per GCM, then summarised as min/median/max and k
-of 5 (k = 1, 3, 5 of 5 GCMs exposed; the final definition of "agreement" is
-open, O31). Ranges are structural (the spread across 5 deterministic GCM
+of 5 (k = 1, 3, 5 of 5 GCMs exposed; "agreement" is defined as k
+of 5 GCMs sharing the same sign in a contrast; closed under
+O31). Ranges are structural (the spread across 5 deterministic GCM
 runs), not confidence intervals (D85). Cell bootstrap (currently n_boot =
 2,000; a final run at n_boot = 5,000 for the W3d and W3f-3 tables is
 pending) reports percentiles only when a bucket has >= 10 cells and zero
@@ -963,22 +966,22 @@ estimated or interpolated. Table names marked (planned) do not exist yet.
 
 ## Appendix E. Open items
 
-O16 (harvest window, no source); O18 (SPI x SPEI scheme, W4c); O19
-(leave-one-out of Axis 2, W4d); O20 (water x air thermal in Fig 5); O21
-(hydro cell bootstrap); O25 (bootstrap percentile gating, >=10 cells and
-zero NaN fraction); O27 (TX40 grid, closed); O28 (heat level cuts, closed
-C45: 10/30/60); O29 (drought null pool, closed for thermal: cell-scale
-pool adopted); O30 (temporal coincidence of heat and drought, not
-verified); O31 (agreement/k-of-5 definition, final form open); O32
-(cooling bound in co-exposure, not yet computed for the drought/co-exposure
-analyses, only for H3); O33 (GCM climate-sensitivity ranking claim, not
-verified, cite or remove before submission); O35 (full design
-documentation of the null: independent-series sampling in R_D, estimation
-error, calibrated-baseline effect); O38 (1 of 6 items remaining: constants
-still outside config/params.yaml; full script audit not done); O39 (TH1
-fleet/GW-level aggregation, not yet done); O40 (mojibake, closed by
-mitigation, D103 -- root cause not identified, do not reuse this id for a
-new claim).
+O16 (harvest window, no source); O18 (SPI x SPEI scheme, W4c); O19 (leave-one-
+out of Axis 2, W4d); O20 (water x air thermal in Fig 5); O21 (hydro cell
+bootstrap); O25 (bootstrap percentile gating, >=10 cells and zero NaN
+fraction); O27 (TX40 grid, closed); O28 (heat level cuts, closed C45:
+10/30/60); O29 (drought null pool, closed for thermal: cell-scale pool
+adopted); O30 (temporal coincidence of heat and drought, not verified); O31
+(agreement/k-of-5 definition, closed: same sign across k of 5 GCMs in a
+contrast); O32 (cooling bound in co-exposure, not yet computed for the
+drought/co-exposure analyses, only for H3); O33 (GCM climate-sensitivity
+ranking claim, not verified; [NEED REFERENCE], cite or remove before
+submission); O35 (full design documentation of the null: independent-series
+sampling in R_D, estimation error, calibrated-baseline effect); O38 (1 of 6
+items remaining: constants still outside config/params.yaml; full script audit
+not done); O39 (TH1 fleet/GW-level aggregation, not yet done); O40 (mojibake,
+closed by mitigation, D103 -- root cause not identified, do not reuse this id
+for a new claim).
 
 Pending without an id: re-run W3d and W3f-3 bootstraps at n_boot = 5,000
 (currently 2,000); reconcile the Pearson III baseline share quoted as ~26%
@@ -987,7 +990,7 @@ hydro-BRA pool (Section 4.2) -- likely different sample scopes, not
 re-checked; reconcile an earlier note of "6 plants" misclassified by the
 hazard-table bucket field against the 5 plants actually found (Section 2).
 
-Author-level open items, outside the pipeline: O20, O31, O33 pending
+Author-level open items, outside the pipeline: O20, O33 pending
 assignment; India and Portugal analysis deferred until Brazil closes;
 external copy/backup of the raw data directory deferred.
 ---

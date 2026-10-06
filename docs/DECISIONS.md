@@ -1705,3 +1705,97 @@ production directly):
 
 Status: O18 Step 2 DONE. Steps 3-4 (own SPI null model, final SPI-vs-SPEI
 comparison + W5 entry) remain open, per the D108 plan.
+
+## D111 (2026-10-06): O22 closed (Itaipu asset-level treatment)
+
+- Author decision: keep asset-level treatment, whole plant (14,000 MW, GEM),
+  as already implemented. No pipeline behaviour changes. This is the existing
+  default (D82's Itaipu a/b split is a separate, already-closed sensitivity
+  axis, not affected by this decision).
+
+## D112 (2026-10-06): O23 closed (drought null, option c)
+
+- Author decision: option (c), block-length sensitivity, already in progress
+  via W4b-block (D102: block12/36/60 tested, non-monotonic result). No new
+  action required; this formalises a closure that was already in effect before
+  this session.
+
+## D113 (2026-10-06): O19 closed (leave-one-out metric)
+
+- Metric: delta_pp = share_loo_pct - share_full_pct (GW share with R_D>=2 in
+  the bucket, excluding the named plant), as already computed in
+  scripts/c23d_checks.py line 483 and written to
+  data/outputs/audit/c23/c23d/c23d_7_leave_one_out.csv. This is a raw-share
+  delta, not an excess-over-null quantity (different from the D102 headline);
+  both are valid lenses and are not merged.
+
+- Binational treatment: Itaipu appears in this table as a whole asset (14,000
+  MW), consistent with O22 (D111). No further action needed for O19's
+  binational sub-question.
+
+- Encoding: raw bytes of c23d_7_leave_one_out.csv confirmed correct UTF-8
+  (Tucurui, Santo Antonio with proper accents) via ReadAllBytes +
+  UTF8.GetString. The mojibake seen in console echo (TucuruA-with-tilde, etc.)
+  was a terminal display artifact only, not a file corruption. No file edit
+  made or needed.
+
+## D114 (2026-10-06): O31 closed (model agreement definition)
+
+- Author decision: agreement means k of 5 GCMs sharing the same sign in a
+  contrast (e.g. future vs. baseline), for k = 1, 3, 5 of 5. This was already
+  the de facto behaviour of the pipeline; docs/METHODS_SPEC.md updated in 4
+  places (lines ~113, ~284, ~525-526, Appendix E ~972) to state closure
+  instead of "pending", and removed from the list of author-level open items
+  pending assignment (~990). No code change required.
+
+## D115 (2026-10-06): O33 marker added, kept open
+
+- Author decision: do not remove the unverified climate-sensitivity claim
+  (GCMs span the CMIP6 range, UKESM1-0-LL at the high end); instead mark it
+  for a citation. docs/METHODS_SPEC.md line ~113 amended with a trailing [NEED
+  REFERENCE] marker, text otherwise unchanged. O33 remains open in Appendix E
+  until a real reference is supplied.
+
+## D116 (2026-10-06): O34 closed (SPEI-12 window dispersion)
+
+- Author decision: accept current state (median 361 months baseline, 349
+  future, vs. 360 used by the null) without further investigation. No
+  technical change.
+
+## D117 (2026-10-06): O24 executed (validation CSVs moved)
+
+- ren_iph_reference_apa.csv (4,757 bytes) and ren_iph_reference_annual.csv
+  (553 bytes) moved from data/validation/ (untracked, outside git per
+  .gitignore) to docs/refs/ (tracked). scripts/22_validate_ren_iph.py updated:
+  APA_REF_PATH and ERSE_REF_PATH now point to docs/refs/. Script re-run
+  successfully against the new paths; report regenerated with no change in
+  validation conclusions. Full test suite: 225 passed, 1 skipped (unchanged).
+
+## D118 (2026-10-06): consolidate.py mojibake: false alarm
+
+- Investigated non-ASCII characters in src/craei/hazards/consolidate.py
+  flagged as possible mojibake. All instances are valid UTF-8: U+00A7 (section
+  sign, Sec. 1.4/3/H4 references) and U+0394 (Greek capital delta, in a
+  docstring for TX35/TX40 deltas). The garbled console display seen in an
+  earlier session (section-sign-mojibake, delta-mojibake) was a terminal
+  rendering artifact, not a file corruption, consistent with the pattern
+  already seen for O41 and for the O19 CSV (D113). No new O-id opened; no edit
+  made.
+
+## D119 (2026-10-06): O21 method chosen (k-of-5 sign agreement)
+
+- Option (b) adopted: k-of-5 GCM sign agreement on excess-over-null
+  (pct_gw_rd_ge2 minus the null rate, per GCM), reusing the same agreement
+  definition just closed under O31 (D114). This is computable with existing
+  infrastructure: scripts/w4b_excess_over_null.py already computes
+  pct_gw_rd_ge2 per GCM before collapsing to min/median/max; a k-of-5 sign-
+  agreement column is a direct extension, not a new pipeline.
+
+- Option (c), cluster bootstrap by basin, was considered more statistically
+  rigorous but requires new implementation with higher risk of delay; not
+  adopted given the robustness-vs-publishability tradeoff the author set for
+  this item.
+
+- Status: method decided, extension of w4b_excess_over_null.py not yet
+  implemented. Implementation is a separate pending action, not a blocker for
+  closing the choice itself.

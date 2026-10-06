@@ -1,0 +1,6 @@
+year,iph_annual_reference,source,source_note
+2015,0.74,ERSE/REN,"Serie anual de IPH reproduzida em documentacao oficial da ERSE, atribuida a REN. Quantidade (metodo de agregacao mensal->anual, provavelmente ponderado por produtibilidade/producao de referencia, nao publicado por este endpoint) nao reproduzida por media simples das 12 series mensais -- ver reports/ren_iph_validation.md Secao 5."
+2016,1.33,ERSE/REN,"Ver nota em 2015."
+2017,0.47,ERSE/REN,"Ver nota em 2015."
+2018,1.05,ERSE/REN,"Ver nota em 2015."
+2019,0.81,ERSE/REN,"Ver nota em 2015."

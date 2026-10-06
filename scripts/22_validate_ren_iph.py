@@ -18,8 +18,8 @@ from craei.validation import ren_iph
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REPORT_PATH = REPO_ROOT / "reports" / "ren_iph_validation.md"
-APA_REF_PATH = REPO_ROOT / "data" / "validation" / "ren_iph_reference_apa.csv"
-ERSE_REF_PATH = REPO_ROOT / "data" / "validation" / "ren_iph_reference_annual.csv"
+APA_REF_PATH = REPO_ROOT / "docs" / "refs" / "ren_iph_reference_apa.csv"
+ERSE_REF_PATH = REPO_ROOT / "docs" / "refs" / "ren_iph_reference_annual.csv"
 
 
 def _fmt_table(df: pd.DataFrame) -> str:

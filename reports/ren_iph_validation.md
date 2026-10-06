@@ -1,5 +1,5 @@
 # REN IPH Validation Report (COMANDO 22-23)
-Generated: 2026-09-30T13:44:37.365275+00:00
+Generated: 2026-10-06T12:03:40.787017+00:00
 ## 1. Data source and endpoint
 REN DataHub, monthly "Indice de produtibilidade hidroelectrica" (IPH). Real endpoint discovered by browser instrumentation (COMANDO 21): `POST https://datahub.ren.pt/service/Electricity/RegimeYearly/2900?culture=pt-PT&dayToSearchString={ticks}&isShare=true` (host `datahub.ren.pt`, not the documented `servicebus.ren.pt/datahubapi`).
 ## 2. Acquisition method
