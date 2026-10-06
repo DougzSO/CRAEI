@@ -906,7 +906,7 @@ the only one in current use.
 | Fig 6 | Co-located exposure map and cross-tab | w4h_coexposure.csv, w3h_state_coexposure.csv | DONE (data, C59/C63); figure PLANNED |
 | Table 1 | GW exposed by technology, fuel, scenario | w3_table1 | DONE (data), table PLANNED |
 | Table 2 | Leave-one-out, 5 largest hydro | w4d_leave_one_out.csv (copy of c23d_7_leave_one_out.csv, audit/c23/c23d) | DONE (D113, O19 closed); table PLANNED |
-| Table 3 | 4x4 cross-tab, GW | w4h_coexposure.csv | DONE (C59, D97) |
+| Table 3 | 4x4 cross-tab, GW | w4h_coexposure.csv, table3_coexposure.csv | DONE (C59/D97 data; scope fixed C85/D130): group in {hydro, thermal_water_dependent} x fleet in {operating, planned_all} x itaipu=b (hydro) / na (thermal) x scenario in {ssp126,370,585}, canonical pool/null/cutset (catchment|cell, block12, p50_p90_p99), full 4x4 heat x drought cross-tab, 192 rows. gw_total vs sum of 16 cell gw_median gap reported per combo (median not additive, D80/D96/D97/D99/D106), range 0.39-23.53 GW. Regression check vs D102 (hydro operating itaipu b = 102.667 GW) PASS. Table formatting for publication pending (Group E/H). |
 | Supplementary | ONS validation | validation.csv | DONE (D73) |
 
 ---
