@@ -1799,3 +1799,29 @@ comparison + W5 entry) remain open, per the D108 plan.
 - Status: method decided, extension of w4b_excess_over_null.py not yet
   implemented. Implementation is a separate pending action, not a blocker for
   closing the choice itself.
+
+## D120 (2026-10-06): O21 implemented (k-of-5 sign agreement)
+
+- Extended scripts/w4b_excess_over_null.py with agreement_table(): for each
+  (fleet, itaipu, scenario, null_type), counts how many of 5 GCMs show
+  positive excess (observed pct_gw_rd_ge2 minus the null rate), reusing
+  the agreement convention closed under O31 (same sign across k of 5
+  GCMs). Writes a new output, w4b_agreement.csv (108 rows), alongside the
+  existing w4b_excess_over_null.csv (not a replacement).
+- Validation (temp-file protocol): backed up w4b_excess_over_null.csv
+  byte-for-byte before re-running the script; compared old vs. new on
+  keys [fleet, itaipu, scenario, null_type] after sort_values, all 11
+  numeric columns max abs diff 0.00e+00 (zero regression on the existing
+  production table). Hydro operating, Itaipu b, block12 headline
+  reproduced exactly: +40.75 / +43.20 / +53.94 pp (SSP126/370/585),
+  matching D102.
+- New table result: n_gcm is always 5 (108/108 rows); k_agreement
+  (GCMs with positive sign) is 5 of 5 in 67 rows and 4 of 5 in 41 rows,
+  concentrated in weaker contrasts (ar1, block36, block60, mixed
+  scenarios); never below 4 of 5 in any row. No row shows disagreement
+  on direction.
+- Full test suite: 225 passed, 1 skipped (unchanged floor; no existing
+  test covers w4b_excess_over_null.py, a script not a src module, so
+  this is expected).
+- Status: O21 CLOSED (method decided under D119, now implemented and
+  validated).

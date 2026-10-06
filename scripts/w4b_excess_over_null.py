@@ -101,6 +101,30 @@ def excess_table(obs_summary, null_tbl):
     return m.rename(columns={"pct_rd_ge": "null_pct_rd_ge2"})
 
 
+def agreement_table(obs, null_tbl):
+    """Per-GCM excess sign agreement (O21/D119): for each (fleet, itaipu,
+    scenario, null_type), count how many of n_gcm models show excess_pp > 0
+    (observed pct_gw_rd_ge2 minus the null rate), using the same k-of-5
+    agreement convention closed under O31 (same sign across k of 5 GCMs).
+    Does not replace excess_table; reported alongside it as an extra lens.
+    """
+    keys = ["fleet", "itaipu", "scenario", "model"]
+    obs_m = obs[keys + ["pct_gw_rd_ge2"]].assign(key=1)
+    null_m = null_tbl.assign(key=1)
+    m = obs_m.merge(null_m, on="key").drop(columns="key")
+    m["excess_pp"] = m["pct_gw_rd_ge2"] - m["pct_rd_ge"]
+    m["sign_positive"] = m["excess_pp"] > 0
+
+    g = m.groupby(["fleet", "itaipu", "scenario", "null_type"])
+    out = g.agg(
+        n_gcm=("model", "nunique"),
+        n_gcm_positive_sign=("sign_positive", "sum"),
+        excess_pp_median=("excess_pp", "median"),
+    ).reset_index()
+    out["k_agreement"] = out["n_gcm_positive_sign"]
+    return out
+
+
 def main():
     paths = load_paths()
     proc, tab = Path(paths["processed_dir"]), Path(paths["outputs_tables_dir"])
@@ -146,6 +170,10 @@ def main():
     out = excess_table(summ, null_tbl)
     out.to_csv(tab / "w4b_excess_over_null.csv", index=False)
     print(f"written: w4b_excess_over_null.csv ({len(out)} rows)")
+
+    agree = agreement_table(obs, null_tbl)
+    agree.to_csv(tab / "w4b_agreement.csv", index=False)
+    print(f"written: w4b_agreement.csv ({len(agree)} rows)")
 
     pd.set_option("display.width", 220)
     head = out[(out["fleet"] == "operating") & (out["itaipu"] == "b")
