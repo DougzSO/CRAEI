@@ -1594,3 +1594,61 @@ w4c_spi_vs_spei.csv, new family/families in w5_sensitivity.csv.
 Status at time of writing: plan approved, zero code changes made, zero
 scripts run. This record exists so the scope decision is not lost before
 implementation begins in a later session.
+
+## D109 (2026-10-05): O18 Step 1 complete - SPI-12 recalibration + thermal
+extension (scripts/08_spei.py)
+
+Context: D108 approved a 4-step plan to fix the SPI vs SPEI confound and
+extend SPI-12 to thermal cells. This record closes Step 1.
+
+Changes made (scripts/08_spei.py):
+1. process_hydro: SPI-12 fit_kind changed from "calendar" to "single"
+   (same calibration scheme already used for SPEI-12, per D54), removing
+   the confound identified in D108 item 1.
+2. process_thermal_cell: added SPI-12 computation using water_balance_cell
+   P column (12-month accumulation, gamma_fit_fn, fit_kind="single"),
+   mirroring the existing hydro block. Previously this function forced
+   SPI_12 = pd.NA unconditionally for all thermal cells.
+
+Validation performed (temp-file protocol per project rules, never
+overwrote spei.parquet directly):
+- Ran full pipeline (scripts/08_spei_O18_test.py, a copy with output
+  redirected to spei_O18_test.parquet) end to end. Completed successfully
+  after pausing unrelated concurrent processes that were starving system
+  memory during the final to_parquet write (pyarrow.set_cpu_count(1) also
+  applied to reduce peak memory at write time; this does not affect
+  computed values, only write-time threading).
+- Compared spei_O18_test.parquet against production spei.parquet on keys
+  [id, model, scenario, period, month]: SPEI_12 and SPEI_3 are byte-exact
+  (max abs diff = 0.0, zero NaN-pattern mismatches) across all
+  28,001,820 rows. Zero regression on the two columns consolidate.py
+  depends on today.
+- SPI_12 changed as expected:
+  - Hydro (catchment scale): non-null count unchanged (4,611,200 rows,
+    all pre-existing hydro ids). Values changed due to the calendar-
+    to-single refit: max abs diff 1.267, mean abs diff (non-NaN pairs)
+    0.045. Magnitude judged plausible for a change in calibration
+    scheme; no anomaly flagged.
+  - Thermal (cell scale): non-null count went from 0 to 22,542,080 rows
+    (new coverage, as intended by D108 item 2).
+  - Total SPI_12 non-null: 4,611,200 -> 27,153,280 out of 28,001,820.
+    Remaining NaN count (848,540) matches the pre-existing structural
+    NaN count already reported for SPEI_12 combined (same 12-month
+    accumulation window produces the same warm-up NaN pattern
+    regardless of which variable is accumulated). Consistent, not a
+    bug.
+- Full test suite re-run after promoting the new file to production:
+  225 passed, 1 skipped (unchanged floor; no existing test reads
+  SPI_12 from a thermal cell today, so this is expected, not a
+  validation of thermal SPI_12 correctness beyond the structural
+  checks above).
+
+File promotion: spei.parquet backed up byte-for-byte
+(spei.parquet.bak_preO18, same directory, untracked, outside git repo)
+before overwrite. Test artifacts (08_spei_O18_test.py,
+spei_O18_test.parquet, run logs) deleted after validation; they were
+never committed.
+
+Status: O18 Step 1 DONE. Steps 2-4 (consolidate.py extension, SPI null
+model, final SPI-vs-SPEI comparison + W5 entry) remain open, per the
+D108 plan.

@@ -82,7 +82,7 @@ def process_hydro(water_balance_catchment: pd.DataFrame, run_of_river_ids: set[s
         value_col="P_for_acc",
     )
     spi12, _ = _fit_and_standardize(
-        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, "SPI_12", clip_bound, fit_kind="calendar"
+        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, "SPI_12", clip_bound, fit_kind="single"
     )
 
     ror = water_balance_catchment.loc[water_balance_catchment["id"].isin(run_of_river_ids), d_cols]
@@ -114,8 +114,21 @@ def process_thermal_cell(water_balance_cell: pd.DataFrame, clip_bound: float):
     spei12, fail12 = _fit_and_standardize(
         acc12, "D_acc12", group_cols, spei.fit_spei_distribution, "SPEI_12", clip_bound, fit_kind="single"
     )
-    out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12", "distribution"]].copy()
-    out["SPI_12"] = pd.NA
+
+    acc_p12 = spei.accumulate(
+        d.rename(columns={"P": "P_for_acc"})[[*group_cols, "scenario", "period", "month", "P_for_acc"]],
+        window=12,
+        value_col="P_for_acc",
+    )
+    spi12, _ = _fit_and_standardize(
+        acc_p12, "P_for_acc_acc12", group_cols, spei.gamma_fit_fn, "SPI_12", clip_bound, fit_kind="single"
+    )
+
+    out = spei12[["id", "model", "scenario", "period", "month", "SPEI_12", "distribution"]].merge(
+        spi12[["id", "model", "scenario", "period", "month", "SPI_12"]],
+        on=["id", "model", "scenario", "period", "month"],
+        how="left",
+    )
     out["SPEI_3"] = pd.NA
     out["scale"] = "cell"
     return out, fail12
