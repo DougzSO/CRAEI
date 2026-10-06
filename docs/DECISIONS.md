@@ -2058,3 +2058,79 @@ comparison + W5 entry) remain open, per the D108 plan.
   already-closed artifact, not touched here. Integration into
   w5_sensitivity.csv remains a separate, later action (same deferral as
   D120/D123/D124).
+
+## D126 (2026-10-07): W3d/W3f-3 re-run with n_boot=5000 (Group F)
+
+- Scope: scripts/w3_bootstrap.py (W3d, cell-level and paired fleet-share
+  bootstrap) and scripts/w3_scenario.py (W3f-3, scenario contrast,
+  consumes W3d's shares). Only change: module constant N_BOOT raised from
+  2,000 to 5,000 in both files. SEED=86 and THRESHOLDS=(20,30,40) unchanged.
+  No other code touched; git diff confirmed exactly one line changed per
+  file.
+
+- Checks, all PASS:
+  w3_bootstrap.py: consistency shares 243/243 rows, max |diff| 2.84e-14
+  against W3a; consistency paired 162/162 rows, max |diff| 4.26e-14,
+  n_planned_ge equal: True.
+  w3_scenario.py: check per-GCM diff vs W3a curves 1215/1215 rows, max
+  7.11e-14; check draws vs W3d shares 243/243 rows, max 1.42e-14, NaN
+  pattern equal: True.
+
+- Output (outside git, data dir): w3_heat_bootstrap_shares.csv,
+  w3_heat_scenario_contrast.csv, w3_heat_scenario_by_gcm.csv (regenerated
+  with n_boot=5,000).
+
+- Pre-existing, not introduced by this re-run: nuclear fleet has n_cells=1
+  (single cell) -> nan_frac=NaN by construction (division by zero on a
+  singleton); multi_fuel has nan_frac=0.35 from a small cell count.
+  Expected behavior for small fleets, already covered by the O25
+  MIN_SITES/descriptive-label rule.
+
+- pytest: 225 passed, 1 skipped, 4 warnings -- unchanged from before this
+  change (the 4 warnings are pre-existing RuntimeWarnings in
+  test_validation_ren_iph.py from a degenerate covariance slice, unrelated
+  to this work).
+
+- Status: Group F (re-run W3d/W3f-3 at n_boot=5,000, respecting the 6.2 GB
+  RAM constraint) DONE. Commit C80 (3eefa3c).
+
+## D127 (2026-10-07): METHODS_SPEC.md textual update (Group D: DR6, DR7, DR8, PE1, new W4f row)
+
+- Scope: docs/METHODS_SPEC.md rows for DR6, DR7, DR8 and PE1, previously
+  "TO BE DEFINED" / "(planned)", updated to reference the actual CSVs and
+  decisions that closed them; one new row (W4f) inserted after DR8 for the
+  threshold-grid sensitivity table that had no row yet.
+
+- DR6 and PE1 (identical scope, SPI vs SPEI) now reference
+  w4c_spi_vs_spei.csv (C77/C79, D123/D125): hydro (pool 1,110 series,
+  catchment) vs thermal_water_dependent (pool 341 cells / 1,705 series,
+  cell-scale); documents the v1 merge bug (joined on hazard only) and its
+  v2 fix (join on group+hazard); records the retraction of the invalid
+  "thermal/ssp126 -3.72 pp" figure; and gives the corrected production
+  figures (thermal/SPEI +20.63/+28.50/+48.06 pp, thermal/SPI
+  -1.08/+5.44/+27.50 pp, ssp126/370/585).
+
+- DR7 now references c23d_7_leave_one_out.csv (D113, O19 closed): 5 largest
+  hydro plants x 3 SSPs, 15 rows, delta_pp column.
+
+- DR8 now references w4b_excess_over_null.csv and w4b_agreement.csv (C74,
+  D120, O21): 108 rows, 5/5 GCM agreement in 67 rows, 4/5 in 41, never
+  below 4/5 in that cut.
+
+- New W4f row references w4f_threshold_grid.csv (C78, D124): hydro-only
+  SPEI threshold x R_D cut grid, 972 rows; records the identity check at
+  -1.5 (max|diff|=0) and the D102 regression check (PASS, tol 0.01); flags
+  the single negative-excess corner (SPEI=-1.0, R_D>=3) as a robustness
+  point, not a reversal.
+
+- Method: surgical replace-in-place on 4 unique anchor strings (count=1
+  each, verified before editing) plus one insertion after the edited DR8
+  line. git diff confirmed exactly 4 lines changed + 1 line inserted, with
+  zero drift elsewhere (CO1, CO2, CO3, SE1, DR1-DR5, NU1-NU4, TH1 and all
+  other rows untouched). File preserved with no BOM and 0 CRLF (LF-only
+  throughout METHODS_SPEC.md, confirmed before and after: 1,096 -> 1,097
+  lines).
+
+- Status: Group D (textual revision of DR6/DR7/DR8/PE1/W4f in
+  METHODS_SPEC.md) DONE. No new scripts or CSVs created by this decision;
+  purely referential/textual. Commit C81.
