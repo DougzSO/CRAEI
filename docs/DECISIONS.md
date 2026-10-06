@@ -2134,3 +2134,64 @@ comparison + W5 entry) remain open, per the D108 plan.
 - Status: Group D (textual revision of DR6/DR7/DR8/PE1/W4f in
   METHODS_SPEC.md) DONE. No new scripts or CSVs created by this decision;
   purely referential/textual. Commit C81.
+
+## D128 (2026-10-07): W5 sensitivity table extended to 12 families (Group C)
+
+- Scope: scripts/w5_sensitivity.py extended from the original 4 families
+  (D107/C69, 12 rows) to 12 families (36 rows), by integrating
+  w4c_spi_vs_spei.csv (D125), w4f_threshold_grid.csv (D124) and
+  w4b_agreement.csv (D120) as new sources. Original 4 families (W3f7_weight,
+  W3f7_metric, W4b_block_12_36, W4b_block_36_60) left untouched in logic;
+  a promotion-safety check (first 12 rows of new output vs a pre-change
+  backup of the CSV) confirms byte-equivalent reproduction, max numeric
+  diff 0.00e+00.
+
+- New families 5-6, W4c_index_hydro and W4c_index_thermal_water_dependent:
+  choice_headline=spei, choice_alternative=spi, metric=excess_pp_median,
+  filter fleet=operating, null_type=block_bootstrap_12 (production),
+  itaipu=b for hydro / na for thermal. Values: hydro SPEI->SPI
+  40.75->17.40 / 43.20->3.03 / 53.94->38.60 pp (ssp126/370/585), all
+  smaller_magnitude_same_sign. Thermal SPEI->SPI 20.63->-1.08 /
+  28.50->5.44 / 48.06->27.50 pp: ssp126 is a clean sign flip
+  (sign_flip_smaller_magnitude), ssp370/585 smaller_magnitude_same_sign.
+  Per-row flag used for the thermal family (precedent: W3f7_metric, D107),
+  uniform flag for hydro (direction and magnitude ordering consistent
+  across all 3 scenarios).
+
+- New families 7-10, W4f_spei_threshold_-1.0_-1.5, _-1.5_-2.0,
+  W4f_rd_threshold_1.5_2.0, _2.0_3.0: one-at-a-time threshold moves
+  around the production cell (spei=-1.5, rd=2.0), same spirit as
+  W4b_block_12_36/_36_60. Filter fleet=operating, itaipu=b,
+  null_type=block_bootstrap_12; metric=excess_pp_median. Finding: the
+  R_D-cut families are monotonic and consistently signed across all 3
+  scenarios (flags larger_magnitude_same_sign, smaller_magnitude_same_
+  sign); the SPEI-threshold families are NOT -- direction of the delta
+  flips between ssp126/370 and ssp585 in both threshold pairs, requiring
+  per-row flags (stricter_threshold_increases_excess /
+  _decreases_excess, two new flag values, purely descriptive of delta
+  sign, not a significance claim).
+
+- New families 11-12, W4b_agreement_block_12_36 and _36_60: metric=
+  k_agreement (count of GCMs agreeing in sign, 0-5), delta_unit="k_of_5"
+  -- a deliberate, documented break from the "pp" convention used
+  elsewhere, since this metric is a count, not a percentage. Filter
+  fleet=operating, itaipu=b. Reuses the same null_type pairs as
+  W4b_block_12_36/_36_60 for structural consistency (not cherry-picked
+  post-hoc from the full null_type range). Finding: agreement drops from
+  5/5 to 4/5 only for ssp370 in the 12->36 transition; all other cells
+  unchanged, including the entire 36->60 transition.
+
+- Technical note: the promotion-safety check initially produced a false
+  positive ("text columns drifted") caused by pandas' default NA-value
+  list treating the literal string "NA" (used for sign_changed in the
+  W4b block families, pre-existing since D107) as a real missing value on
+  re-read. Fixed with na_filter=False when reading the backup file for
+  comparison. Not a data integrity issue; confirmed the in-memory and
+  on-disk values were always correct, only the re-read comparison method
+  was wrong.
+
+- pytest: 225 passed, 1 skipped, 4 warnings -- unchanged.
+
+- Status: Group C (integrate w4b_agreement.csv, w4c_spi_vs_spei.csv and
+  w4f_threshold_grid.csv into w5_sensitivity.csv) DONE. 36 rows, 12
+  families, w5_sensitivity.csv (outside git). Commit C82.
