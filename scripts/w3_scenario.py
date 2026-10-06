@@ -11,7 +11,7 @@ from craei.exposure import heat_fuel as hf
 from craei.exposure import heat_scenario as hs
 
 THRESHOLDS = (20, 30, 40)
-N_BOOT = 2000
+N_BOOT = 5000
 SEED = 86
 SHOW = ["group", "fleet", "pair", "obs_median_diff", "obs_min_diff", "obs_max_diff",
         "n_gcm_pos", "boot_p025_pp", "boot_p975_pp", "prob_diff_gt0", "loo_min",

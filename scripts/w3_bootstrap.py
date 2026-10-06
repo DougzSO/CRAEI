@@ -13,7 +13,7 @@ from craei.exposure import heat_fuel as hf
 sys.stdout.reconfigure(encoding="utf-8")
 
 THRESHOLDS = (20, 30, 40)
-N_BOOT = 2000
+N_BOOT = 5000
 SEED = 86
 LOG: list[str] = []
 
