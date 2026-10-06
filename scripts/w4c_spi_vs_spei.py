@@ -1,23 +1,27 @@
 ﻿"""W4c Step 4: SPI-12 vs SPEI-12 excess over null, hydro + thermal (O18/D108 item 4).
 
-Structural clone of scripts/w4b_excess_over_null.py, generalized along two new
-dimensions: group (hydro, thermal_water_dependent) and hazard (spei: f_d_spei12
-with scripts/w4_null.py's w4_null_rates.csv; spi: f_d_spi12 with Step 3's
-w4c_null_rates_spi.csv). drought_levels.unit_drought_frame is called once per
-(group, hazard) pair -- it raises on duplicate (plant_uid, model, scenario)
-keys, so SPEI and SPI rows for the same units cannot be joined in one call.
+v2 (O43/D125 fix): the original version (C77) merged observed rates against
+the null table keyed only on `hazard`, which silently applied the HYDRO null
+(catchment, 1,110-series pool) to thermal_water_dependent rows too, since
+no thermal null existed yet. This version adds a `group` column to the null
+table and merges on (group, hazard), using the new cell-scale thermal null
+(w4c_null_rates_thermal.csv, 341-cell pool) for thermal rows. Hydro rows are
+unaffected (they always matched the hydro null; merging on group+hazard
+instead of hazard alone is a no-op for them since null_tbl's hydro rows are
+still group="hydro" and nothing else claims that key).
 
-Checks fixed before running (author-approved, chat):
-  A (regression): the SPEI slice, hydro/operating/itaipu=b/block_bootstrap_12,
-     must reproduce D102's headline excess_pp_median exactly (SSP126/370/585:
-     40.75/43.20/53.94 pp), tolerance 0.01 pp -- guards against the hydro+
-     thermal generalization silently changing the already-closed hydro result.
-  B (hydro capacity): operating a=109.667 / b=102.667 GW (D82), tol 0.001 GW.
-  C (thermal capacity, new): thermal_water_dependent operating = 39.7699 GW
-     (confirmed this session via inventory.fleet.scope_units), tol 0.001 GW.
+Checks fixed before running (A/B/C unchanged from v1; D new):
+  A: SPEI hydro/operating/itaipu=b/block_bootstrap_12 excess_pp_median must
+     reproduce D102 (40.75/43.20/53.94 pp SSP126/370/585), tol 0.01 pp.
+  B: hydro capacity a=109.667/b=102.667 GW (D82), tol 0.001 GW.
+  C: thermal capacity 39.1015 GW (bucket-filtered, this session), tol 0.001 GW.
+  D (new, structural): every (group, hazard) combination present in `obs_all`
+     must find a matching null_type set in null_tbl (no silent NaN from a
+     missing group key) -- guards against reintroducing a silent mismatch.
 
-Output: w4c_spi_vs_spei.csv (long format, columns group/hazard added to the
-w4b schema). Integration into w5_sensitivity.csv is a separate, later step.
+Output (this run): _tmp_w4c_spi_vs_spei_v2.csv (temporary; promoted to
+w4c_spi_vs_spei.csv only after the hydro-subset identity check against the
+pre-O43 backup passes, done in a separate comparison script).
 """
 
 import sys
@@ -33,13 +37,6 @@ from craei.hazards import drought_levels as dl
 COUNTRY = "BRA"
 SPEI_TH, RD_TH = -1.5, 2.0
 REF_GW_A, REF_GW_B, REF_GW_THERMAL = 109.667, 102.667, 39.1015
-# REF_GW_THERMAL excludes 5 plants (0.6684 GW operating) whose plant-level
-# bucket in plant_hazards.parquet is thermal_air_only despite having at
-# least one thermal_water_dependent unit in plant_units.parquet -- a
-# pre-existing plant-vs-unit granularity mismatch in consolidate.py's
-# _assign_bucket (plant-level, dominant tech_class), not introduced here.
-# Confirmed this session (chat); excluded units never had f_d_spei12/
-# f_d_spi12 computed, so they cannot enter unit_drought_frame regardless.
 TOL_GW = 0.001
 MIN_SITES = 10
 
@@ -89,24 +86,39 @@ def summarize_gcm(obs, extra_keys):
     return s.join(extra).reset_index()
 
 
-def load_null_spei(tab):
-    n = pd.read_csv(tab / "w4_null_rates.csv")
-    n = n[(n["spei_threshold"] == SPEI_TH) & (n["rd_threshold"] == RD_TH)].copy()
+def _null_type(n):
     is_bb = n["null"] == "block_bootstrap"
+    n = n.copy()
     n["null_type"] = np.where(is_bb, "block_bootstrap_" + n["block_months"].astype(int).astype(str), n["null"])
-    return n[["null_type", "pct_rd_ge"]].drop_duplicates("null_type").assign(hazard="spei")
+    return n
 
 
-def load_null_spi(tab):
-    n = pd.read_csv(tab / "w4c_null_rates_spi.csv")
-    n = n[(n["spei_threshold"] == SPEI_TH) & (n["rd_threshold"] == RD_TH)].copy()
-    is_bb = n["null"] == "block_bootstrap"
-    n["null_type"] = np.where(is_bb, "block_bootstrap_" + n["block_months"].astype(int).astype(str), n["null"])
-    return n[["null_type", "pct_rd_ge"]].drop_duplicates("null_type").assign(hazard="spi")
+def load_null_hydro(tab):
+    spei = pd.read_csv(tab / "w4_null_rates.csv")
+    spei = spei[(spei["spei_threshold"] == SPEI_TH) & (spei["rd_threshold"] == RD_TH)]
+    spei = _null_type(spei)[["null_type", "pct_rd_ge"]].drop_duplicates("null_type").assign(hazard="spei")
+    spi = pd.read_csv(tab / "w4c_null_rates_spi.csv")
+    spi = spi[(spi["spei_threshold"] == SPEI_TH) & (spi["rd_threshold"] == RD_TH)]
+    spi = _null_type(spi)[["null_type", "pct_rd_ge"]].drop_duplicates("null_type").assign(hazard="spi")
+    return pd.concat([spei, spi], ignore_index=True).assign(group="hydro")
+
+
+def load_null_thermal(tab):
+    n = pd.read_csv(tab / "w4c_null_rates_thermal.csv")
+    n = n[(n["spei_threshold"] == SPEI_TH) & (n["rd_threshold"] == RD_TH)]
+    n = _null_type(n)
+    return n[["null_type", "pct_rd_ge", "hazard"]].drop_duplicates(["null_type", "hazard"]).assign(
+        group="thermal_water_dependent"
+    )
 
 
 def excess_table(summ, null_tbl):
-    m = summ.merge(null_tbl, on="hazard", how="left")
+    m = summ.merge(null_tbl, on=["group", "hazard"], how="left")
+    missing = m[m["pct_rd_ge"].isna()][["group", "hazard"]].drop_duplicates()
+    if len(missing):
+        print("CHECK D FAILED: (group, hazard) with no matching null row:")
+        print(missing.to_string(index=False))
+        sys.exit(1)
     m["excess_pp_min"] = m["pct_min"] - m["pct_rd_ge"]
     m["excess_pp_median"] = m["pct_median"] - m["pct_rd_ge"]
     m["excess_pp_max"] = m["pct_max"] - m["pct_rd_ge"]
@@ -130,12 +142,12 @@ def main():
     cap_hydro = uv[(uv["tech_class"] == "hydro") & (uv["fleet"] == "operating")]
     cap_hydro = cap_hydro.groupby("itaipu")["capacity_mw"].sum() / 1000.0
     gw_a, gw_b = float(cap_hydro.get("a", np.nan)), float(cap_hydro.get("b", np.nan))
-    valid_bucket_uids_chk = set(
+    valid_bucket_uids = set(
         pd.read_parquet(proc / "plant_hazards.parquet", columns=["plant_uid", "bucket"])
         .loc[lambda x: x["bucket"] == "thermal_water_dependent", "plant_uid"]
     )
     tw_filtered = uv[(uv["tech_class"] == "thermal_water_dependent")
-                     & uv["plant_uid"].isin(valid_bucket_uids_chk)]
+                     & uv["plant_uid"].isin(valid_bucket_uids)]
     cap_thermal = tw_filtered[tw_filtered["fleet"] == "operating"]["capacity_mw"].sum() / 1000.0
     ok_b = abs(gw_a - REF_GW_A) < TOL_GW and abs(gw_b - REF_GW_B) < TOL_GW
     ok_c = abs(cap_thermal - REF_GW_THERMAL) < TOL_GW
@@ -145,10 +157,6 @@ def main():
           f"-> {'PASS' if ok_c else 'FAIL'}")
 
     obs_parts = []
-    valid_bucket_uids = set(
-        pd.read_parquet(proc / "plant_hazards.parquet", columns=["plant_uid", "bucket"])
-        .loc[lambda x: x["bucket"] == "thermal_water_dependent", "plant_uid"]
-    )
     for group, spec in GROUPS.items():
         subset = uv[uv["tech_class"] == spec["tech_class"]]
         if group == "thermal_water_dependent":
@@ -166,7 +174,7 @@ def main():
     obs_all = pd.concat(obs_parts, ignore_index=True)
 
     summ = summarize_gcm(obs_all, ["group", "hazard"])
-    null_tbl = pd.concat([load_null_spei(tab), load_null_spi(tab)], ignore_index=True)
+    null_tbl = pd.concat([load_null_hydro(tab), load_null_thermal(tab)], ignore_index=True)
     out = excess_table(summ, null_tbl)
 
     chk = out[(out["group"] == "hydro") & (out["hazard"] == "spei")
@@ -182,19 +190,20 @@ def main():
         ok_a = ok_a and diff < TOL_EXCESS_PP
 
     if not (ok_a and ok_b and ok_c):
-        print("\nCHECK FAILED: w4c_spi_vs_spei.csv not written")
+        print("\nCHECK FAILED: output not written")
         sys.exit(1)
-    print("\nchecks A-C: PASS")
+    print("\nchecks A-D: PASS")
 
-    out.to_csv(tab / "w4c_spi_vs_spei.csv", index=False)
-    print(f"\nwritten: w4c_spi_vs_spei.csv ({len(out)} rows)")
+    tmp_path = tab / "_tmp_w4c_spi_vs_spei_v2.csv"
+    out.to_csv(tmp_path, index=False)
+    print(f"\nwritten (TEMP, not yet promoted): {tmp_path.name} ({len(out)} rows)")
 
     pd.set_option("display.width", 220)
     head = out[(out["fleet"] == "operating") & (out["itaipu"].isin(["b", "na"]))
                & (out["null_type"] == "block_bootstrap_12")]
     cols = ["group", "hazard", "scenario", "pct_min", "pct_median", "pct_max",
             "null_pct_rd_ge2", "excess_pp_median", "pct_undefined_mean", "n_plants", "label"]
-    print("\n=== operating, block12, SPEI vs SPI side by side ===")
+    print("\n=== operating, block12, SPEI vs SPI side by side (v2, corrected thermal null) ===")
     print(head[cols].sort_values(["group", "hazard", "scenario"]).round(2).to_string(index=False))
 
 

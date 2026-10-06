@@ -1996,3 +1996,65 @@ comparison + W5 entry) remain open, per the D108 plan.
   w4f_threshold_grid.csv as a new w5_sensitivity.csv family remains a
   separate, later action (same deferral already applied to
   w4c_spi_vs_spei.csv under D123 and to w4b_agreement.csv under D120).
+
+## D125 (2026-10-07): thermal null fix in w4c_spi_vs_spei.py (O18 follow-up)
+
+- Bug found: scripts/w4c_spi_vs_spei.py (C77/D123, v1) built its excess-over-
+  null table with `summ.merge(null_tbl, on="hazard", how="left")` -- keyed
+  only on `hazard`, not `(group, hazard)`. Since no thermal null existed at
+  the time, this silently applied the HYDRO null (catchment, 1,110-series
+  pool) to thermal_water_dependent rows too. The previously reported
+  thermal/SPEI excess figure (~-3.72 pp for ssp126) compared thermal
+  observed rates against the hydro null and is WITHDRAWN as stated; it was
+  never used in any committed artifact text beyond chat discussion.
+
+- Fix: scripts/w4c_null_thermal.py (new) builds a dedicated thermal null,
+  cell-scale, SPEI-12 and SPI-12, same block-bootstrap/white-noise/AR(1)
+  family and (-1.0,-1.5,-2.0) x (1.5,2.0,3.0) grid as w4_null.py/
+  w4c_null_spi.py. Population: 341 cells, 1,705 series (341 cells x 5
+  models), zero NaN. Output: w4c_null_rates_thermal.csv (108 rows).
+  scripts/w4c_spi_vs_spei.py (v2) now merges on (group, hazard), with a new
+  abort-on-fail Check D (every observed (group, hazard) combination must
+  find a matching null row). Checks A (D102 regression), B (hydro capacity
+  109.667/102.667 GW) and C (thermal capacity 39.1015 GW) unchanged, all
+  PASS. Promotion safety: the reprocessed CSV's hydro subset is byte-
+  identical to the pre-fix file (max abs diff 0.00e+00, 216 rows); only the
+  thermal subset (108 rows) changed. Pre-fix file kept as
+  w4c_spi_vs_spei.csv.bak_preO43 (outside git, data dir).
+
+- Deliberate population choice, NOT an inconsistency: this 341-cell/1,705-
+  series pool differs from O29's canonical thermal null pool (342 cells,
+  1,710 series, closed C45, scripts/archive/w4r_null_production.py), which
+  selects thermal_water_dependent plants directly from plant_units.tech_
+  class and feeds w4g_drought_level_classes.csv / the null_emulator family.
+  w4c_spi_vs_spei.py's observed side instead reads plant_hazards.parquet,
+  whose plant-level bucket assignment (consolidate.py::_assign_bucket)
+  already excludes 5 plants with a plant-vs-unit tech_class mismatch
+  (0.6684 GW, documented D123) -- the same root cause produces one fewer
+  cell here. Matching the null's population to the exact observed
+  population being tested (both sourced from plant_hazards.parquet's
+  bucket in this script) was judged more defensible than importing O29's
+  pool, which would compare against a population the observed side never
+  uses. Both pools are correct for their own consumer; neither supersedes
+  the other. O29 itself is unaffected and not reopened.
+
+- Corrected production-point figures (operating, block_bootstrap_12,
+  excess_pp_median = observed - null):
+  thermal/SPEI: ssp126 +20.63 pp, ssp370 +28.50 pp, ssp585 +48.06 pp.
+  thermal/SPI:  ssp126 -1.08 pp, ssp370 +5.44 pp, ssp585 +27.50 pp.
+  Thermal null production rate (block12): SPEI 17.74%, SPI 17.84% (close
+  to each other, unlike the hydro null where SPEI/SPI null rates diverge
+  more -- 18.88% vs 20.47%). Hydro figures unchanged from D123 (hydro/SPEI
+  block12 ssp126/370/585: +40.75/+43.20/+53.94 pp, reproducing D102).
+
+- Finding: thermal SPEI exposure is clearly positive and substantial once
+  compared against its own correct null, unlike the withdrawn figure above
+  suggested. Thermal SPI at ssp126 (-1.08 pp) is the one cell indistin-
+  guishable from the null, consistent with the broader finding (D123) that
+  SPI vs SPEI is not a neutral methodological choice.
+
+- Status: thermal null for the R_D-threshold table family (W4b/W4c schema)
+  DONE. O29's percentile-based thermal null (w4g/w4r family) is a separate,
+  already-closed artifact, not touched here. Integration into
+  w5_sensitivity.csv remains a separate, later action (same deferral as
+  D120/D123/D124).
