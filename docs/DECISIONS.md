@@ -1888,3 +1888,58 @@ comparison + W5 entry) remain open, per the D108 plan.
   relative threshold is more permissive than 35 degC in many cells.
 - Output: th1_fleet_gw.csv (560 rows), outputs/tables, not in git.
 - Status: O39 CLOSED.
+
+## D123 (2026-10-06): O18 closed (SPI-12 vs SPEI-12, Steps 3-4)
+
+- Step 3: scripts/w4c_null_spi.py, structural clone of scripts/w4_null.py
+  with SPEI_12 replaced by SPI_12 (null_model.build_series_pool's
+  value_col parameter, no change to null_model.py needed). No REF_BB12/
+  REF_WN reproduction check (first time this rate is computed under
+  SPI-12); validity is structural only, per D108: pool size == 1,110
+  (hydro BRA) and zero NaN in the pool. PASS: pool 1,110, 5 models, no
+  NaN. Output: w4c_null_rates_spi.csv (54 rows). Production point
+  (SPI<=-1.5, R_D>=2): block12 20.47%, white_noise 1.80%, ar1 27.33%
+  (informative only, same convention as w4_null.py).
+- Step 4: scripts/w4c_spi_vs_spei.py, structural clone of
+  scripts/w4b_excess_over_null.py, generalized to (group, hazard):
+  group in {hydro, thermal_water_dependent}, hazard in {spei, spi}
+  (f_d_spei12 vs f_d_spi12). drought_levels.unit_drought_frame called
+  once per (group, hazard) pair, since it raises on duplicate
+  (plant_uid, model, scenario) keys and cannot take mixed hazards in
+  one call.
+- Checks fixed before running (author-approved, chat): (A) regression
+  -- the SPEI slice, hydro/operating/itaipu=b/block_bootstrap_12, must
+  reproduce D102's headline excess_pp_median (40.75/43.20/53.94 pp,
+  SSP126/370/585) within 0.01 pp; (B) hydro operating capacity
+  a=109.667/b=102.667 GW (D82), tol 0.001 GW; (C) thermal capacity
+  matches the plant-filtered reference (see finding below), tol 0.001
+  GW. All three PASS (check A max diff 0.0047 pp).
+- Finding during Step 4 (plant-vs-unit bucket mismatch, pre-existing,
+  not introduced this session): 5 BRA plants (Guarani, Atlantico,
+  Termopecem, Azulao, Termo Norte power stations) have at least one
+  thermal_water_dependent unit in plant_units.parquet, but
+  consolidate.py's _assign_bucket operates at plant level (one
+  tech_class per plant, from plants.parquet) and classed all five as
+  thermal_air_only; f_d_spei12/f_d_spi12 were therefore never computed
+  for them (only TX35/TX40, attached regardless of bucket). Excluded
+  from Step 4's thermal_water_dependent scope (694 of 699 plants kept);
+  REF_GW_THERMAL adjusted from the naive unit-level sum (39.7699 GW) to
+  the plant-hazards-consistent value (39.1015 GW operating, 0.6684 GW
+  excluded). This is a plant-vs-unit granularity limitation in the
+  existing pipeline (consolidate.py), not a new bug; no change made to
+  consolidate.py or to any closed result that depends on its current
+  bucket assignment (W4b, W4h, W3g, etc. are at a different scope or
+  use plant-level bucket consistently already).
+- Result (operating, block12, median over 5 GCMs, excess over null):
+  SPEI vs SPI diverge substantially and are not interchangeable.
+  Hydro: SPEI 40.75/43.20/53.94 pp vs SPI 17.40/3.03/38.60 pp
+  (SSP126/370/585). Thermal_water_dependent: SPEI 19.48/27.35/46.91 pp
+  vs SPI -3.72/2.80/24.86 pp -- SPI/ssp126 falls BELOW the null
+  (negative excess). This confirms the SPI-vs-SPEI confound flagged in
+  D108 was real: the headline (D102, SPEI) does not reproduce under
+  SPI, and the choice of standardized index is not methodologically
+  neutral. Material for the article's robustness section.
+- Output: w4c_spi_vs_spei.csv (324 rows), outputs/tables, not in git.
+- Status: O18 CLOSED (4 of 4 steps done: D109 Step 1, D110 Step 2,
+  this record Steps 3-4). Integration of w4c_spi_vs_spei.csv as a new
+  w5_sensitivity.csv family remains a separate, later action.
