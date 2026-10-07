@@ -143,3 +143,4 @@
 - C90 (2026-10-07): Phase 2 A2, Table 2 leave-one-out corrected (D135). Metric note fixed (drought R_D >= 2.0, not TX35), Itaipu headline version b (7,000 MW),
   version a as sensitivity; new scripts/w4d_leave_one_out.py. Floor unchanged: 225 passed, 1 skipped.
 - C91 (2026-10-07): Phase 2 A5/O44, Fig 6 nuclear restored as real 0% bars, GW and n under fuel labels, gas note (D136). Floor unchanged: 225 passed, 1 skipped.
+- C92 (2026-10-07): Phase 2 A4, Table 3 main = mean across 5 GCMs with min-max (additive), median version kept as table3_median_reference (D137). New scripts/w5_table3_gcm_mean.py. Floor unchanged: 225 passed, 1 skipped.
