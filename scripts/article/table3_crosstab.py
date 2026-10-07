@@ -7,17 +7,16 @@ table3_coexposure_crosstab.py).
 """
 
 import pandas as pd
-from _common import SCEN_LABEL, hydro_context_note, out_dir, read_csv, write_csv, write_text
+from _common import SCEN_LABEL, out_dir, read_csv, write_csv, write_text
 from table3_coexposure_crosstab import canonical
 
 CLASSES = ["low", "medium", "high", "extreme"]
 FLEET = {"operating": "Operating", "planned_all": "Planned"}
 DESC = ("Rows = heat class, columns = drought class. Cell = mean % capacity across 5 GCMs "
         "(mean GW) [min-max across GCMs, GW].")
-NOTE = ("**Note:** Mean across 5 GCMs, unlike the headline results, which use the median. The 16 "
-        "means of each table sum exactly to the fleet total. Heat class = TX35 future; drought "
-        "class = F_D future against the block12 null (p50/p90/p99 cuts); both from the same GCM. "
-        "Source: table3_coexposure_gcm_mean.csv (D137).")
+NOTE = ("**Note:** Mean across 5 GCMs (the 16 cells add up to the fleet total), unlike the headline "
+        "medians. GCM heat x drought co-exposure is probably inflated relative to observations. See caption.")
+HYDRO_SHORT = "**Note (hydropower):** heat is regional climatic context, not a hydro hazard (H1). See caption."
 MAIN = [("hydro", "operating", "ssp585"), ("thermal_water_dependent", "operating", "ssp585")]
 SUPP = [(g, f, s) for g in ("hydro", "thermal_water_dependent")
         for f, s in [("operating", "ssp126"), ("operating", "ssp370"),
@@ -54,7 +53,7 @@ def section(t, combos, titles):
         last_hydro = g == "hydro" and (combos.index((g, f, s)) + 1 == len(combos)
                                        or combos[combos.index((g, f, s)) + 1][0] != "hydro")
         if last_hydro:
-            out.append("**Note (hydropower):** " + hydro_context_note()[0] + "\n")
+            out.append(HYDRO_SHORT + "\n")
     return "\n\n".join(out)
 
 

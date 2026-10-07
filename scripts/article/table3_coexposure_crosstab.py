@@ -7,7 +7,7 @@ column): table3_median_reference.{csv,md}, from table3_coexposure.csv.
 Canonical pool/null/cutset: hydro catchment, thermal cell, block12, p50_p90_p99.
 """
 
-from _common import SCEN_LABEL, hydro_context_note, md_table, out_dir, read_csv, write_csv, write_text
+from _common import SCEN_LABEL, md_table, out_dir, read_csv, write_csv, write_text
 
 GROUP = {"hydro": "Hydro", "thermal_water_dependent": "Thermal (water-dependent)"}
 FLEET = {"operating": "Operating", "planned_all": "Planned (all stages)"}
@@ -16,18 +16,13 @@ SHARED = (
     "Itaipu reported at Brazil's 7,000 MW share for hydro (itaipu=b); not applicable for "
     "thermal. Canonical pool/null/cutset: catchment|cell, block12, p50_p90_p99. ")
 NOTE_MEAN = (
-    "**Note:** 192 rows = 12 group/fleet/scenario combinations x 16 heat x drought cells (4x4). "
-    "Values are the MEAN across 5 GCMs (GW and % of the group's fleet capacity), with the "
-    "minimum and maximum across GCMs in GW; this differs from the headline results, which use "
-    "the median. The 16 means of each combination sum exactly to the fleet total, so the table "
-    "is additive. " + SHARED + "Source: table3_coexposure_gcm_mean.csv (D137). Baseline "
-    "1985-2014, future 2041-2070.")
+    "**Note:** 192 rows = 12 group/fleet/scenario combinations x 16 heat x drought cells. Values are the "
+    "MEAN across 5 GCMs (GW and % of the fleet), with min and max in GW; the 16 means of each combination "
+    "add up to the fleet total. " + SHARED + "GCM heat x drought co-exposure is probably inflated relative "
+    "to observations. See caption.")
 NOTE_MEDIAN = (
-    "**Note:** REFERENCE with the per-cell MEDIAN across 5 GCMs (C85/D130), the version before D137. "
-    "192 rows = 12 group/fleet/scenario combinations x 16 cells. " + SHARED + "'Gap (GW)' = "
-    "gw_total minus the sum of the 16 per-cell gw_median values for that combination (the median "
-    "is not additive across cells, D80/D96/D97/D99/D106; expected, not an error). Source: "
-    "table3_coexposure.csv. Baseline 1985-2014, future 2041-2070.")
+    "**Note:** REFERENCE with the per-cell MEDIAN across 5 GCMs (C85/D130), not additive: 'Gap (GW)' = "
+    "gw_total minus the sum of the 16 per-cell medians. " + SHARED + "See caption.")
 
 
 def canonical(t):
@@ -64,7 +59,7 @@ def main():
     write_pair(df, {"GW Mean": "{:.3f}", "% Mean": "{:.2f}", "GW Min": "{:.3f}",
                     "GW Max": "{:.3f}"}, "table3_coexposure_crosstab",
                "# Table 3 -- Heat x Drought Co-Exposure Cross-Tab (4x4), GW and %, Mean Across "
-               "5 GCMs", NOTE_MEAN + "\n\n**Note (hydropower):** " + hydro_context_note()[0])
+               "5 GCMs", NOTE_MEAN + "\n\n**Note (hydropower):** heat is regional climatic context, not a hydro hazard (H1). See caption.")
 
     med = labelled(canonical(read_csv("table3_coexposure.csv")))
     dm = med.assign(**{"GW Median": med["gw_median"].round(3),

@@ -10,18 +10,10 @@ from _common import SCEN_LABEL, md_table, out_dir, read_csv, write_csv, write_te
 BUCKET = {"hydro_reservoir": "Hydro (reservoir)", "hydro_run_of_river": "Hydro (run-of-river)"}
 COLS = ["Bucket", "Scenario", "Plant Removed", "Capacity (MW)", "Share Full Fleet (%)",
         "Share Leave-One-Out (%)", "Delta (pp)"]
-NOTE = (
-    "**Note:** Share = percentage of the bucket's operating Brazilian hydro capacity with "
-    "drought exposure R_D >= 2.0 (future-to-baseline frequency ratio of SPEI-12 <= -1.5), "
-    "capacity-weighted, median across 5 GCMs. Raw capacity share, not excess over the null; not "
-    "comparable with D102. Delta (pp) = "
-    "share with the plant removed minus share with the full fleet. {itaipu} Source: "
-    "w4d_leave_one_out.csv (D113, D135, O19 closed). Baseline 1985-2014, future 2041-2070.")
-ITAIPU_NOTE = {
-    "b": "Itaipu at the Brazilian share (7,000 MW, version b, D102); the whole binational asset "
-         "(14,000 MW, version a) is in table2_sensitivity_itaipu_a.",
-    "a": "Sensitivity: Itaipu as the whole binational asset (14,000 MW, version a); the headline "
-         "table uses the Brazilian share (7,000 MW, version b)."}
+NOTE = ("**Note:** Raw share of operating hydro capacity with R_D >= 2.0 (not excess over the null), "
+        "median across 5 GCMs. {itaipu} See caption.")
+ITAIPU_NOTE = {"b": "Itaipu at the Brazilian share (7,000 MW).",
+               "a": "Itaipu as the whole binational asset (14,000 MW)."}
 TITLE = {"b": "# Table 2 -- Leave-One-Out Sensitivity, 5 Largest Hydro Plants",
          "a": "# Table 2 (sensitivity) -- Leave-One-Out, 5 Largest Hydro Plants, Itaipu Whole "
               "Asset (14,000 MW)"}
