@@ -130,4 +130,10 @@
   actually sign-flips with larger magnitude -- corrected to a per-row flag
   for that family only. No code changed outside the new script. Floor
   unchanged: 225 passed, 1 skipped (w5_sensitivity.py has no pytest unit
-  yet -- script-level asserts only, consistent with w3f7/w4b precedent).
+  yet -- script-level asserts only, consistent with w3f7/w4b precedent).- C88 (2026-10-07): Phase 0 baseline and regression gate. New
+  scripts/check_headlines.py verifies 10 C87 headline items (D102/W4b hydro,
+  D125/W4c thermal SPEI/SPI, Table 1 capacities, table3_coexposure 192 rows,
+  w4g_fd_unit_values 13,815 rows, Fig 3 339/433/770, Fig 1 745/340), all PASS.
+  data/outputs/article/_ref_C87/ saved as comparison reference (outside Git).
+  docs/HANDOFF_v46.md added; CLAUDE.md consolidated (permanent rules, test
+  floor history). Floor measured: 225 passed, 1 skipped.
