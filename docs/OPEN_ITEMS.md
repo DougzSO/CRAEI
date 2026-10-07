@@ -31,7 +31,7 @@ hydro-BRA pool (Section 4.2) -- likely different sample scopes, not
 re-checked; reconcile an earlier note of "6 plants" misclassified by the
 hazard-table bucket field against the 5 plants actually found (Section 2).
 
-O44 (Fig 6 footnote says nuclear has "no planned capacity" and oil is excluded from the planned fleet, but Table 1 lists planned nuclear, 1 unit 1.405 GW, with 0% exposure in w3_table1.csv; footnote wording to be reviewed by the author).
+O44 (CLOSED, D136: nuclear restored as a real 0% bar, footnote corrected; was: Fig 6 footnote says nuclear has "no planned capacity" and oil is excluded from the planned fleet, but Table 1 lists planned nuclear, 1 unit 1.405 GW, with 0% exposure in w3_table1.csv; footnote wording to be reviewed by the author).
 O45 (Fig 5a/5b horizontal colorbar overlaps the middle panel and its scale bar; reproduced as in C87, layout fix deferred to the visual-adjustment phase).
 
 Author-level open items, outside the pipeline: O20, O33 pending
