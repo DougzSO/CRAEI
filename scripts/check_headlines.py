@@ -7,6 +7,11 @@ item and exits non-zero if any item fails. Sources and definitions:
  - Table 1: article/tables/table1_fleet_capacity.csv.
  - Fig 1: plants.parquet x plant_cell.parquet x w3g_heat_cell_class.csv (ssp585).
  - Fig 3: w4g_fd_unit_values.csv, per-plant median ratio over GCMs >= 2.0.
+
+The Fig 1 and Fig 3 definitions were reconstructed after the original figure
+scripts were lost (_tmp_* removed after use). They are not necessarily identical
+to the original generation logic: they are a continuity regression from C88,
+not proof that they replicate the pipeline that produced the C87 PNGs.
 """
 
 import sys

@@ -103,6 +103,7 @@ matplotlib, isimip-client, pytest, ruff.
 - `plant_uid` = blake2s hash of `name|lat|lon`.
 - Tabular data: parquet. Gridded data: NetCDF.
 - Scripts: `NN_name.py`, numbered by spec step.
+- Article figures and tables are built only by `scripts/article/` (`python scripts/article/build_all.py [--out DIR]`, D134); never hand-made or `_tmp_*`.
 - `outputs_dir` is never written to directly (COMANDO 22-B Part 3). It has
   exactly four subdirectories, each exposed by `config.load_paths()` as its
   own key so a script never builds the path by hand:

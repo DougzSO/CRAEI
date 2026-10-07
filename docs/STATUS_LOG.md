@@ -137,3 +137,6 @@
   data/outputs/article/_ref_C87/ saved as comparison reference (outside Git).
   docs/HANDOFF_v46.md added; CLAUDE.md consolidated (permanent rules, test
   floor history). Floor measured: 225 passed, 1 skipped.
+- C89 (2026-10-07): Phase 1, article artifact scripts. 12 scripts in scripts/article/ plus build_all.py regenerate all 18 files of
+  data/outputs/article/ (D134). Tables: content-identical to _ref_C87. Figures: same data, cosmetic differences listed in the phase report.
+  check_headlines 10/10 PASS; floor unchanged: 225 passed, 1 skipped. Open items O44, O45 (found while reproducing Fig 5/6).
