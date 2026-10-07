@@ -151,3 +151,4 @@
 - C97 (2026-10-07): D142, E1 primary criterion not met (SSP3-7.0 3/5); target Climate Risk Management; SSP3-7.0 non-monotonicity logged for Phase 6. Floor 236 passed, 1 skipped.
 - C98 (2026-10-07): D143, E1 post-outcome verifications (baseline-fitted SPEI/SPI confirmed with file:line, observed vs GCM same variant and pair, co-location by macro region in new scripts/e1_colocation.py, block 24/36 and calendar-month sensitivities). Floor unchanged: 236 passed, 1 skipped.
 - C99 (2026-10-07): Phase 4 E3, D144 pre-specification and D145 outcome (SE/CO lag 0 rho 0.37, CI excludes 0, criterion met, main text), scripts/e3_ena_validation.py; O47 registered (Phase 9 note on GCM heat x drought inflation). Floor unchanged: 236 passed, 1 skipped.
+- C100 (2026-10-07): Phase 4 E3 hit rate, D146 criterion registered before computing, D147 outcome (scripts/e3_hit_rate.py). Floor unchanged: 236 passed, 1 skipped.
