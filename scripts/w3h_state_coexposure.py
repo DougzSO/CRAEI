@@ -153,7 +153,10 @@ def flagged_sum(df, flag_col, keys):
     grid = df[full_keys].drop_duplicates()
     out = grid.merge(g, on=full_keys, how="left")
     out["mw"] = out["mw"].fillna(0.0)
-    tot = df.groupby(keys)["capacity_mw"].sum().rename("mw_total").reset_index()
+    # denominator: each unit once per (keys), not once per GCM (a sum over the 5 GCM rows is 5x the fleet)
+    once = df.drop_duplicates(subset=keys + ["uid"])
+    tot = once.groupby(keys).agg(mw_total=("capacity_mw", "sum"), n_units=("uid", "size"),
+                                 n_plants=("plant_uid", "nunique")).reset_index()
     return out.merge(tot, on=keys, how="left")
 
 
@@ -161,6 +164,7 @@ def summarise_flag(t, keys):
     t = t.assign(pct=100.0 * t["mw"] / t["mw_total"])
     out = t.groupby(keys).agg(
         n_gcm=("model", "nunique"), gw_total=("mw_total", "first"),
+        n_units=("n_units", "first"), n_plants=("n_plants", "first"),
         gw_min=("mw", "min"), gw_median=("mw", "median"), gw_max=("mw", "max"),
         pct_min=("pct", "min"), pct_median=("pct", "median"), pct_max=("pct", "max"),
     ).reset_index()

@@ -38,9 +38,13 @@ O46 (apply in Phase 9 the Fig 4 title, x-axis label and note drafted in docs/art
 
 O47 (Phase 9 / article text: in W5E5 observations the heat x drought pair shows no dependence (D = 1.14, block-12 CI 0.28-2.48 includes 1, D143), while the GCMs give a baseline D of about 2.8 (median 2.78, range 1.67-3.33). The notes of Fig 5a/5b and Table 3 must state that GCM heat x drought co-exposure is probably inflated relative to observations, citing these numbers).
 
-O48 (Table 3 thermal population: table3_coexposure_gcm_mean.csv uses 690 units / 621 plants / 39.770 GW for water-dependent thermal operating, against the 618 plants / 39.1015 GW of D125 and D138 (plant-level bucket filter). The Table 3 thermal denominators were not aligned with the Fig 4 / E1 population; decision pending).
+O48 (Table 3 thermal population: table3_coexposure_gcm_mean.csv uses 690 units / 621 plants / 39.770 GW for water-dependent thermal operating, against the 618 plants / 39.1015 GW of D125 and D138 (plant-level bucket filter). The Table 3 thermal denominators were not aligned with the Fig 4 / E1 population; decision pending).; D150 identifies the 3 operating plants (Guarani, Atlantico, Termo Norte, 0.668 GW) and the cause, plant-level class air-only with water-dependent units, not data validity).
 
-O49 (w3h_state_coexposure.csv, Fig 5a/5b: scripts/w3h_state_coexposure.py:156 sums capacity_mw over all 5 GCMs rows in `mw_total`, so gw_total is 5x the fleet (hydro operating Itaipu b: states sum to 513.335 GW instead of 102.667 GW) and pct_median is 1/5 of the true share (Para 20.00 instead of 100%; the colorbar VMAX = 20 is the artifact). gw_median and the GW values are correct. Fig 5a/5b, as built in C87 and rebuilt in C89-C94, show percentages five times too low. Not corrected: needs author decision; Phase 6 left the figures untouched).
+O49 CLOSED (D149): w3h_state_coexposure.csv denominator corrected, percentages were 5x too low in Fig 5a/5b since C63/C87; GW correct; figures rebuilt, check_headlines extended.
+
+O50 (claims register, Phase 5 input): (a) hydro exposure claim rests on SPEI (k = 5/5 in every scenario); SPI (k = 3/5) is stated as the explicit lower band (hydro SPI excess 17.40/3.03/38.60 pp vs SPEI 40.75/43.20/53.94). (b) Thermal drought exposure is robust only in SSP5-8.5 (SPEI k = 5/5, SPI k = 4/5 with 27.50 pp) and model-dependent in SSP1-2.6 and SSP3-7.0 (k = 4/5 SPEI, 3/5 SPI; drops without UKESM1-0-LL and IPSL-CM6A-LR: SPEI 8.34/18.74/34.53, SPI -4.80/-7.48/27.50, D148). (c) E3: significant rho in SE/CO (0.37, n = 240) but hit rate without significance (HSS CI includes 0, 14 signal months; NE and N have lift > 1, D147); this is stated together with the tension against the concentration of the E1 dependence in SE/CO and Centro-Oeste (D143).
+
+O51 (Phase 9): Fig 4 must include a 'Hydro, SPI' row, for symmetry with the thermal SPEI and SPI rows (values in w4c_spi_vs_spei.csv, hydro, spi).
 
 Author-level open items, outside the pipeline: O20, O33 pending
 assignment; India and Portugal analysis deferred until Brazil closes;

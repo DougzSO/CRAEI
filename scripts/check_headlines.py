@@ -25,6 +25,9 @@ TOL = 1e-3
 SCEN = ["ssp126", "ssp370", "ssp585"]
 RD_EXPOSED = 2.0
 THERMAL = ["thermal_water_dependent", "thermal_air_only"]
+# Fleet capacity (GW) the state tables must add up to. Thermal is the unit-level population of
+# plant_units (621 plants), pending the O48 decision on the 618-plant population (39.1015 GW).
+STATE_FLEET_GW = {"hydro": 102.667, "thermal": 39.7699}
 
 RESULTS = []
 
@@ -90,6 +93,15 @@ def main():
     check("Fig 1 thermal plants joined", [len(thermal), len(j)], [745, 745], tol=0)
     check("Fig 1 thermal in extreme cell, ssp585",
           [int((j["class_median"] == "extreme").sum())], [340], tol=0)
+
+    # O49: the states of w3h_state_coexposure.csv must add up to the fleet (gw_total was 5x before D149).
+    st = pd.read_csv(tdir / "w3h_state_coexposure.csv")
+    st = st[(st["fleet"] == "operating") & (st["null"] == "block12") & (st["co_class"] == "co_extreme")]
+    for grp, itaipu, want in (("hydro", "b", STATE_FLEET_GW["hydro"]),
+                              ("thermal_water_dependent", "na", STATE_FLEET_GW["thermal"])):
+        s = st[(st["group"] == grp) & (st["itaipu"] == itaipu)].groupby("scenario")["gw_total"].sum()
+        check(f"w3h states sum gw_total, {grp} operating (GW, ssp126/370/585)",
+              [round(float(s[x]), 4) for x in SCEN], [want] * 3)
 
     n_fail = RESULTS.count(False)
     print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} PASS")

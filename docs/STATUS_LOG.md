@@ -153,3 +153,4 @@
 - C99 (2026-10-07): Phase 4 E3, D144 pre-specification and D145 outcome (SE/CO lag 0 rho 0.37, CI excludes 0, criterion met, main text), scripts/e3_ena_validation.py; O47 registered (Phase 9 note on GCM heat x drought inflation). Floor unchanged: 236 passed, 1 skipped.
 - C100 (2026-10-07): Phase 4 E3 hit rate, D146 criterion registered before computing, D147 outcome (scripts/e3_hit_rate.py). Floor unchanged: 236 passed, 1 skipped.
 - C101 (2026-10-07): Phase 6, 3-GCM subset (D148), k/5 agreement, non-monotonicity decomposition, gw and n_units columns; O48 (Table 3 thermal population 621/39.77) and O49 (w3h_state_coexposure pct 5x too low, Fig 5a/5b) registered. Floor unchanged: 236 passed, 1 skipped.
+- C102 (2026-10-07): O49 closed (D149): w3h_state_coexposure denominator fixed (percentages were 5x low), Fig 5a/5b rebuilt, check_headlines 12 checks; O48 investigated (D150) and left for author decision; O50, O51 registered. Floor unchanged: 236 passed, 1 skipped.
