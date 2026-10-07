@@ -147,3 +147,4 @@
 - C93 (2026-10-07): Phase 2 A3 text, null hypothesis wording and Fig 4 title/note drafted in docs/article/text_snippets.md (not applied), METHODS_SPEC line 223 corrected (1,705 vs 1,710), O46 (D138). Floor unchanged: 225 passed, 1 skipped.
 - C94 (2026-10-07): Phase 2 A1, hydropower heat reframed as regional compound climate context in Fig 5a and Table 3 hydropower block, V3 ratios 81/84/87% (D139). Floor unchanged: 225 passed, 1 skipped.
 - C95 (2026-10-07): Phase 3 E1 specification, docs/article/E1_spec.md with the pre-specified decision criterion, D140 reopening the D72 compound metric. No code yet. Floor unchanged: 225 passed, 1 skipped.
+- C96 (2026-10-07): Phase 3 E1 implemented and run (D141): hedge.py + tests, e1_populations/e1_w5e5_inputs/e1_hedge, results CSVs outside Git. Primary criterion NOT met (SSP3-7.0 3/5, SSP5-8.5 5/5); observed D 4.83. Floor 236 passed, 1 skipped.

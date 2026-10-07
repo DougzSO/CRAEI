@@ -174,3 +174,18 @@ baselines. No future for observations.
    P90 (`heat_cal`) is reported next to it.
 7. **Statistics.** SPEI-12 and the monthly series are strongly autocorrelated (n_eff far below 360, D65);
    the prior signal was weak (D 1.03-1.6); no pooled p-value.
+
+## 7. Implementation notes (C96, data constraints found while running; the criterion in section 0b is unchanged)
+
+- **Future window.** SPEI-12 of the future runs has no accumulation history: the first 11 months of 2041 are
+  undefined. Every future series (all channels) uses the 29 full years 2042-2070 (348 months), the same
+  window for all channels and pairs. The baseline keeps 360 months (1985-2014). Probabilities are
+  frequencies, so n differs between the periods (348 vs 360).
+- **Observed window.** The W5E5-derived SPEI-12 starts in 1985, so its first 11 months are undefined; the
+  observed series use 1986-2014 (348 months). The observed thresholds are the series' own P90.
+- **Thermal fleets** use the plant_units selection of W4c (618 operating plants, 39.1015 GW; operating +
+  planned: 694 plants, 80.254 GW, 341 cells); hydro 194 plants, 102.667 GW (Itaipu b).
+- **Seeds.** `default_rng([23, 3, k])`, k running over pair -> fleet -> model -> period -> variant -> block
+  (see `Rng` in scripts/e1_hedge.py); the observed stream starts at k = 10,000.
+- Inputs derived from raw W5E5 (new processed files): `w5e5_thermal_cells_monthly.parquet` (341 cells; fits
+  without failures; TX<TN days 0; PET-truncated days 0), `w5e5_hydro_spi12.parquet` (194 catchments).
