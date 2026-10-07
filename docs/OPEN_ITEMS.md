@@ -38,7 +38,7 @@ O46 (apply in Phase 9 the Fig 4 title, x-axis label and note drafted in docs/art
 
 O47 (Phase 9 / article text: in W5E5 observations the heat x drought pair shows no dependence (D = 1.14, block-12 CI 0.28-2.48 includes 1, D143), while the GCMs give a baseline D of about 2.8 (median 2.78, range 1.67-3.33). The notes of Fig 5a/5b and Table 3 must state that GCM heat x drought co-exposure is probably inflated relative to observations, citing these numbers).
 
-O48 (Table 3 thermal population: table3_coexposure_gcm_mean.csv uses 690 units / 621 plants / 39.770 GW for water-dependent thermal operating, against the 618 plants / 39.1015 GW of D125 and D138 (plant-level bucket filter). The Table 3 thermal denominators were not aligned with the Fig 4 / E1 population; decision pending).; D150 identifies the 3 operating plants (Guarani, Atlantico, Termo Norte, 0.668 GW) and the cause, plant-level class air-only with water-dependent units, not data validity).
+O48 CLOSED (D151): option A, plant-level cooling class everywhere; Table 3 and w3h aligned to 618 plants / 39.1015 GW.
 
 O49 CLOSED (D149): w3h_state_coexposure.csv denominator corrected, percentages were 5x too low in Fig 5a/5b since C63/C87; GW correct; figures rebuilt, check_headlines extended.
 

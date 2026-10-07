@@ -24,7 +24,13 @@ NOTE = (
     "result (hydro operating, itaipu=b, 102.667 GW). The full binational asset (itaipu=a, "
     "14,000 MW) is used only in sensitivity analyses, not in this table. 'Planned (all "
     "stages)' aggregates advanced-stage and early-stage GEM status categories. Source: "
-    "plant_units.parquet (BRA only), GEM inventory cutoff 2026-08-09.")
+    "plant_units.parquet (BRA only), GEM inventory cutoff 2026-08-09. This table counts units "
+    "(inventory). Analyses classify thermal plants by plant-level cooling class; 3 operating "
+    "plants with mixed cooling (Guarani, Atlântico, Termo Norte; 0.668 GW of water-dependent "
+    "units) are treated as air-cooled, so the analytical water-dependent operating population "
+    "is 39.10 GW vs 39.77 GW here. Likewise 2 planned plants (Termopecém, Azulão; 2.432 GW "
+    "of water-dependent units) are treated as air-cooled, so the analytical planned "
+    "water-dependent population is 41.15 GW vs 43.58 GW here.")
 
 
 def main():

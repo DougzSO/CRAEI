@@ -116,3 +116,11 @@ national Table 3 (mean across 5 GCMs); the footnote says "national" to avoid mix
 > Reframing (D139): hydropower remains outside H1 (D88 unchanged); the plant-cell TX35 class is kept
 > only as regional climatic context and is now labelled as such wherever it appears (Fig 5a,
 > Table 3 hydropower block).
+
+## O48. Thermal population (Methods)
+
+> Water-dependent thermal plants are identified by the plant-level cooling class. Five plants whose
+> plant-level class is air-cooled but that hold some water-dependent units (three operating: Guarani,
+> Atlântico, Termo Norte; two planned: Termopecém, Azulão) are treated as air-cooled, which gives an
+> analytical operating water-dependent population of 618 plants and 39.10 GW (39.77 GW at unit level)
+> and a planned population of 41.15 GW (43.58 GW at unit level) (D151).

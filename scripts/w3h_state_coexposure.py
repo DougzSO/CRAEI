@@ -59,6 +59,7 @@ import yaml
 from craei.config import load_paths
 from craei.exposure import heat_levels as hl
 from craei.exposure.heat_fuel import add_pooled_planned
+from craei.exposure.plant_class import plant_class_filter
 from craei.geo.state_assignment import add_macro_region, assign_state
 from craei.hazards import drought_levels as dl
 
@@ -78,6 +79,10 @@ def load_units(proc):
     u = u[(u["country"] == COUNTRY) & u["tech_class"].isin(keep)].reset_index(drop=True)
     u["uid"] = u.index
     u["group"] = np.where(u["tech_class"] == "hydro", "hydro", "thermal_water_dependent")
+    # plant-level cooling class (D151): mixed-cooling plants leave the water-dependent population
+    bucket = (pd.read_parquet(proc / "plant_hazards.parquet", columns=["plant_uid", "bucket"])
+              .drop_duplicates("plant_uid").set_index("plant_uid")["bucket"])
+    u, _ = plant_class_filter(u, bucket)
     return u
 
 
@@ -247,7 +252,10 @@ def main():
         z = np.load(audit / f"draws_{r['pool']}_{r['null']}.npz")
         draws[(r["pool"], r["null"])] = z["fd_fut"]
 
-    ref = pd.read_csv(tab / "w4h_coexposure.csv")
+    # reference for check (c): W4h for hydro; table3_coexposure.csv (D151 population) for thermal,
+    # which only has the operating and planned_all fleets under block12
+    ref_hydro = pd.read_csv(tab / "w4h_coexposure.csv")
+    ref_thermal = pd.read_csv(tab / "table3_coexposure.csv")
 
     state_parts, nat_parts, gap_b = [], [], []
     nat_co3_w4hdef = []
@@ -302,7 +310,10 @@ def main():
         for null_kind in NULLS:
             n = nat_tab[(nat_tab["group"] == grp) & (nat_tab["null"] == null_kind)
                         & (nat_tab["co_class"] == "co_extreme")]
+            ref = ref_hydro if grp == "hydro" else ref_thermal
             for _, row in n.iterrows():
+                if grp != "hydro" and (null_kind != "block12" or row["fleet"] not in ("operating", "planned_all")):
+                    continue
                 m = (ref["group"] == grp) & (ref["fleet"] == row["fleet"]) \
                     & (ref["itaipu"] == row["itaipu"]) & (ref["scenario"] == row["scenario"]) \
                     & (ref["null"] == null_kind) & (ref["cutset"] == CUTSET_NAME) \
@@ -314,6 +325,8 @@ def main():
                     sys.exit(1)
                 prod_checks_co2.append(abs(float(row["gw_median"]) - float(r["gw_median"].iloc[0])))
 
+            if grp != "hydro":  # W4h CO3 is a diagnostic on the all-unit population, hydro only (D151)
+                continue
             s = co3_w4hdef_tab[(co3_w4hdef_tab["group"] == grp)
                                 & (co3_w4hdef_tab["null"] == null_kind)]
             m4 = (ref["group"] == grp) & (ref["null"] == null_kind) \
