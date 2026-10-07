@@ -36,6 +36,8 @@ O45 (Fig 5a/5b horizontal colorbar overlaps the middle panel and its scale bar; 
 
 O46 (apply in Phase 9 the Fig 4 title, x-axis label and note drafted in docs/article/text_snippets.md, section A3: stationary resampling null, pools named; Fig 4 is unchanged until then).
 
+O47 (Phase 9 / article text: in W5E5 observations the heat x drought pair shows no dependence (D = 1.14, block-12 CI 0.28-2.48 includes 1, D143), while the GCMs give a baseline D of about 2.8 (median 2.78, range 1.67-3.33). The notes of Fig 5a/5b and Table 3 must state that GCM heat x drought co-exposure is probably inflated relative to observations, citing these numbers).
+
 Author-level open items, outside the pipeline: O20, O33 pending
 assignment; India and Portugal analysis deferred until Brazil closes;
 external copy/backup of the raw data directory deferred.
