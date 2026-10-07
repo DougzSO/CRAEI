@@ -161,3 +161,16 @@ Declared limitations, each tied to the evidence that quantifies it:
 (a) Figure E1: Design A (recommended), Design B, or another variant.
 (c) Final list: full list or compact list, and which items go to the main text once O52 is filled.
 (e) Framing: approve, edit or replace the 5 sentences and the limitations above.
+
+## Decisions of the author (recorded in D153)
+
+- (a) Figure E1: Design A.
+- (c) Compact list. Main figures (6): Fig 1, Fig 3, Fig 4, Fig 5 (state maps; one merged figure or 5a in
+  the main text and 5b in the supplementary, decided in the Phase 9 design proposal), Fig 7 (E1, Design A),
+  Fig 8 (E3). Main tables (2): Table 1, Table 3 (main block). Supplementary: Fig 2, Fig 6, Table 0,
+  Table 2, Table 3 supplementary blocks (and Fig 5b if it is not in the main text).
+- (e) Pending: sentence 2 contains a heat number that does not match the CSV (see D153); sentences 1, 3, 4
+  and 5 match the register.
+- O52 postponed; neutral dimensions until the journal is adjusted: 1 column about 90 mm, 2 columns about
+  180 mm, 300 dpi, fonts legible at 100%.
+- New order: Phase 9 -> Phase W (text drafts) -> Phase 7 -> Phase 8 -> Phase 10.
