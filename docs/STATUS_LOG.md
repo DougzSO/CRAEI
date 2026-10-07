@@ -140,3 +140,5 @@
 - C89 (2026-10-07): Phase 1, article artifact scripts. 12 scripts in scripts/article/ plus build_all.py regenerate all 18 files of
   data/outputs/article/ (D134). Tables: content-identical to _ref_C87. Figures: same data, cosmetic differences listed in the phase report.
   check_headlines 10/10 PASS; floor unchanged: 225 passed, 1 skipped. Open items O44, O45 (found while reproducing Fig 5/6).
+- C90 (2026-10-07): Phase 2 A2, Table 2 leave-one-out corrected (D135). Metric note fixed (drought R_D >= 2.0, not TX35), Itaipu headline version b (7,000 MW),
+  version a as sensitivity; new scripts/w4d_leave_one_out.py. Floor unchanged: 225 passed, 1 skipped.
