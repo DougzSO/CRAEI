@@ -46,6 +46,8 @@ O50 (claims register, Phase 5 input): (a) hydro exposure claim rests on SPEI (k 
 
 O51 (Phase 9): Fig 4 must include a 'Hydro, SPI' row, for symmetry with the thermal SPEI and SPI rows (values in w4c_spi_vs_spei.csv, hydro, spi).
 
+O52 (Phase 5: the Climate Risk Management guide for authors, https://www.sciencedirect.com/journal/climate-risk-management/publish/guide-for-authors, could not be fetched (HTTP 403); author to read it and fill in the DECISION_MEMO_F5.md section 0 cells marked TO BE DEFINED: abstract format, highlights, number of figures and tables, figure width and dpi, supplementary rules, data availability statement).
+
 Author-level open items, outside the pipeline: O20, O33 pending
 assignment; India and Portugal analysis deferred until Brazil closes;
 external copy/backup of the raw data directory deferred.

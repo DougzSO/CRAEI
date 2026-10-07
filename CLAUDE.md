@@ -154,4 +154,3 @@ grep precedent/IDs -> audit -> implement -> test -> update
 - Pytest floor after C60: 220 passed, 1 skipped (measured 2026-10-03; supersedes the floor above).
 - Pytest floor after C62: 225 passed, 1 skipped (measured 2026-10-05; supersedes the floor above).
 - Pytest floor after C96: 236 passed, 1 skipped (measured 2026-10-07; supersedes the floor above; +11 tests, hedge).
-- Pytest floor after C96: 236 passed, 1 skipped is superseded by C103 (238 passed, 1 skipped).

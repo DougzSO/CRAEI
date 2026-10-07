@@ -155,3 +155,4 @@
 - C101 (2026-10-07): Phase 6, 3-GCM subset (D148), k/5 agreement, non-monotonicity decomposition, gw and n_units columns; O48 (Table 3 thermal population 621/39.77) and O49 (w3h_state_coexposure pct 5x too low, Fig 5a/5b) registered. Floor unchanged: 236 passed, 1 skipped.
 - C102 (2026-10-07): O49 closed (D149): w3h_state_coexposure denominator fixed (percentages were 5x low), Fig 5a/5b rebuilt, check_headlines 12 checks; O48 investigated (D150) and left for author decision; O50, O51 registered. Floor unchanged: 236 passed, 1 skipped.
 - C103 (2026-10-07): O48 closed (D151), Table 3 and w3h thermal aligned to the plant-level class (618 plants, 39.1015 GW), Table 3 outputs, Fig 5b and Table 1 note regenerated. Floor 238 passed, 1 skipped.
+- C104 (2026-10-07): Phase 5 memo docs/article/DECISION_MEMO_F5.md (decisions a, c, e pending), D152 (memo and D148 thermal co-extreme correction), O52 (journal guide unavailable). Floor unchanged: 238 passed, 1 skipped.
