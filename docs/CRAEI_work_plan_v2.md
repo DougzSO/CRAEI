@@ -1,4 +1,11 @@
-﻿# CRAEI work plan v2
+﻿> **Document role:** Work-plan / phase tracker (W1-W8 and successors).
+> **Contains:** phase definitions, status updates appended as addenda.
+> **Does NOT contain:** closed decision rationale -> docs/DECISIONS.md.
+> **Status:** living; superseded sections marked, not deleted.
+
+---
+
+# CRAEI work plan v2
 
 Replaces PROGRESS.json (frozen at docs/archive/PROGRESS_v1.json). Old command numbers are frozen; new commands start at C26 (C25 keeps its old definition). Rules: no calculation in figure modules; after any change touching plants or hazards run pytest (baseline 141 passed, 1 skipped) and scripts/c23b_regression_gate.py (8/8 PASS); never commit without author authorization; Brazil filter at table level; documents in English.
 

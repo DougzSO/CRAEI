@@ -1,3 +1,10 @@
+> **Document role:** Session-by-session technical log: commands run, checks, pass/fail outcomes.
+> **Contains:** one row per step/command, chronological, append-only.
+> **Does NOT contain:** decision rationale -> docs/DECISIONS.md; current pipeline state -> docs/METHODS_SPEC.md.
+> **Status:** append-only.
+
+---
+
 # STATUS LOG (append-only; plan lives in CRAEI_work_plan_v2.md)
 
 | date | step | status | note |

@@ -1,3 +1,10 @@
+> **Document role:** Working rules for AI-assisted sessions on this repository.
+> **Contains:** process rules: ID hygiene, EOL/BOM handling, read-before-write discipline, environment checks.
+> **Does NOT contain:** project methods or results (-> docs/METHODS_SPEC.md, docs/RESULTS_REGISTRY.md).
+> **Status:** living.
+
+---
+
 # CRAEI: Climate Risk Assessment for Energy Infrastructure
 
 Assesses climate hazard exposure (heat, drought, water stress) of power plant
