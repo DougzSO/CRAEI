@@ -34,6 +34,8 @@ hazard-table bucket field against the 5 plants actually found (Section 2).
 O44 (CLOSED, D136: nuclear restored as a real 0% bar, footnote corrected; was: Fig 6 footnote says nuclear has "no planned capacity" and oil is excluded from the planned fleet, but Table 1 lists planned nuclear, 1 unit 1.405 GW, with 0% exposure in w3_table1.csv; footnote wording to be reviewed by the author).
 O45 (Fig 5a/5b horizontal colorbar overlaps the middle panel and its scale bar; reproduced as in C87, layout fix deferred to the visual-adjustment phase).
 
+O46 (apply in Phase 9 the Fig 4 title, x-axis label and note drafted in docs/article/text_snippets.md, section A3: stationary resampling null, pools named; Fig 4 is unchanged until then).
+
 Author-level open items, outside the pipeline: O20, O33 pending
 assignment; India and Portugal analysis deferred until Brazil closes;
 external copy/backup of the raw data directory deferred.

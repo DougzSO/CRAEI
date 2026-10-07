@@ -220,7 +220,11 @@ reported as its own category, whenever the baseline F_D is exactly zero
 6).
 
 Hydro plants are evaluated at catchment scale; water-dependent thermal
-plants at cell scale (a 1,710-series cell pool feeds the thermal null).
+plants at cell scale. The thermal null uses cell-scale pools of two sizes: 1,710
+series (342 cells x 5 GCMs) in W4g/W4r, built from the unit-level population
+of plant_units, and 1,705 series (341 cells x 5 GCMs) in the W4c null behind Fig 4,
+built from the plant-level class (5 plants whose plant-level class is air-only
+although some of their units are water-dependent add one cell; D138).
 Run-of-river plants additionally receive SPEI-3 at catchment scale. A
 SPI-12 (precipitation only, ignoring atmospheric demand) comparison against
 SPEI-12 under the same classes is planned (W4c, O18) to isolate the
