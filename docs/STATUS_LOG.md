@@ -157,3 +157,4 @@
 - C103 (2026-10-07): O48 closed (D151), Table 3 and w3h thermal aligned to the plant-level class (618 plants, 39.1015 GW), Table 3 outputs, Fig 5b and Table 1 note regenerated. Floor 238 passed, 1 skipped.
 - C104 (2026-10-07): Phase 5 memo docs/article/DECISION_MEMO_F5.md (decisions a, c, e pending), D152 (memo and D148 thermal co-extreme correction), O52 (journal guide unavailable). Floor unchanged: 238 passed, 1 skipped.
 - C105 (2026-10-07): Phase 5 decisions recorded (D153): E1 Design A, compact list, neutral dimensions, new phase order; sentence 2 of the framing held (heat share does not match the CSV). Floor unchanged: 238 passed, 1 skipped.
+- C106 (2026-10-07): Phase 5 closed: framing sentences recorded (D154), register row R21. Floor unchanged: 238 passed, 1 skipped.

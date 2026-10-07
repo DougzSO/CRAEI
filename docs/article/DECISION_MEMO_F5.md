@@ -126,21 +126,30 @@ sign of the median (D114). Scenarios in the order SSP1-2.6 / SSP3-7.0 / SSP5-8.5
 
 ## (e) Framing and limitations (3-5 sentences, each tied to the register)
 
-1. Hydro drought exposure above a stationary resampling null is large and consistent across the five GCMs
-   with SPEI-12 (R1: +41 to +54 pp, 5/5), and smaller and model-dependent with SPI-12, which is the
-   explicit lower band (R2: +3 to +39 pp, 3/5).
-2. Water-dependent thermal drought exposure rises clearly only under SSP5-8.5 (R3 +48 pp, R4 +28 pp,
-   k = 5 and 4) and is model-dependent under SSP1-2.6 and SSP3-7.0 (k = 3 to 4; R3, R4 change sign or
-   shrink without UKESM1-0-LL and IPSL-CM6A-LR).
-3. In the observed climate the thermal fleet is already in drought when hydro is: D = 4.83, CI [1.70, 6.32]
-   (R12), concentrated in Sudeste and Centro-Oeste (R15; 64% of the thermal capacity), so thermal capacity
-   is not an independent insurance against hydro drought there.
-4. Warming raises the frequency of joint stress mainly through the marginals (R9: 0.065 of 0.095 in
-   SSP5-8.5; R11: 0.191 of 0.214 for heat), without a consistent increase in coupling (R10: dD up in 3/5
-   GCMs, criterion of 4/5 not met).
-5. The drought index is associated with observed natural inflow (R16, rho 0.37 in SE/CO), but as an
-   association: the hit rate in SE/CO is not distinguishable from no skill (R18), in tension with the
-   concentration of the E1 dependence in the same region, and E3 is not a validation (D146).
+1. Hydro. Operating hydropower capacity facing a doubling of drought frequency exceeds the null
+   expectation by +41, +43 and +54 pp (SSP1-2.6, 3-7.0, 5-8.5; 5/5 GCMs under SPEI) [R1]. The signal
+   weakens under precipitation-only SPI (3/5), indicating that part of the projected drying is
+   evaporative demand [R2].
+2. Thermal backup. Drought exposure of water-dependent thermal capacity is clear only under SSP5-8.5
+   (+48 pp SPEI, +27.5 pp SPI) and model-dependent in lower scenarios [R3, R4]. Heat stress, in
+   contrast, rises in all GCMs: the share of thermal capacity under monthly heat stress grows from
+   6.5% to 23%, 30% and 35% (SSP1-2.6, 3-7.0, 5-8.5) [R21].
+3. The hedge is already correlated. In the observed climate (W5E5, 1986-2014), hydro drought and
+   thermal drought co-occur 4.8 times more often than under independence [1.7-6.3] [R12]. The GCMs
+   reproduce this (median 5.0) [R13], and the coupling is concentrated in the Southeast/Center-West,
+   which holds 64% of thermal capacity [R15].
+4. Warming raises joint stress through the marginals. Under SSP5-8.5, the increase in joint stress
+   frequency (+0.095) comes mostly from each side failing more often (+0.065), with a smaller
+   dependence component (+0.030) [R9]. Coupling does not strengthen consistently (dD > 0 in 3/5 GCMs)
+   [R10].
+5. Evidence quality. The drought index tracks observed natural inflow energy moderately (rho = 0.37 in
+   SE/CO, 240 months; stronger in the Northeast and North) and is weakest exactly where the hedge
+   correlation concentrates [R16, R17, R18]. GCM-based heat x drought co-exposure is likely overstated,
+   since observed dependence is absent (D = 1.14) while GCMs give about 2.8 [R14].
+
+Register row added for sentence 2 (heat share):
+
+| R21 | Thermal capacity (618 plants, 39.1015 GW) under monthly heat stress (N35 above the local baseline P90), mean share of capacity over months, median over 5 GCMs | 6.5% baseline -> 23.2 / 29.8 / 35.2% (calendar-month P90: 4.7% -> 24.7 / 34.6 / 41.6%) | per GCM in e1_hedge_series.csv | rises in 5/5 GCMs in every scenario | not computed | e1_hedge_series.csv | D154 | G |
 
 Declared limitations, each tied to the evidence that quantifies it:
 - SPEI against SPI, Hargreaves PET temperature dependence: R1 against R2, R3 against R4 (circularity
