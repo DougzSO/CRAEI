@@ -149,3 +149,4 @@
 - C95 (2026-10-07): Phase 3 E1 specification, docs/article/E1_spec.md with the pre-specified decision criterion, D140 reopening the D72 compound metric. No code yet. Floor unchanged: 225 passed, 1 skipped.
 - C96 (2026-10-07): Phase 3 E1 implemented and run (D141): hedge.py + tests, e1_populations/e1_w5e5_inputs/e1_hedge, results CSVs outside Git. Primary criterion NOT met (SSP3-7.0 3/5, SSP5-8.5 5/5); observed D 4.83. Floor 236 passed, 1 skipped.
 - C97 (2026-10-07): D142, E1 primary criterion not met (SSP3-7.0 3/5); target Climate Risk Management; SSP3-7.0 non-monotonicity logged for Phase 6. Floor 236 passed, 1 skipped.
+- C98 (2026-10-07): D143, E1 post-outcome verifications (baseline-fitted SPEI/SPI confirmed with file:line, observed vs GCM same variant and pair, co-location by macro region in new scripts/e1_colocation.py, block 24/36 and calendar-month sensitivities). Floor unchanged: 236 passed, 1 skipped.
