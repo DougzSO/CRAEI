@@ -39,7 +39,9 @@ def build(t, ver):
            "Share Leave-One-Out (%)": t["share_loo_pct"].round(2),
            "Delta (pp)": t["delta_pp"].round(2)})[COLS]
     d = out_dir("tables")
-    write_csv(df, d / (STEM[ver] + ".csv"))
+    # denominator of the shares (bucket operating fleet): GW and number of plants, CSV only
+    write_csv(df.assign(gw_total=t["gw_total"].to_numpy(), n_units=t["n_units"].to_numpy()),
+              d / (STEM[ver] + ".csv"))
     md = df.assign(**{
         "Capacity (MW)": df["Capacity (MW)"].map("{:.0f}".format),
         "Share Full Fleet (%)": df["Share Full Fleet (%)"].map("{:.2f}".format),

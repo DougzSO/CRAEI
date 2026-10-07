@@ -62,13 +62,19 @@ def per_gcm_tables(paths):
     t = pd.concat(parts, ignore_index=True)
     t["gw"] = t["mw"] / 1000.0
     t["gw_total"] = t["mw_total"] / 1000.0
-    return t
+    # denominator population of the percentages: unit rows and plants of the group / fleet / Itaipu version
+    sel = d[d["group"].isin(w4h.GROUPS) & d["fleet"].isin(FLEETS)]
+    sel = sel[sel["itaipu"] == sel["group"].map(ITAIPU)]
+    cnt = (sel[sel["model"] == sel["model"].iloc[0]].groupby(KEYS)
+           .agg(n_units=("plant_uid", "size"), n_plants=("plant_uid", "nunique")).reset_index())
+    return t.merge(cnt, on=KEYS, how="left")
 
 
 def summarise(t):
     t = t.assign(pct=100.0 * t["gw"] / t["gw_total"])
     g = t.groupby(CELL + ["pool"])
     out = g.agg(n_gcm=("model", "nunique"), gw_total=("gw_total", "first"),
+                n_units=("n_units", "first"), n_plants=("n_plants", "first"),
                 gw_mean=("gw", "mean"), gw_min=("gw", "min"), gw_max=("gw", "max"),
                 gw_median=("gw", "median"), pct_mean=("pct", "mean"), pct_min=("pct", "min"),
                 pct_max=("pct", "max")).reset_index()

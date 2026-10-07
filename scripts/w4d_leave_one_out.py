@@ -64,7 +64,9 @@ def build(plants, hazards):
                     rows.append(dict(itaipu=ver, bucket=bucket, scenario=scen,
                                      plant_removed=p["plant_name"],
                                      capacity_mw=p["capacity_mw"], share_full_pct=s_full,
-                                     share_loo_pct=s_loo, delta_pp=s_loo - s_full))
+                                     share_loo_pct=s_loo, delta_pp=s_loo - s_full,
+                                     gw_total=full["capacity_mw"].sum() / 1000.0,
+                                     n_units=len(full)))
     return pd.DataFrame(rows)
 
 
@@ -81,6 +83,7 @@ def main():
     ref = pd.read_csv(Path(paths["outputs_tables_dir"]) / "w4d_leave_one_out.csv")
     a = t[t.itaipu == "a"].drop(columns="itaipu").reset_index(drop=True)
     num = ["capacity_mw", "share_full_pct", "share_loo_pct", "delta_pp"]
+    # gw_total / n_units: capacity (GW) and number of plant rows of the bucket's operating fleet (the denominator)
     if len(ref) == len(a):  # regression of version a against the C23d audit output
         gap = float(np.abs(a[num].to_numpy() - ref[num].to_numpy()).max())
         assert gap < 1e-9, gap

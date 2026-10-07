@@ -61,7 +61,8 @@ def section(t, combos, titles):
 def main():
     t = canonical(read_csv("table3_coexposure_gcm_mean.csv"))
     d = out_dir("tables")
-    cols = ["group", "heat_class", "drought_class", "pct_mean", "gw_mean", "gw_min", "gw_max"]
+    cols = ["group", "heat_class", "drought_class", "pct_mean", "gw_mean", "gw_min", "gw_max",
+            "gw_total", "n_units", "n_plants"]
     main_csv = pd.concat([
         t[(t.group == g) & (t.fleet == f) & (t.scenario == s)]
         .assign(group=CSV_GROUP[g]).sort_values(["heat_class", "drought_class"])[cols]

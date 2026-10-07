@@ -64,8 +64,9 @@ def gw_share_rd_ge(d, rd_th=RD_TH):
     gw_ge = defined[defined["ge"]].groupby(keys)["capacity_mw"].sum().rename("gw_ge_mw")
     undef_gw = d[d["ratio"].isna()].groupby(keys)["capacity_mw"].sum().rename("gw_undefined_mw")
     n_plants = d.groupby(keys)["plant_uid"].nunique().rename("n_plants")
+    n_units = d.groupby(keys).size().rename("n_units")
 
-    out = pd.concat([total, gw_def, gw_ge, undef_gw, n_plants], axis=1).reset_index()
+    out = pd.concat([total, gw_def, gw_ge, undef_gw, n_plants, n_units], axis=1).reset_index()
     out[["gw_ge_mw", "gw_undefined_mw"]] = out[["gw_ge_mw", "gw_undefined_mw"]].fillna(0.0)
     out["pct_gw_rd_ge2"] = np.where(out["gw_defined_mw"] > 0,
                                      100.0 * out["gw_ge_mw"] / out["gw_defined_mw"], np.nan)
@@ -78,6 +79,7 @@ def summarize_gcm(obs):
     g = obs.groupby(["fleet", "itaipu", "scenario"])
     s = g["pct_gw_rd_ge2"].agg(pct_min="min", pct_median="median", pct_max="max", n_gcm="count")
     extra = g.agg(gw_total_mw=("gw_total_mw", "first"), n_plants=("n_plants", "first"),
+                  n_units=("n_units", "first"),
                   label=("label", "first"), pct_undefined_mean=("pct_gw_undefined", "mean"))
     return s.join(extra).reset_index()
 

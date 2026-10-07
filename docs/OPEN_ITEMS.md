@@ -38,6 +38,10 @@ O46 (apply in Phase 9 the Fig 4 title, x-axis label and note drafted in docs/art
 
 O47 (Phase 9 / article text: in W5E5 observations the heat x drought pair shows no dependence (D = 1.14, block-12 CI 0.28-2.48 includes 1, D143), while the GCMs give a baseline D of about 2.8 (median 2.78, range 1.67-3.33). The notes of Fig 5a/5b and Table 3 must state that GCM heat x drought co-exposure is probably inflated relative to observations, citing these numbers).
 
+O48 (Table 3 thermal population: table3_coexposure_gcm_mean.csv uses 690 units / 621 plants / 39.770 GW for water-dependent thermal operating, against the 618 plants / 39.1015 GW of D125 and D138 (plant-level bucket filter). The Table 3 thermal denominators were not aligned with the Fig 4 / E1 population; decision pending).
+
+O49 (w3h_state_coexposure.csv, Fig 5a/5b: scripts/w3h_state_coexposure.py:156 sums capacity_mw over all 5 GCMs rows in `mw_total`, so gw_total is 5x the fleet (hydro operating Itaipu b: states sum to 513.335 GW instead of 102.667 GW) and pct_median is 1/5 of the true share (Para 20.00 instead of 100%; the colorbar VMAX = 20 is the artifact). gw_median and the GW values are correct. Fig 5a/5b, as built in C87 and rebuilt in C89-C94, show percentages five times too low. Not corrected: needs author decision; Phase 6 left the figures untouched).
+
 Author-level open items, outside the pipeline: O20, O33 pending
 assignment; India and Portugal analysis deferred until Brazil closes;
 external copy/backup of the raw data directory deferred.
