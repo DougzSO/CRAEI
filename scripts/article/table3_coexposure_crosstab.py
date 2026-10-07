@@ -7,7 +7,7 @@ column): table3_median_reference.{csv,md}, from table3_coexposure.csv.
 Canonical pool/null/cutset: hydro catchment, thermal cell, block12, p50_p90_p99.
 """
 
-from _common import SCEN_LABEL, md_table, out_dir, read_csv, write_csv, write_text
+from _common import SCEN_LABEL, hydro_context_note, md_table, out_dir, read_csv, write_csv, write_text
 
 GROUP = {"hydro": "Hydro", "thermal_water_dependent": "Thermal (water-dependent)"}
 FLEET = {"operating": "Operating", "planned_all": "Planned (all stages)"}
@@ -64,7 +64,7 @@ def main():
     write_pair(df, {"GW Mean": "{:.3f}", "% Mean": "{:.2f}", "GW Min": "{:.3f}",
                     "GW Max": "{:.3f}"}, "table3_coexposure_crosstab",
                "# Table 3 -- Heat x Drought Co-Exposure Cross-Tab (4x4), GW and %, Mean Across "
-               "5 GCMs", NOTE_MEAN)
+               "5 GCMs", NOTE_MEAN + "\n\n**Note (hydropower):** " + hydro_context_note()[0])
 
     med = labelled(canonical(read_csv("table3_coexposure.csv")))
     dm = med.assign(**{"GW Median": med["gw_median"].round(3),

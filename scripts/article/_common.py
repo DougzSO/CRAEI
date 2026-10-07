@@ -130,3 +130,30 @@ def fig_text(fig, x_in, y_in, text, **kw):
 
 
 FOOT = dict(fontsize=8.5, style="italic", color="#444444", va="center", ha="left")
+
+
+def hydro_context_note():
+    """Hydropower compound-context sentence with the V3 ratios computed from the data (D139).
+
+    Ratio = co-extreme share / extreme-drought share, national operating fleet, mean across
+    5 GCMs (table3_coexposure_gcm_mean.csv, canonical pool).
+    """
+    d = read_csv("table3_coexposure_gcm_mean.csv")
+    d = d[(d["group"] == "hydro") & (d["fleet"] == "operating") & (d["pool"] == "catchment")]
+    parts, ratios = [], []
+    for s in SCEN:
+        x = d[d["scenario"] == s]
+        assert len(x) == 16
+        co = float(x[(x.heat_class == "extreme") & (x.drought_class == "extreme")].pct_mean.iloc[0])
+        dr = float(x[x.drought_class == "extreme"].pct_mean.sum())
+        ratios.append(f"{100 * co / dr:.0f}%")
+        parts.append(f"{co:.1f} of {dr:.1f}%")
+    return (
+        "Heat is shown as regional climatic context at the plant cell (TX35 class), not as a heat "
+        "hazard to hydropower, which is outside H1. Compound = extreme drought class (catchment) "
+        "and extreme heat class (plant cell), same GCM. For the national operating fleet, the "
+        f"compound share is {', '.join(ratios[:-1])} and {ratios[-1]} of the extreme-drought "
+        "share alone (SSP1-2.6 / SSP3-7.0 / SSP5-8.5; mean across 5 GCMs: "
+        f"{', '.join(parts)}). This overlap is attributed in part to the temperature dependence "
+        "of SPEI-Hargreaves; the circularity control of the E1 analysis (SPI-based) will test it "
+        "when available."), ratios

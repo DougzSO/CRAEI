@@ -145,3 +145,4 @@
 - C91 (2026-10-07): Phase 2 A5/O44, Fig 6 nuclear restored as real 0% bars, GW and n under fuel labels, gas note (D136). Floor unchanged: 225 passed, 1 skipped.
 - C92 (2026-10-07): Phase 2 A4, Table 3 main = mean across 5 GCMs with min-max (additive), median version kept as table3_median_reference (D137). New scripts/w5_table3_gcm_mean.py. Floor unchanged: 225 passed, 1 skipped.
 - C93 (2026-10-07): Phase 2 A3 text, null hypothesis wording and Fig 4 title/note drafted in docs/article/text_snippets.md (not applied), METHODS_SPEC line 223 corrected (1,705 vs 1,710), O46 (D138). Floor unchanged: 225 passed, 1 skipped.
+- C94 (2026-10-07): Phase 2 A1, hydropower heat reframed as regional compound climate context in Fig 5a and Table 3 hydropower block, V3 ratios 81/84/87% (D139). Floor unchanged: 225 passed, 1 skipped.

@@ -5,6 +5,8 @@ scripts/w3h_state_coexposure.py:347-350), co_class co_extreme (heat extreme AND 
 extreme, same GCM), operating fleet. States without capacity are gray and hatched.
 """
 
+import textwrap
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -15,10 +17,12 @@ from matplotlib.colors import Normalize
 
 FIG_H = 7.63
 VMAX = 20.0
+NOTE_WRAP = 215  # characters per footnote line at 8.5 pt on a 16.9 in canvas
 CBAR_LABEL = "Median share of capacity under combined extreme heat + extreme drought (%)"
 
 
-def state_figure(fname, group, itaipu, suptitle, label, n_expected):
+def state_figure(fname, group, itaipu, suptitle, label, n_expected, cbar_label=CBAR_LABEL,
+                 note_tail=None):
     d = read_csv("w3h_state_coexposure.csv")
     d = d[(d.group == group) & (d.fleet == "operating") & (d.itaipu == itaipu)
           & (d["null"] == "block12") & (d.co_class == "co_extreme")]
@@ -38,9 +42,11 @@ def state_figure(fname, group, itaipu, suptitle, label, n_expected):
                         linewidth=0.7, zorder=2)
     cax = place_axes(fig, 6.29, 6.26, 4.73, 0.24)
     cb = fig.colorbar(ScalarMappable(norm=norm, cmap="Reds"), cax=cax, orientation="horizontal")
-    cb.set_label(CBAR_LABEL, fontsize=9.5)
+    cb.set_label(cbar_label, fontsize=9.5)
     note = (f"Gray/hatched states have no {label} capacity (n={n_expected} states with capacity). "
-            "Null: block-bootstrap-12. Co-extreme = heat class extreme AND drought class extreme, "
-            "same GCM.")
-    fig_text(fig, 0.1, 7.48, note, **FOOT)
+            "Null: block-bootstrap-12. ")
+    note += note_tail or "Co-extreme = heat class extreme AND drought class extreme, same GCM."
+    lines = textwrap.wrap(note, width=NOTE_WRAP)  # keep the canvas as wide as the maps
+    for i, line in enumerate(lines):
+        fig_text(fig, 0.1, 7.48 + 0.2 * i, line, **FOOT)
     save_figure(fig, fname)

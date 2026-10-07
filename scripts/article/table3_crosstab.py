@@ -7,7 +7,7 @@ table3_coexposure_crosstab.py).
 """
 
 import pandas as pd
-from _common import SCEN_LABEL, out_dir, read_csv, write_csv, write_text
+from _common import SCEN_LABEL, hydro_context_note, out_dir, read_csv, write_csv, write_text
 from table3_coexposure_crosstab import canonical
 
 CLASSES = ["low", "medium", "high", "extreme"]
@@ -24,9 +24,10 @@ SUPP = [(g, f, s) for g in ("hydro", "thermal_water_dependent")
                      ("planned_all", "ssp126"), ("planned_all", "ssp370"),
                      ("planned_all", "ssp585")]]
 CSV_GROUP = {"hydro": "Hydropower", "thermal_water_dependent": "Thermal"}
-MAIN_TITLE = {"hydro": "Hydropower (Itaipu Brazil share)",
+MAIN_TITLE = {"hydro": "Hydropower, Regional Compound Climate Context (Itaipu Brazil share)",
               "thermal_water_dependent": "Water-Dependent Thermal"}
-SUPP_TITLE = {"hydro": "Hydropower", "thermal_water_dependent": "Thermal"}
+SUPP_TITLE = {"hydro": "Hydropower, Regional Compound Climate Context",
+              "thermal_water_dependent": "Thermal"}
 
 
 def block(t, g, f, s, title):
@@ -45,6 +46,18 @@ def block(t, g, f, s, title):
     return "\n".join(lines) + "\n"
 
 
+def section(t, combos, titles):
+    """Blocks of a table; the hydropower context note follows the last hydropower block."""
+    out = []
+    for g, f, s in combos:
+        out.append(block(t, g, f, s, titles[g]))
+        last_hydro = g == "hydro" and (combos.index((g, f, s)) + 1 == len(combos)
+                                       or combos[combos.index((g, f, s)) + 1][0] != "hydro")
+        if last_hydro:
+            out.append("**Note (hydropower):** " + hydro_context_note()[0] + "\n")
+    return "\n\n".join(out)
+
+
 def main():
     t = canonical(read_csv("table3_coexposure_gcm_mean.csv"))
     d = out_dir("tables")
@@ -55,11 +68,9 @@ def main():
         for g, f, s in MAIN], ignore_index=True)
     write_csv(main_csv, d / "table3_crosstab_main.csv")
     write_text(d / "table3_crosstab_main.md",
-               "\n\n".join(block(t, g, f, s, MAIN_TITLE[g]) for g, f, s in MAIN)
-               + "\n\n" + NOTE + "\n")
+               section(t, MAIN, MAIN_TITLE) + "\n\n" + NOTE + "\n")
     write_text(d / "table3_crosstab_supplementary.md",
-               "\n\n".join(block(t, g, f, s, SUPP_TITLE[g]) for g, f, s in SUPP)
-               + "\n\n" + NOTE + "\n")
+               section(t, SUPP, SUPP_TITLE) + "\n\n" + NOTE + "\n")
 
 
 if __name__ == "__main__":
