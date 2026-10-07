@@ -30,8 +30,8 @@ spec is the single source of truth for all numeric choices and definitions.
   Paths come from `config/paths.local.yaml` (gitignored).
 - `raw_dir`: `D:/Douglas/OUTROS/CRAEI_raw_data/raw`.
 - Article artifacts go to `data/outputs/article/{figures,tables}`, outside Git.
-- Geometry only from the cache `data/external/geo/natural_earth_brazil.gpkg`;
-  use `representative_point()` for labels.
+- Geometry only from the caches `data/external/geo/natural_earth_brazil.gpkg` (Natural Earth) and
+  `gadm_brazil.gpkg` (GADM 4.1, article maps, not redistributable, D155); use `representative_point()` for labels.
 - Machine has ~6.2 GB RAM, well under the Spec's assumed 8+ cores/32 GB (D41).
   `spei.parquet` (463 MB) is read only with selective column/row reads.
 - Files are UTF-8 without BOM, LF line endings.
@@ -86,7 +86,7 @@ spec is the single source of truth for all numeric choices and definitions.
 5. Funções a reutilizar: dl.find_plant (src/craei/hazards/drought_levels.py:18), hl.with_itaipu_versions (src/craei/exposure/heat_levels.py:43), scripts/article_map_utils.py.
 6. Arquivo de produção: escrever em temporário, git --no-pager diff --no-index, promover só sem drift não explicado. UTF-8 sem BOM, LF.
 7. Nenhum _tmp_* sobrevive ao fim da fase. Conferir git status.
-8. Geometria só do cache data/external/geo/natural_earth_brazil.gpkg. representative_point() para rótulos.
+8. Geometria só dos caches data/external/geo/natural_earth_brazil.gpkg e gadm_brazil.gpkg (mapas do artigo, D155). representative_point() para rótulos.
 9. Sem dependência nova por conveniência.
 10. "PARE E PERGUNTE" = apresentar opções com números reais e esperar minha resposta. Pontos de julgamento científico nunca são decididos por você.
 11. Fim de fase: pytest (>= piso), python scripts/check_headlines.py (todo PASS), registrar D/C, commit "C<n>: ..." sem pedir autorização, mostrar o diff no relatório final, git log -3 e git status. Se algum check falhar, PARE. Push só com minha confirmação.

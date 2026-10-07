@@ -158,3 +158,5 @@
 - C104 (2026-10-07): Phase 5 memo docs/article/DECISION_MEMO_F5.md (decisions a, c, e pending), D152 (memo and D148 thermal co-extreme correction), O52 (journal guide unavailable). Floor unchanged: 238 passed, 1 skipped.
 - C105 (2026-10-07): Phase 5 decisions recorded (D153): E1 Design A, compact list, neutral dimensions, new phase order; sentence 2 of the framing held (heat share does not match the CSV). Floor unchanged: 238 passed, 1 skipped.
 - C106 (2026-10-07): Phase 5 closed: framing sentences recorded (D154), register row R21. Floor unchanged: 238 passed, 1 skipped.
+- C107 (2026-10-07): Phase 9 maps: GADM 4.1 geometry layers (geo_base.py build_gadm), single map standard (article_map_utils.py, _maps.py), Fig 1, 3, 5a, 5b rebuilt (D155, O53); build_all --promote, scripts alone write to article/_preview. Floor unchanged: 238 passed, 1 skipped.
+- C108 (2026-10-07): Phase 9 non-map figures and tables: Fig 2, 4 (Hydro SPI row), 6, 7 (E1), 8 (E3) without footnotes, short axis labels, Table 2 and 3 short notes, captions in docs/article/drafts/results.md. Phase 9 closed after author approval; next: Phase W (text drafts).

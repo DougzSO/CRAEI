@@ -14,3 +14,7 @@ isimip_global_cache_dir: "/path/to/ISIMIP_CACHE"
 # Optional: internal-SSD staging area for in-progress downloads before they
 # are moved into isimip_global_cache_dir (see docs/DECISIONS.md, COMANDO 12).
 isimip_staging_dir: "/path/to/SSD_STAGING"
+
+# Optional: GADM 4.1 Brazil shapefiles (gadm41_BRA_0_mainland.shp, gadm41_BRA_1_mainland.shp) for the article
+# maps (scripts/geo_base.py). GADM cannot be redistributed; obtain it from gadm.org.
+gadm_bra_dir: "/path/to/gadm/BRA"

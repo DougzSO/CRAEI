@@ -25,8 +25,7 @@ CLASS_COLOR = {"low": "#2b83ba", "medium": "#abdda4", "high": "#fdae61", "extrem
 CLASS_ORDER = ["low", "medium", "high", "extreme"]
 BASELINE_FUTURE = "(Baseline 1985-2014, Future 2041-2070)"
 DPI = 300
-MAP_EXTENT = (-75.0, -34.0, -34.5, 6.0)  # lon W, lon E, lat S, lat N
-GEO_LAYERS = ("brazil_admin1", "brazil_admin0", "southamerica_admin0")
+MAP_EXTENT = (-75.0, -33.0, -34.5, 6.0)  # lon W, lon E, lat S, lat N (article_map_utils.EXTENT)
 
 
 def paths():
@@ -46,8 +45,9 @@ def processed_dir():
 
 
 def article_root():
+    """Output root: CRAEI_ARTICLE_OUT, else the preview folder; the official folder only via build_all --promote."""
     env = os.environ.get("CRAEI_ARTICLE_OUT")
-    return Path(env) if env else Path(paths()["outputs_dir"]) / "article"
+    return Path(env) if env else Path(paths()["outputs_dir"]) / "article" / "_preview"
 
 
 def out_dir(kind):
@@ -84,13 +84,18 @@ def md_table(df):
 
 
 def load_geo():
-    """(adm1 with label points cx/cy, adm0, sam0) from the cached Natural Earth gpkg."""
+    """(adm1, adm0, sam0): GADM 4.1 states (postal code, label point cx/cy) and Brazil outline from
+    gadm_brazil.gpkg; neighbouring countries (without Brazil) from the Natural Earth cache."""
     import geopandas as gpd
 
-    gpkg = Path(paths()["data_root"]) / "external" / "geo" / "natural_earth_brazil.gpkg"
-    adm1, adm0, sam0 = (gpd.read_file(gpkg, layer=layer) for layer in GEO_LAYERS)
+    geo = Path(paths()["data_root"]) / "external" / "geo"
+    adm1 = gpd.read_file(geo / "gadm_brazil.gpkg", layer="brazil_admin1_gadm")
+    adm0 = gpd.read_file(geo / "gadm_brazil.gpkg", layer="brazil_admin0_gadm")
+    sam0 = gpd.read_file(geo / "natural_earth_brazil.gpkg", layer="southamerica_admin0")
+    sam0 = sam0[sam0[next(c for c in sam0.columns if c.lower() == "adm0_a3")] != "BRA"]
     pts = adm1.geometry.representative_point()
     adm1 = adm1.assign(cx=pts.x, cy=pts.y)
+    assert len(adm1) == 27 and adm1["postal"].nunique() == 27
     return adm1, adm0, sam0
 
 
@@ -107,11 +112,19 @@ def marker_size(capacity_mw, scale=1.0):
 
 
 THERMAL_MARKER_SCALE = 0.55  # thermal markers are drawn smaller than hydro (Fig 1, Fig 3)
+MAP_MARKER_SCALE = 0.30  # markers on the 180 mm three-panel maps (panels are 2.3 in wide)
 
 
-def save_figure(fig, name):
+def save_figure(fig, name, journal_width=True):
+    """Save at the exact figure size (no tight cropping); journal_width=True requires 1 or 2 columns.
+
+    The three-panel maps are kept at their 17 x 7 in working size (journal reduction comes later).
+    """
     path = out_dir("figures") / name
-    fig.savefig(path, dpi=DPI, bbox_inches="tight", facecolor="white")
+    w_in = fig.get_size_inches()[0]
+    if journal_width:
+        assert min(abs(w_in - 90 / 25.4), abs(w_in - 180 / 25.4)) < 1e-6, w_in
+    fig.savefig(path, dpi=DPI, facecolor="white")
     print("written:", path)
     return path
 
@@ -129,7 +142,6 @@ def fig_text(fig, x_in, y_in, text, **kw):
     return fig.text(x_in / w, 1 - y_in / h, text, **kw)
 
 
-FOOT = dict(fontsize=8.5, style="italic", color="#444444", va="center", ha="left")
 
 
 def hydro_context_note():
@@ -154,6 +166,15 @@ def hydro_context_note():
         "and extreme heat class (plant cell), same GCM. For the national operating fleet, the "
         f"compound share is {', '.join(ratios[:-1])} and {ratios[-1]} of the extreme-drought "
         "share alone (SSP1-2.6 / SSP3-7.0 / SSP5-8.5; mean across 5 GCMs: "
-        f"{', '.join(parts)}). This overlap is attributed in part to the temperature dependence "
-        "of SPEI-Hargreaves; the circularity control of the E1 analysis (SPI-based) will test it "
-        "when available."), ratios
+        f"{', '.join(parts)})."), ratios
+
+
+def heat_drought_note():
+    """O47: observed heat x drought dependence against the GCMs (E1, e1_hedge_observed.csv)."""
+    o = read_csv("e1_hedge_observed.csv")
+    o = o[(o["fleet"] == "operating") & (o["h_channel"] == "spi") & (o["t_channel"] == "heat")].iloc[0]
+    assert o["D_lo_b12"] < 1 < o["D_hi_b12"]
+    return (f"In W5E5 observations the heat x drought pair shows no dependence (D = {o['D']:.2f}, 95% CI "
+            f"{o['D_lo_b12']:.2f}-{o['D_hi_b12']:.2f} includes 1), whereas the GCMs give a baseline D of "
+            f"about {o['D_gcm_baseline_median']:.1f}; GCM heat x drought co-exposure is therefore probably "
+            "inflated relative to observations (E1, D143).")
