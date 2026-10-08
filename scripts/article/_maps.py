@@ -7,7 +7,7 @@ the caption (docs/article/drafts/results.md). The block legend serves the non-ma
 
 import matplotlib.pyplot as plt
 from _common import load_geo
-from article_map_utils import EXTENT, base_map
+from article_map_utils import EXTENT, base_country_map
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
@@ -29,7 +29,7 @@ def map_figure():
     for k in range(3):
         left = MAP_LEFT + k * (PANEL_W + PANEL_GAP)
         ax = fig.add_axes([left / MAP_W, 1 - (MAP_TOP + PANEL_H) / MAP_H, PANEL_W / MAP_W, PANEL_H / MAP_H])
-        base_map(ax, EXTENT, adm1, adm0, sam0, left_labels=k == 0)
+        base_country_map(ax, EXTENT, adm1, adm0, sam0, left_labels=k == 0)
         axes.append(ax)
     return fig, axes, adm1, adm0
 

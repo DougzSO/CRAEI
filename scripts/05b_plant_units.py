@@ -16,6 +16,7 @@ pd.set_option("display.width", 200)
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from craei.config import load_paths  # noqa: E402
+from craei.countries import iso as country_iso  # noqa: E402
 from craei.inventory import plants as P  # noqa: E402
 from craei.inventory import units as U  # noqa: E402
 
@@ -35,7 +36,7 @@ def out(s=""):
 
 
 def brazil_thermal(units: pd.DataFrame) -> pd.DataFrame:
-    return units[(units.country == "BRA") & units.tech_class.str.startswith("thermal")]
+    return units[(units.country == country_iso()) & units.tech_class.str.startswith("thermal")]
 
 
 def fleet_fuel_gw(th: pd.DataFrame) -> pd.DataFrame:

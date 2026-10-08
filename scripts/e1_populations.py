@@ -9,10 +9,11 @@ Thermal fleets: "operating" (main) and "operating_plus_planned" (secondary, the 
 
 import pandas as pd
 
+from craei.countries import iso as country_iso
 from craei.exposure import heat_levels as hl
 from craei.hazards import drought_levels as dl
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 ITAIPU_TOTAL_MW = 14000.0  # scripts/th1_fleet_gw.py:73
 EXPECT_HYDRO_GW, EXPECT_THERMAL_PLANTS, EXPECT_THERMAL_GW = 102.667, 618, 39.1015  # D102, D125
 PLANNED = ["planned_adv", "planned_early"]

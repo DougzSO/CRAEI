@@ -1,0 +1,4 @@
+iso: IND
+name: India
+aliases: [IND, India]
+implemented: false     # main.py stops with "país não implementado: IND" before running anything

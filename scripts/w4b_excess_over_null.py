@@ -21,10 +21,11 @@ import numpy as np
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.exposure.heat_levels import with_itaipu_versions
 from craei.hazards import drought_levels as dl
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 SPEI_TH, RD_TH = -1.5, 2.0
 REF_BLOCK12, REF_AR1, REF_WN = 18.88, 26.12, 1.80
 REF_GW_A, REF_GW_B = 109.667, 102.667

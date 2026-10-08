@@ -57,13 +57,14 @@ import pandas as pd
 import yaml
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.exposure import heat_levels as hl
 from craei.exposure.heat_fuel import add_pooled_planned
 from craei.exposure.plant_class import plant_class_filter
 from craei.geo.state_assignment import add_macro_region, assign_state
 from craei.hazards import drought_levels as dl
 
-COUNTRY, CAP_TOL, SUM_TOL, PROD_TOL = "BRA", 1e-6, 1e-3, 1e-6
+COUNTRY, CAP_TOL, SUM_TOL, PROD_TOL = country_iso(), 1e-6, 1e-3, 1e-6
 GROUPS = {"hydro": "catchment", "thermal_water_dependent": "cell"}
 NULLS = ("block12", "year", "anystart")
 CUTSET_NAME, CUTSET_PCTS = "p50_p90_p99", dl.CUTSETS["p50_p90_p99"]

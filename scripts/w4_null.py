@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.hazards import null_model as nm
 
 SEED, N_SIM, N_MONTHS, CANON_BLOCK = 23, 2000, 360, 12
@@ -24,7 +25,7 @@ REF_AR1, REF_PHI = 26.12, 0.9291
 def load_pool(proc):
     plants = pd.read_parquet(proc / "plants.parquet", columns=["plant_uid", "country"])
     haz = pd.read_parquet(proc / "plant_hazards.parquet", columns=["plant_uid", "bucket"])
-    bra = set(plants.loc[plants["country"] == "BRA", "plant_uid"])
+    bra = set(plants.loc[plants["country"] == country_iso(), "plant_uid"])
     hyd = haz[haz["bucket"].isin(["hydro_reservoir", "hydro_run_of_river"])]
     ids = set(hyd["plant_uid"]) & bra
     cols = ["id", "model", "period", "scale", "month", "SPEI_12"]

@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.exposure import heat_fuel as hf
 from craei.exposure import heat_season as hs
 
@@ -59,7 +60,7 @@ def main() -> None:
     proc = Path(paths["processed_dir"])
     tables = Path(paths["outputs_tables_dir"])
     units = pd.read_parquet(proc / "plant_units.parquet")
-    keep = (units["country"] == "BRA") & units["fuel_class"].isin(hf.THERMAL_FUELS)
+    keep = (units["country"] == country_iso()) & units["fuel_class"].isin(hf.THERMAL_FUELS)
     op = units[keep & (units["fleet"] == "operating")]
     bio = op["fuel_class"] == "bioenergy"
     log("bio_subtype, operating bioenergy units: "

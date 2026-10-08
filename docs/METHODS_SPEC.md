@@ -739,7 +739,11 @@ the coast). Output: plant_aqueduct.parquet. Time: included in Step 7's
 excluded from the lower bound as coastal). 0 plants fell into category -1
 or "no_data" in this run.
 
-**Step 9. Exposure aggregation and agreement.** Input: Steps 1, 7, 8.
+**Step 9. Exposure aggregation and agreement -- LEGACY (C19), not used in the article.**
+The C19 aggregation (`scripts/archive/10_exposure.py`, `craei.exposure.aggregate`, outputs
+exposure_summary.csv, exposure_si.csv, exposure_aqueduct.csv) is no longer part of the pipeline (Phase 7,
+D156); the article numbers come from the W3-W6 and E1/E3 analyses. The library functions and their tests stay
+in `src/craei/exposure/`. Input: Steps 1, 7, 8.
 Processing: capacity shares and GW above headline classes per country x
 technology x fleet x scenario x model; ensemble median and range; model
 agreement flags per plant. Output: exposure_summary.csv. Time: 0.5 h (not

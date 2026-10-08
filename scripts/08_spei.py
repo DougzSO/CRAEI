@@ -245,7 +245,7 @@ def main() -> None:
         print(flagged.to_string(index=False))
     else:
         print(
-            f"{truncated_cells_path} not found -- rerun scripts/audit_tx_tn_and_pet_truncation.py "
+            f"{truncated_cells_path} not found -- rerun scripts/archive/audit_tx_tn_and_pet_truncation.py "
             "with its truncated-cell list persisted to this path before this action can be reported."
         )
 

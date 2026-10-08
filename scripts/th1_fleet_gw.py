@@ -25,11 +25,12 @@ from pathlib import Path
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.exposure import heat_levels as hl
 from craei.exposure.heat_fuel import add_pooled_planned
 from craei.hazards import drought_levels as dl
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 KEEP = ("hydro", "thermal_water_dependent", "thermal_air_only")
 REF_TOTALS = {"all_thermal": 47.67, "hydro_a": 109.67, "hydro_b": 102.67}
 TOTAL_TOL = 0.01

@@ -7,10 +7,11 @@ Source: plant_units.parquet (BRA). Itaipu at the Brazilian share (version b,
 import pandas as pd
 from _common import md_table, out_dir, processed_dir, write_csv, write_text
 
+from craei.countries import iso as country_iso
 from craei.exposure import heat_levels as hl
 from craei.hazards import drought_levels as dl
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 TECH = {"hydro": "Hydro", "solar_pv": "Solar PV",
         "thermal_water_dependent": "Thermal (water-dependent)",
         "thermal_air_only": "Thermal (air-cooled)"}

@@ -6,7 +6,7 @@ docs/HANDOFF_v46.md section 2. Planned hydro capacity is computed from plant_uni
 """
 
 import pandas as pd
-from _common import SCEN_LABEL, md_table, out_dir, params, processed_dir, write_csv, write_text
+from _common import SCEN_LABEL, country_iso, md_table, out_dir, params, processed_dir, write_csv, write_text
 
 GCMS = ["GFDL-ESM4", "IPSL-CM6A-LR", "MPI-ESM1-2-HR", "MRI-ESM2-0", "UKESM1-0-LL"]
 ITAIPU_TOTAL_MW, ITAIPU_BRAZIL_MW = 14000, 7000  # scripts/th1_fleet_gw.py:73, heat_levels.py:43
@@ -16,7 +16,7 @@ GEM_CUTOFF = "2026-08-09"
 def main():
     p = params()
     u = pd.read_parquet(processed_dir() / "plant_units.parquet")
-    ph = u[(u["country"] == "BRA") & (u["tech_class"] == "hydro")
+    ph = u[(u["country"] == country_iso()) & (u["tech_class"] == "hydro")
            & u["fleet"].isin(["planned_adv", "planned_early"])]
     n, adv, early = len(ph), ph[ph.fleet == "planned_adv"].capacity_mw.sum(), \
         ph[ph.fleet == "planned_early"].capacity_mw.sum()

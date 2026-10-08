@@ -22,6 +22,8 @@ import w3h_state_coexposure as w3h  # noqa: E402
 import w4c_spi_vs_spei as w4c  # noqa: E402
 
 from craei.config import load_paths  # noqa: E402
+from craei.countries import current as country_cfg  # noqa: E402
+from craei.countries import iso as country_iso  # noqa: E402
 from craei.exposure import heat_levels as hl  # noqa: E402
 from craei.exposure.heat_fuel import add_pooled_planned  # noqa: E402
 from craei.geo.state_assignment import add_macro_region, assign_state  # noqa: E402
@@ -30,6 +32,8 @@ from craei.hazards import drought_levels as dl  # noqa: E402
 S1, S3 = "ssp126", "ssp370"
 GCM_ROWS, PLANT_ROWS = [], []
 
+
+ITAIPU = country_cfg()["special_cases"]["itaipu"]
 
 def share_by_gcm(u, flag, key):
     """Capacity share (%) of `flag` per GCM and scenario within `u` (one case)."""
@@ -83,8 +87,8 @@ def main():
     fd = pd.read_csv(tab / "w4g_fd_unit_values.csv")
     plants = pd.read_parquet(proc / "plants.parquet",
                              columns=["plant_uid", "plant_name", "country", "capacity_mw", "lat", "lon"])
-    bra = plants[plants["country"] == "BRA"]
-    uv = hl.with_itaipu_versions(units, dl.find_plant(plants, "BRA", "itaipu", 14000.0))
+    bra = plants[plants["country"] == country_iso()]
+    uv = hl.with_itaipu_versions(units, dl.find_plant(plants, country_iso(), ITAIPU["find_name"], ITAIPU["total_mw"]))
     d = dl.unit_drought_frame(uv, fd)
     heat = pd.concat([w3h.thermal_tx35(proc, units), w3h.hydro_tx35(proc, units)], ignore_index=True)
     d = d.merge(heat, on=["plant_uid", "model", "scenario"], how="left")

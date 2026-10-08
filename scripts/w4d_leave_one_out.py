@@ -18,10 +18,11 @@ import numpy as np
 import pandas as pd
 
 from craei.config import load_params, load_paths
+from craei.countries import iso as country_iso
 from craei.hazards import drought_levels as dl
 from craei.inventory.fleet import apply_foreign_share
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 BUCKETS = ["hydro_reservoir", "hydro_run_of_river"]
 SCENARIOS = ["ssp126", "ssp370", "ssp585"]
 ITAIPU_TOTAL_MW, ITAIPU_FOREIGN_MW = 14000.0, 7000.0  # scripts/th1_fleet_gw.py:73, heat_levels.py:43

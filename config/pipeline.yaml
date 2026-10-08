@@ -1,0 +1,131 @@
+# Ordered phases of `python main.py <COUNTRY>` (Phase 7, docs/PIPELINE.md). Input tokens and the completion
+# criterion are described in src/craei/pipeline.py. `long: true` phases run only when named (--only / --force).
+# Scripts live in scripts/ and run with the repository root as working directory.
+phases:
+  - name: acquire
+    description: ISIMIP3b, W5E5 and auxiliary data acquisition (network, days; manual)
+    long: true
+    scripts: [02_acquire.py, 04_full_acquire.py]
+    inputs: []
+    outputs: ["raw:manifest.json"]
+
+  - name: geo
+    description: Natural Earth and GADM 4.1 geometry caches
+    scripts: [geo_base.py]
+    inputs: ["path:gadm_bra_dir"]
+    outputs: ["geo:natural_earth_brazil.gpkg", "geo:gadm_brazil.gpkg"]
+
+  - name: inventory
+    description: plant and unit inventory (Spec step 1)
+    scripts: [05_plants.py, 05b_plant_units.py]
+    inputs: ["raw:gem/*.xlsx", "raw:boundaries/ne_10m_coastline.*"]
+    outputs: ["processed:plants.parquet", "processed:plant_units.parquet", "processed:plants_discarded.csv"]
+
+  - name: spatial
+    description: grid and catchment mapping (Spec step 3)
+    scripts: [06_spatial.py]
+    inputs: ["phase:inventory", "raw:gadm/gadm41_{iso}.gpkg", "raw:boundaries/hydrobasins/*.zip", "rawcov:climate/isimip3b/gfdl-esm4/historical/tasmax/gfdl-esm4_historical_tasmax_{iso}.nc"]
+    outputs: ["processed:plant_cell.parquet", "processed:catchment_weights.parquet", "processed:catchment_validation.csv"]
+
+  - name: indices
+    description: daily heat and precipitation indices (Spec step 4)
+    long: true
+    scripts: [04_daily_indices.py]
+    inputs: ["phase:spatial", "rawcov:climate/isimip3b/*/*/tasmax/*_{iso}.nc", "rawcov:climate/isimip3b/*/*/pr/*_{iso}.nc"]
+    outputs: ["processed:indices_daily.parquet"]
+
+  - name: hydro
+    description: PET, monthly water balance and SPEI/SPI (Spec step 5)
+    long: true
+    scripts: [07_water_balance.py, 08_spei.py]
+    inputs: ["phase:spatial", "rawcov:climate/isimip3b/*/*/tasmax/*_{iso}.nc", "rawcov:climate/isimip3b/*/*/tasmin/*_{iso}.nc", "rawcov:climate/isimip3b/*/*/pr/*_{iso}.nc"]
+    outputs: ["processed:water_balance_cell.parquet", "processed:water_balance_catchment.parquet", "processed:spei.parquet"]
+
+  - name: hazards
+    description: plant-level hazard table and Aqueduct water stress (Spec steps 7-8)
+    scripts: [09_consolidate.py]
+    inputs: ["phase:hydro", "phase:indices", "phase:spatial", "raw:boundaries/hydrobasins/*.zip", "raw:aqueduct/baseline_annual/aqueduct_baseline_annual_3countries.csv"]
+    outputs: ["processed:plant_hazards.parquet", "processed:plant_aqueduct.parquet"]
+
+  - name: w5e5
+    description: "observed W5E5 SPEI/SPI and E1 inputs (the raw .nc files are not in the manifest, so they are hashed directly)"
+    scripts: [24_w5e5_spei_validation.py, e1_w5e5_inputs.py]
+    inputs: ["phase:spatial", "phase:hazards", "raw:climate/w5e5v2.0/*/*.nc"]
+    outputs: ["processed:spei_w5e5.parquet", "processed:water_balance_catchment_w5e5.parquet", "processed:w5e5_hydro_spi12.parquet", "processed:w5e5_thermal_cells_monthly.parquet"]
+
+  - name: w3
+    description: axis 1 heat exposure (W3a-W3g), thresholds, Table 1 and curves inputs
+    scripts: [w3_heat_fuel.py, w3_agreement.py, w3_influence.py, w3_bootstrap.py, w3_season.py, w3_scenario.py, w3_sensitivity.py, w3_tx40.py, w3_gcm_exclusion.py, w3f7_sensitivity.py, w3_table1.py, w3_curves.py, th1_fleet_gw.py, w3g_heat_levels.py]
+    inputs: ["phase:hazards", "phase:inventory", "phase:spatial", "phase:indices"]
+    outputs: ["tables:w3_heat_summary.csv", "tables:w3_heat_agreement.csv", "tables:w3_heat_influence.csv", "tables:w3_heat_bootstrap_shares.csv", "tables:w3_heat_season_summary.csv", "tables:w3_heat_scenario_contrast.csv", "tables:w3_heat_sensitivity.csv", "tables:w3_tx40_curves.csv", "tables:w3_gcm_exclusion.csv", "tables:w3f7_planned_vs_operating.csv", "tables:w3_table1.csv", "tables:w3_curves_plot.csv", "tables:th1_fleet_gw.csv", "tables:w3g_heat_cell_class.csv", "tables:w3g_heat_level_classes.csv"]
+
+  - name: w4
+    description: axis 2 drought exposure, null models, leave-one-out, drought classes (W4a-W4h)
+    scripts: [w4_null.py, w4b_excess_over_null.py, w4c_null_spi.py, w4c_null_thermal.py, w4c_spi_vs_spei.py, w4d_leave_one_out.py, w4f_threshold_grid.py, w4r_emulator_check.py, w4g_drought_levels.py, w4h_coexposure.py]
+    inputs: ["phase:hazards", "phase:inventory", "phase:spatial", "phase:w3"]
+    outputs: ["tables:w4_null_rates.csv", "tables:w4b_excess_over_null.csv", "tables:w4b_agreement.csv", "tables:w4c_null_rates_spi.csv", "tables:w4c_null_rates_thermal.csv", "tables:w4c_spi_vs_spei.csv", "tables:w4d_leave_one_out.csv", "tables:w4f_threshold_grid.csv", "tables:w4g_fd_unit_values.csv", "tables:w4g_null_percentiles.csv", "tables:w4h_coexposure.csv"]
+
+  - name: coexposure
+    description: heat x drought co-exposure by state, Table 3, W5 sensitivity table
+    scripts: [w3h_state_coexposure.py, w5_table3_gcm_mean.py, w5_sensitivity.py]
+    inputs: ["phase:w3", "phase:w4", "phase:inventory", "phase:spatial", "geo:natural_earth_brazil.gpkg"]
+    outputs: ["tables:w3h_state_coexposure.csv", "tables:table3_coexposure.csv", "tables:table3_coexposure_gcm_mean.csv", "tables:w5_sensitivity.csv"]
+
+  - name: e1
+    description: hydrothermal hedge failure (E1) and co-location check
+    scripts: [e1_hedge.py, e1_colocation.py]
+    inputs: ["phase:w5e5", "phase:hazards", "phase:inventory", "phase:coexposure", "geo:natural_earth_brazil.gpkg"]
+    outputs: ["tables:e1_hedge_observed.csv", "tables:e1_hedge_metrics.csv", "tables:e1_hedge_delta.csv", "tables:e1_hedge_summary.csv", "tables:e1_hedge_series.csv", "tables:e1_hedge_criterion.csv", "tables:e1_colocation.csv"]
+
+  - name: e3
+    description: SPEI against observed natural inflow (ONS ENA) and hit rate
+    scripts: [e3_ena_validation.py, e3_hit_rate.py]
+    inputs: ["phase:w5e5", "phase:inventory", "rawcov:validation/ons_ena/ENA_Diario_por_Subsistema-*.csv"]
+    outputs: ["processed:ena_monthly.parquet", "tables:e3_spearman.csv", "tables:e3_regional_series.csv", "tables:e3_episodes.csv", "tables:e3_hit_rate.csv"]
+
+  - name: w6
+    description: 3-GCM subset, k/5 agreement, non-monotonicity
+    scripts: [w6_gcm_subset.py, w6_nonmonotonicity.py]
+    inputs: ["phase:e1", "phase:w4", "phase:hazards", "phase:coexposure", "geo:natural_earth_brazil.gpkg"]
+    outputs: ["tables:w6_agreement_k.csv", "tables:w6_subset_coextreme.csv", "tables:w6_subset_e1.csv", "tables:w6_subset_excess.csv", "tables:w6_nonmono_gcm.csv", "tables:w6_nonmono_plants.csv"]
+
+  - name: validation
+    description: SPEI x ONS ENA national validation table (supplementary)
+    scripts: [25_validation_stats.py]
+    inputs: ["phase:w5e5", "processed:ren_iph.parquet", "processed:plants.parquet"]
+    outputs: ["tables:validation.csv"]
+
+  - name: article
+    description: article figures and tables (written to data/outputs/article)
+    scripts: ["article/build_all.py --promote"]
+    watch: ["article/*.py", "article_map_utils.py"]
+    inputs: ["phase:inventory", "phase:w3", "phase:w4", "phase:coexposure", "phase:e1", "phase:e3", "phase:w6", "geo:gadm_brazil.gpkg", "geo:natural_earth_brazil.gpkg"]
+    outputs:
+      - "article:figures/fig1_heat_class_map.png"
+      - "article:figures/fig2_threshold_curves.png"
+      - "article:figures/fig3_drought_exposure_map.png"
+      - "article:figures/fig4_excess_over_null.png"
+      - "article:figures/fig5a_state_coexposure_hydro.png"
+      - "article:figures/fig5b_state_coexposure_thermal.png"
+      - "article:figures/fig6_thermal_heat_by_fuel.png"
+      - "article:figures/fig7_e1_hedge.png"
+      - "article:figures/fig8_e3_ena.png"
+      - "article:tables/table0_parameters.csv"
+      - "article:tables/table1_fleet_capacity.csv"
+      - "article:tables/table2_leave_one_out.csv"
+      - "article:tables/table3_coexposure_crosstab.csv"
+      - "article:tables/table3_crosstab_main.csv"
+
+  - name: headlines
+    description: regression gate on the headline numbers (always the last phase, never skipped)
+    always: true
+    scripts: [check_headlines.py]
+    inputs: ["phase:inventory", "phase:w3", "phase:w4", "phase:coexposure"]
+    outputs: []
+
+# Phases of other countries, listed for the record (main.py refuses these countries before any run).
+not_implemented:
+  PRT:
+    - name: ren_iph_validation
+      scripts: [22_validate_ren_iph.py]
+      description: REN IPH hydropower validation (Portugal only)

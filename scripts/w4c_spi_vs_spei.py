@@ -19,9 +19,8 @@ Checks fixed before running (A/B/C unchanged from v1; D new):
      must find a matching null_type set in null_tbl (no silent NaN from a
      missing group key) -- guards against reintroducing a silent mismatch.
 
-Output (this run): _tmp_w4c_spi_vs_spei_v2.csv (temporary; promoted to
-w4c_spi_vs_spei.csv only after the hydro-subset identity check against the
-pre-O43 backup passes, done in a separate comparison script).
+Output: w4c_spi_vs_spei.csv, written only after checks A-D pass (the O43 promotion step, a temporary file and
+a separate comparison script, is part of the pipeline now, Phase 7).
 """
 
 import sys
@@ -31,10 +30,11 @@ import numpy as np
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.exposure.heat_levels import with_itaipu_versions
 from craei.hazards import drought_levels as dl
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 SPEI_TH, RD_TH = -1.5, 2.0
 REF_GW_A, REF_GW_B, REF_GW_THERMAL = 109.667, 102.667, 39.1015
 TOL_GW = 0.001
@@ -196,9 +196,9 @@ def main():
         sys.exit(1)
     print("\nchecks A-D: PASS")
 
-    tmp_path = tab / "_tmp_w4c_spi_vs_spei_v2.csv"
-    out.to_csv(tmp_path, index=False)
-    print(f"\nwritten (TEMP, not yet promoted): {tmp_path.name} ({len(out)} rows)")
+    out_path = tab / "w4c_spi_vs_spei.csv"
+    out.to_csv(out_path, index=False)
+    print(f"\nwritten: {out_path.name} ({len(out)} rows)")
 
     pd.set_option("display.width", 220)
     head = out[(out["fleet"] == "operating") & (out["itaipu"].isin(["b", "na"]))

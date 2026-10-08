@@ -2,7 +2,7 @@
 
 Sources: w3g_heat_cell_class.csv (class_median per cell and scenario), plants.parquet
 x plant_cell.parquet. Thermal plants only (hydro is outside H1, precedent
-scripts/archive/w3_heat_levels.py:43). Marker shape = technology (diamond water-dependent, triangle air-cooled),
+scripts/w3g_heat_levels.py:43). Marker shape = technology (diamond water-dependent, triangle air-cooled),
 marker colour = heat exposure class of the plant's cell; the raster uses the same class colours, cells
 without data are transparent. Map standard of article_map_utils; no suptitle, no note.
 """
@@ -11,7 +11,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import numpy as np
-from _common import CLASS_COLOR, CLASS_ORDER, SCEN, SCEN_LABEL, THERMAL_MARKER_SCALE, brazil_plants, marker_size, read_csv, save_figure
+from _common import CLASS_COLOR, CLASS_ORDER, SCEN, SCEN_LABEL, THERMAL_MARKER_SCALE, brazil_plants, country_iso, marker_size, read_csv, save_figure
 from _maps import DEG_PER_PT, map_figure, map_legend
 from article_map_utils import place_state_labels
 from matplotlib.colors import ListedColormap
@@ -37,7 +37,7 @@ def raster(cc):
 
 def main():
     plants = brazil_plants()
-    th = plants[(plants["country"] == "BRA") & plants["tech_class"].isin(THERMAL)]
+    th = plants[(plants["country"] == country_iso()) & plants["tech_class"].isin(THERMAL)]
     cc_all = read_csv("w3g_heat_cell_class.csv")
     assert len(th) == 745 and th["cell_lat"].notna().all(), len(th)  # join without orphans
 

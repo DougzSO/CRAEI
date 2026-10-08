@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.exposure import heat_fuel as hf
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -30,7 +31,7 @@ def log(msg: object = "") -> None:
 
 
 def check_capacity(units: pd.DataFrame) -> bool:
-    th = units[(units["country"] == "BRA") & units["fuel_class"].isin(hf.THERMAL_FUELS)]
+    th = units[(units["country"] == country_iso()) & units["fuel_class"].isin(hf.THERMAL_FUELS)]
     ok = True
     for grp, ref in REF_GW.items():
         sub = th if grp == "all" else th[th["fuel_class"] == grp]

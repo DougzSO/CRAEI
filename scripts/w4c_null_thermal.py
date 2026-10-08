@@ -26,9 +26,10 @@ import numpy as np
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 from craei.hazards import null_model as nm
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 SEED, N_SIM, N_MONTHS, CANON_BLOCK = 23, 2000, 360, 12
 OTHER_BLOCKS = (24, 36, 60)
 SPEI_TH, RD_TH = (-1.0, -1.5, -2.0), (1.5, 2.0, 3.0)

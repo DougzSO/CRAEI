@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import e1_populations as pops  # noqa: E402
 
 from craei.config import load_datasets, load_params, load_paths  # noqa: E402
+from craei.countries import iso as country_iso  # noqa: E402
 from craei.hazards import heat, pet, spei  # noqa: E402
 from craei.hazards.pet import KELVIN_OFFSET_C  # noqa: E402
 
@@ -51,7 +52,7 @@ def index_12(balance, value_col, out_col, fit_fn, clip):
 
 def thermal_cells_monthly(paths, datasets_cfg, cells, clip):
     raw_dir = Path(paths["raw_dir"])
-    bbox = datasets_cfg["bboxes"]["BRA"]
+    bbox = datasets_cfg["bboxes"][country_iso()]
     start, end = int(datasets_cfg["w5e5"]["years"]["start"]), int(datasets_cfg["w5e5"]["years"]["end"])
     tx = w5.load_cell_series_multi(w5.find_files(raw_dir, "tasmax", bbox), cells, "tasmax_c", start, end)
     tx["tasmax_c"] -= KELVIN_OFFSET_C

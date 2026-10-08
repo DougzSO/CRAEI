@@ -1,0 +1,4 @@
+iso: PRT
+name: Portugal
+aliases: [PRT, Portugal]
+implemented: false     # main.py stops with "país não implementado: PRT" before running anything

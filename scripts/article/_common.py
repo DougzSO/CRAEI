@@ -12,6 +12,8 @@ from pathlib import Path
 import pandas as pd
 
 from craei.config import load_params, load_paths
+from craei.countries import current as country_cfg
+from craei.countries import iso as country_iso  # noqa: F401 (re-exported to the article scripts)
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(SCRIPTS_DIR) not in sys.path:
@@ -25,7 +27,6 @@ CLASS_COLOR = {"low": "#2b83ba", "medium": "#abdda4", "high": "#fdae61", "extrem
 CLASS_ORDER = ["low", "medium", "high", "extreme"]
 BASELINE_FUTURE = "(Baseline 1985-2014, Future 2041-2070)"
 DPI = 300
-MAP_EXTENT = (-75.0, -33.0, -34.5, 6.0)  # lon W, lon E, lat S, lat N (article_map_utils.EXTENT)
 
 
 def paths():
@@ -84,18 +85,20 @@ def md_table(df):
 
 
 def load_geo():
-    """(adm1, adm0, sam0): GADM 4.1 states (postal code, label point cx/cy) and Brazil outline from
-    gadm_brazil.gpkg; neighbouring countries (without Brazil) from the Natural Earth cache."""
+    """(adm1, adm0, sam0) for the run's country: state layer (postal code, label point cx/cy) and outline from the
+    GADM gpkg, neighbouring countries from the Natural Earth gpkg; file and layer names come from
+    config/countries/<ISO>.yaml."""
     import geopandas as gpd
 
+    g = country_cfg()["geometry"]
     geo = Path(paths()["data_root"]) / "external" / "geo"
-    adm1 = gpd.read_file(geo / "gadm_brazil.gpkg", layer="brazil_admin1_gadm")
-    adm0 = gpd.read_file(geo / "gadm_brazil.gpkg", layer="brazil_admin0_gadm")
-    sam0 = gpd.read_file(geo / "natural_earth_brazil.gpkg", layer="southamerica_admin0")
-    sam0 = sam0[sam0[next(c for c in sam0.columns if c.lower() == "adm0_a3")] != "BRA"]
+    adm1 = gpd.read_file(geo / g["gadm_gpkg"], layer=g["admin1_layer"])
+    adm0 = gpd.read_file(geo / g["gadm_gpkg"], layer=g["admin0_layer"])
+    sam0 = gpd.read_file(geo / g["natural_earth_gpkg"], layer=g["neighbours_layer"])
+    sam0 = sam0[sam0[next(c for c in sam0.columns if c.lower() == "adm0_a3")] != g["neighbours_exclude_iso"]]
     pts = adm1.geometry.representative_point()
     adm1 = adm1.assign(cx=pts.x, cy=pts.y)
-    assert len(adm1) == 27 and adm1["postal"].nunique() == 27
+    assert adm1[g["postal_column"]].nunique() == len(adm1) == 27  # Brazil: 26 states + DF
     return adm1, adm0, sam0
 
 

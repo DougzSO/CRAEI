@@ -15,7 +15,9 @@ import matplotlib.ticker as mticker
 import numpy as np
 import shapely
 
-EXTENT = (-75.0, -33.0, -34.5, 6.0)  # lon W, lon E, lat S, lat N
+from craei.countries import current as country_cfg
+
+EXTENT = tuple(country_cfg()["geometry"]["map_extent"])  # lon W, lon E, lat S, lat N (config/countries)
 XTICKS = (-70, -60, -50, -40)
 YTICKS = (0, -10, -20, -30)
 SAM = "#F5F5F0"
@@ -53,8 +55,8 @@ def scale_bar(ax, extent, km=500, fs=6.5):
                 fontsize=fs, ha="center", va="top", zorder=10)
 
 
-def base_map(ax, extent, adm1, adm0, sam0, left_labels=True, tick_fs=7.0):
-    """Standard base map on `ax` (see module docstring)."""
+def base_country_map(ax, extent, adm1, adm0, sam0, left_labels=True, tick_fs=7.0):
+    """Standard base map of a country on `ax` (see module docstring); geometry comes from the country config."""
     sam0.plot(ax=ax, color=SAM, edgecolor="none", zorder=0)
     adm0.plot(ax=ax, color=SAM, edgecolor="none", zorder=0.2)
     adm1.boundary.plot(ax=ax, edgecolor=STATE_EDGE, linewidth=STATE_LW, zorder=3)
@@ -75,6 +77,9 @@ def base_map(ax, extent, adm1, adm0, sam0, left_labels=True, tick_fs=7.0):
         sp.set_color("#BBBBBB")
     compass(ax, extent)
     scale_bar(ax, extent)
+
+
+base_brazil_map = base_country_map  # alias kept (name used before the multi-country interface)
 
 
 def _overlap(cx, cy, mx, my, rad, marea, half_w):

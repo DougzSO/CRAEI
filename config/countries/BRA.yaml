@@ -1,0 +1,31 @@
+# Country definition for main.py (Phase 7, docs/PIPELINE.md). Names and pointers only: every numeric
+# parameter stays in config/params.yaml (CLAUDE.md rule 3).
+iso: BRA
+name: Brazil
+aliases: [BRA, Brazil, Brasil]
+implemented: true
+
+geometry:
+  natural_earth_gpkg: natural_earth_brazil.gpkg      # data/external/geo (file name kept)
+  gadm_gpkg: gadm_brazil.gpkg                        # data/external/geo, article maps (D155)
+  admin1_layer: brazil_admin1_gadm
+  admin0_layer: brazil_admin0_gadm
+  neighbours_layer: southamerica_admin0
+  neighbours_exclude_iso: BRA
+  postal_column: postal
+  map_extent: [-75.0, -33.0, -34.5, 6.0]             # lon W, lon E, lat S, lat N
+
+special_cases:
+  itaipu:
+    find_name: itaipu
+    total_mw: 14000.0
+    foreign_mw: 7000.0
+    headline_version: b                              # Brazilian share (7,000 MW) for hydro, "na" for thermal
+
+filters:
+  fleet: operating
+  hydro_in_heat_hazard: false                        # D88
+  thermal_water_dependent_classification: plant_level   # D151
+
+macro_region_map: brazil_macroregion_map             # key in config/params.yaml (IBGE five macro-regions)
+submarket_approximation: macro_region                # E3 (D144)

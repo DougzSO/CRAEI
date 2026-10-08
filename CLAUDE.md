@@ -82,7 +82,7 @@ spec is the single source of truth for all numeric choices and definitions.
 1. Nunca inventar números. Valor ausente = "TO BE DEFINED" + item O-xx.
 2. Antes de criar IDs C/D/O: grep em docs/DECISIONS.md, docs/STATUS_LOG.md, docs/CRAEI_work_plan_v2.md, CLAUDE.md, docs/OPEN_ITEMS.md. Último commit C87, última decisão D133.
 3. Antes de escrever lógica nova: grep por precedente em scripts/*.py e src/craei/. Quando o schema admite vários valores (threshold, null, scenario, fleet, itaipu, pool), usar o valor headline do script-fonte e citar arquivo:linha.
-4. Headline: threshold=30 (scripts/w3_table1.py:35); null block12/block_bootstrap_12; itaipu=b (7.000 MW) para hidro, "na" para térmica; fleet operating; filtro precedente th1_fleet_gw.py:102. Hidro fora de H1 (scripts/archive/w3_heat_levels.py:43).
+4. Headline: threshold=30 (scripts/w3_table1.py:35); null block12/block_bootstrap_12; itaipu=b (7.000 MW) para hidro, "na" para térmica; fleet operating; filtro precedente th1_fleet_gw.py:102. Hidro fora de H1 (scripts/w3g_heat_levels.py:43).
 5. Funções a reutilizar: dl.find_plant (src/craei/hazards/drought_levels.py:18), hl.with_itaipu_versions (src/craei/exposure/heat_levels.py:43), scripts/article_map_utils.py.
 6. Arquivo de produção: escrever em temporário, git --no-pager diff --no-index, promover só sem drift não explicado. UTF-8 sem BOM, LF.
 7. Nenhum _tmp_* sobrevive ao fim da fase. Conferir git status.
@@ -120,6 +120,13 @@ matplotlib, isimip-client, pytest, ruff.
   Article artifacts (see Environment) are the exception and go under
   `data/outputs/article/`.
 
+## Pipeline
+
+`python main.py BRA` runs the phases of `config/pipeline.yaml` in order, skipping completed ones (outputs present, hash
+equal); `--dry-run`, `--force <phase>`, `--only`, `--adopt`. Long phases (acquire, indices, hydro) only when named;
+`check_headlines` is always last. Countries: `config/countries/<ISO>.yaml` (PRT, IND not implemented). See
+`docs/PIPELINE.md` (D156).
+
 ## Command flow
 
 grep precedent/IDs -> audit -> implement -> test -> update
@@ -127,11 +134,12 @@ grep precedent/IDs -> audit -> implement -> test -> update
 
 ## Test floor
 
-- Current pytest floor: 238 passed, 1 skipped (measured 2026-10-07 at C103; +2 tests, plant_class).
+- Current pytest floor: 256 passed, 1 skipped (measured 2026-10-07 at C109; +18 tests, pipeline skip logic and countries).
   Update this line on each new floor; append the superseded one to the history below.
 
 ## Test floor history
 
+- Pytest floor after C103: 238 passed, 1 skipped (measured 2026-10-07; supersedes the floor above; +2 tests, plant_class).
 - Pytest floor after C25-S3: 143 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
 - Pytest floor after W3a: 151 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).
 - Pytest floor after W3b: 154 passed, 1 skipped (measured 2026-10-01; supersedes the floor above).

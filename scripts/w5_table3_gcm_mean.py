@@ -27,12 +27,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "archive"))
 import w4h_coexposure as w4h  # noqa: E402
 
 from craei.config import load_paths  # noqa: E402
+from craei.countries import iso as country_iso  # noqa: E402
 from craei.exposure import heat_levels as hl  # noqa: E402
 from craei.exposure.heat_fuel import add_pooled_planned  # noqa: E402
 from craei.exposure.plant_class import plant_class_filter  # noqa: E402
 from craei.hazards import drought_levels as dl  # noqa: E402
 
-COUNTRY = "BRA"
+COUNTRY = country_iso()
 CUTSET = "p50_p90_p99"
 FLEETS = ["operating", "planned_all"]
 ITAIPU = {"hydro": "b", "thermal_water_dependent": "na"}

@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from craei.countries import iso as country_iso
 from craei.hazards.null_emulator import accumulate, fd_pct, fit_quiet, standardize_acc
 
 HYDRO_BUCKETS = ["hydro_reservoir", "hydro_run_of_river"]
@@ -20,7 +21,7 @@ def load_hydro_baseline(proc):
     """Return keys, model array, D (n, 372), stored SPEI_12 (n, 372), stored labels."""
     plants = pd.read_parquet(proc / "plants.parquet", columns=["plant_uid", "country"])
     haz = pd.read_parquet(proc / "plant_hazards.parquet", columns=["plant_uid", "bucket"])
-    bra = set(plants.loc[plants["country"] == "BRA", "plant_uid"])
+    bra = set(plants.loc[plants["country"] == country_iso(), "plant_uid"])
     ids = set(haz.loc[haz["bucket"].isin(HYDRO_BUCKETS), "plant_uid"]) & bra
     sp = pd.read_parquet(
         proc / "spei.parquet",

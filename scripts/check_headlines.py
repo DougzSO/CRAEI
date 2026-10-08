@@ -20,6 +20,7 @@ from pathlib import Path
 import pandas as pd
 
 from craei.config import load_paths
+from craei.countries import iso as country_iso
 
 TOL = 1e-3
 SCEN = ["ssp126", "ssp370", "ssp585"]
@@ -84,7 +85,7 @@ def main():
           [339, 433, 770], tol=0)
 
     plants = pd.read_parquet(proc / "plants.parquet")
-    thermal = plants[(plants["country"] == "BRA") & plants["tech_class"].isin(THERMAL)]
+    thermal = plants[(plants["country"] == country_iso()) & plants["tech_class"].isin(THERMAL)]
     pc = pd.read_parquet(proc / "plant_cell.parquet").drop_duplicates("plant_uid")
     cc = pd.read_csv(tdir / "w3g_heat_cell_class.csv")
     cc = cc[cc["scenario"] == "ssp585"]
