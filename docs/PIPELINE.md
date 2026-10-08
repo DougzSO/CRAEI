@@ -99,7 +99,8 @@ of `24_w5e5_spei_validation.py` are left as they are.
    27 ONS ENA files are all in `raw/manifest.json`. The 36 W5E5 `.nc` files read by `w5e5` are **not**: the
    manifest registers the downloaded `isimip-download-*.zip`, not the extracted files. `w5e5` therefore hashes
    them directly (2.5 GB, cached by size and time); registering the extracted files in the manifest is left to
-   a data-layer decision.
+   a data-layer decision. Author decision (C110): keep the direct hash of the extracted `.nc` files; the manifest is
+   not changed. The five older ruff errors (imports in `src/` and `tests/`) are left for Phase 8.
 4. EM-DAT: `26_emdat_descriptive.py` feeds no row of the claims register (DECISION_MEMO_F5.md): both EM-DAT scripts
    archived, `emdat_events.parquet` stays as an existing processed file.
 5. `audit_tx_tn_and_pet_truncation.py` (archived) is only an optional diagnostic of `08_spei.py` (the message

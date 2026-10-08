@@ -183,3 +183,20 @@ Declared limitations, each tied to the evidence that quantifies it:
 - O52 postponed; neutral dimensions until the journal is adjusted: 1 column about 90 mm, 2 columns about
   180 mm, 300 dpi, fonts legible at 100%.
 - New order: Phase 9 -> Phase W (text drafts) -> Phase 7 -> Phase 8 -> Phase 10.
+
+## Register additions (Phase W, C110)
+
+Rows R22-R28 add the counts and values that the results text uses and that R1-R21 do not carry. Each value is
+read from the CSV named in the row (outputs_tables_dir) or from the inventory tables; scenarios in the order
+SSP1-2.6 / SSP3-7.0 / SSP5-8.5.
+
+| # | Claim | Value | CI or range | k/5 | 3-GCM subset | Source CSV | D | Type |
+|---|---|---|---|---|---|---|---|---|
+| R22 | Thermal plants (745) in extreme-heat cells (TX35 class of the plant cell, median across GCMs) | 205 / 291 / 340 plants | n/a | n/a | not computed | w3g_heat_cell_class.csv, plants.parquet (Fig 1) | D133, check_headlines | G |
+| R23 | Plants with a median R_D >= 2.0 (SPEI-12 <= -1.5), all fleets: 921 plants | total 339 / 433 / 770; hydro 118 / 93 / 176 of 222; water-dependent thermal 219 / 338 / 590 of 694; air-cooled thermal 2 / 2 / 4 of 5 | n/a | n/a | not computed | w4g_fd_unit_values.csv, plants.parquet (Fig 3) | D133, check_headlines | G |
+| R24 | States (hydro: 19 with capacity; thermal: 26) with more than 50% of the state's operating capacity under extreme heat and extreme drought, median across GCMs | hydro 8 / 5 / 11 of 19; thermal 1 / 7 / 10 of 26. Largest co-extreme capacity under SSP5-8.5: hydro Para 22.35 GW; thermal Sao Paulo 2.67 GW, Mato Grosso do Sul 2.56 GW | n/a | n/a | not computed | w3h_state_coexposure.csv (Fig 5a, 5b) | D100, D149 | G |
+| R25 | Operating thermal capacity with >= 30 days/yr of TX35, by fuel class (median across GCMs) | bioenergy 41.7 / 61.2 / 68.2 % (17.43 GW, 624 units); coal 0.0 / 12.0 / 48.2 % (3.00 GW, 13); gas 22.4 / 22.4 / 40.4 % (19.32 GW, 91); multi-fuel 62.8 / 62.8 / 62.8 % (1.33 GW, 11); nuclear 0 % in all scenarios (1.99 GW, 2); oil 24.1 / 24.1 / 34.7 % (4.60 GW, 33) | per GCM in w3_table1.csv | n/a | not computed | w3_table1.csv (Fig 6) | D131 | G |
+| R26 | Leave-one-out of the five largest hydro plants: share of bucket capacity with R_D >= 2 (Itaipu at 7,000 MW), change in pp when the plant is removed | reservoir (66.4 GW, 135 plants) 55.54 / 55.10 / 74.03 %: Itaipu +6.54 / +6.49 / -3.06; Belo Monte +2.28 / -9.14 / +5.49; Tucurui -0.41 / -6.62 / -3.83. Run-of-river (36.2 GW, 59 plants) 67.14 / 72.01 / 79.27 %: Jirau -3.79 / -3.23 / -2.39; Santo Antonio -3.59 / -3.06 / -2.26 | n/a | n/a | n/a | w4d_leave_one_out.csv (Table 2) | D113, D135 | G |
+| R27 | Inventory (GEM snapshot 9 August 2026; 14,280 units): operating hydro 102.667 GW, 194 plants (Itaipu at 7,000 MW); operating thermal 47.67 GW, 774 units, 665 plants; of these water-dependent 39.1015 GW, 618 plants (plant-level class; unit level 39.77 GW, 621 plants); planned thermal 48.35 GW, 108 units; planned water-dependent 41.15 GW (plant level; unit level 43.58 GW); planned gas 44.12 GW (58 units), of which water-dependent 39.35 GW | n/a | n/a | n/a | n/a | plant_units.parquet, w3_curves_plot.csv, w3_table1.csv (Table 1, Fig 2) | D77, D131, D151 | n/a |
+| R28 | Planned thermal capacity with >= 30 days/yr of TX35 (median across GCMs) | all planned thermal 15.9 / 39.0 / 61.6 %; planned gas 14.4 / 39.1 / 62.1 % | all planned thermal min-max 6.3-61.7, 20.6-76.9, 43.1-94.4 | n/a | not computed | w3_curves_plot.csv, w3_table1.csv (Fig 2, Fig 6) | D131 | G |
+
